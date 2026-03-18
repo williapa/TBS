@@ -1,0 +1,54 @@
+div.form-row {
+  flex-direction: column;
+  max-width: 97.5%;
+  align-items: baseline;
+  justify-content: flex-start;
+}
+
+label, input {
+  flex: 1;
+  min-width: 100%;
+}
+
+select {
+  flex: 1;
+  min-width: 103.3%;
+}
+
+input[type="submit"] {
+  align-self: center;
+}
+
+div input[type="checkbox"] {
+  min-width: auto;
+}
+
+option.beach {
+  background-color: yellow;
+}
+
+option.desert {
+  background-color: lightyellow;
+}
+
+option.forest {
+  background-color: green;
+}
+
+option.mountain {
+  background-color: black;
+  color: white;
+}
+
+option.plains {
+  background-color: yellowgreen;
+}
+
+option.road {
+  background-color: brown;
+}
+
+
+option.water {
+  background-color: blue;
+}

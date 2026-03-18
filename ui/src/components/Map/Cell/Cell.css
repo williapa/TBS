@@ -1,0 +1,66 @@
+/* .hex:before {
+  content: "";
+  width: 0; 
+  height: 0;
+  border-bottom: 29px solid;
+  border-left: 52px solid transparent;
+  border-right: 52px solid transparent;
+  position: absolute;
+  top: -29px;
+}
+
+.hex {
+  display: block;
+  float: left;
+  margin-left: 3px;
+  margin-bottom: 26px;
+  width: 104px;
+  height: 60px;
+  position: relative;
+}
+
+.hex:after {
+  content: "";
+  width: 0;
+  position: absolute;
+  bottom: -29px;
+  border-top: 29px solid;
+  border-left: 52px solid transparent;
+  border-right: 52px solid transparent;
+}
+*/
+
+/*
+.hex:before {
+  content: " ";
+  width: 0;
+  height: 0;
+  border-bottom: 10px solid;
+  border-left: 17.32px solid transparent;
+  border-right: 17.32px solid transparent;
+  position: absolute;
+  top: -10px;
+}
+
+.hex {
+  display: block;
+  float: left;
+  margin-left: 2.666px;
+  margin-bottom: -8.666px;
+  margin-top: 10px;
+  width: 34.641px;
+  height: 20px;
+  position: relative;
+  cursor: pointer;
+}
+
+.hex:after {
+  content: "";
+  width: 0;
+  position: absolute;
+  bottom: -10px;
+  border-top: 10px solid;
+  border-left: 17.32px solid transparent;
+  border-right: 17.32px solid transparent;
+}
+*/

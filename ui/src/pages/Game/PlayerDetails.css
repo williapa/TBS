@@ -1,0 +1,7 @@
+textarea {
+  resize: none !important;
+  border-radius: 0px !important;
+}
+.actions span {
+  flex: auto;
+}

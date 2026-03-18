@@ -1,0 +1,8 @@
+.edit-cell-form {
+  position: absolute;
+  background: white;
+  border: 1px solid black;
+  padding: 20px;
+  z-index: 999;
+  width: 200px;
+};

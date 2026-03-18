@@ -1,0 +1,20 @@
+{
+  "name": "TBS",
+  "private": true,
+  "workspaces": [
+    "common",
+    "server",
+    "ui"
+  ],
+  "scripts": {
+    "build": "npm run build -w @TBS/common && npm run build -w @TBS/server && npm run build -w @TBS/ui",
+    "dev:server": "npm run start -w @TBS/server",
+    "dev:ui": "npm run start -w @TBS/ui",
+    "db:create": "npm run db:create -w @TBS/server",
+    "db:delete": "npm run db:delete -w @TBS/server",
+    "db:clear-games": "npm run db:clear-games -w @TBS/server"
+  },
+  "devDependencies": {
+    "dynamodb-admin": "^5.1.3"
+  }
+}

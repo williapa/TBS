@@ -1,0 +1,55 @@
+.r1 {
+  display: flex;
+  flex-direction: row;
+  height: 80%;
+}
+.r2 {
+  display: flex;
+  flex-direction: row;
+  height: 20%;
+}
+
+.r1 .panel {
+  outline: 1px solid white;
+  outline-offset: -1px;
+}
+.r2 .panel {
+  outline: 1px solid #ccc;
+  outline-offset: -1px;
+}
+.panel {
+  display: flex;
+}
+.game.panel {
+  width: 60%;
+  height: 100%;
+}
+.game.special-panel {
+  width: 60%;
+  height: 100%;
+  outline: 1px solid rgb(122, 126, 130); /* #8b0000; */
+  outline-offset: -1px;
+  z-index: 9999;
+}
+.event.panel {
+  width: 40%;
+  height: 100%;
+  overflow-y: scroll;
+  display: flex;
+  flex-direction: column;
+}
+.player.panel {
+  width: 20%;
+  height: 100%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+}
+.panel p {
+  margin-left: auto;
+  margin-right: auto;
+}
+.map.panel {
+  width: 60%;
+  height: 100%;
+}

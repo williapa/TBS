@@ -1,0 +1,99 @@
+/* beach 
+
+.beach.hex {
+  background-color: yellow;
+} 
+
+.beach.hex:before {
+  border-bottom-color: yellow;  
+}
+
+.beach.hex:after {
+  border-top-color: yellow;
+}
+
+/* desert 
+
+.desert.hex {
+  background-color: lightyellow;
+} 
+
+.desert.hex:before {
+  border-bottom-color: lightyellow;  
+}
+
+.desert.hex:after {
+  border-top-color: lightyellow;
+}
+
+/* forest 
+
+.forest.hex {
+  background-color: green;
+} 
+
+.forest.hex:before {
+  border-bottom-color: green;  
+}
+
+.forest.hex:after {
+  border-top-color: green;
+}
+
+/* mountain 
+
+.mountain.hex {
+  background-color: black;
+} 
+
+.mountain.hex:before {
+  border-bottom-color: black;  
+}
+
+.mountain.hex:after {
+  border-top-color: black;
+}
+
+/* plains 
+
+.plains.hex {
+  background-color: yellowgreen;
+} 
+
+.plains.hex:before {
+  border-bottom-color: yellowgreen;  
+}
+
+.plains.hex:after {
+  border-top-color: yellowgreen;
+}
+
+/* road 
+
+.road.hex {
+  background-color: brown;
+} 
+
+.road.hex:before {
+  border-bottom-color: brown;  
+}
+
+.road.hex:after {
+  border-top-color: brown;
+}
+
+/* water 
+
+.water.hex {
+  background-color: blue;
+} 
+
+.water.hex:before {
+  border-bottom-color: blue;  
+}
+
+.water.hex:after {
+  border-top-color: blue;
+}
+
+*/
