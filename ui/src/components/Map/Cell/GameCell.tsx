@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
 import Terrain from "./Terrain/Terrain";
 import ActionForm from "./Action/ActionForm";
-// TODO: react-tooltip
-// TODO: on click behavior is different
-// TODO: onclick, show move options
-// TODO: game mode should a) track those options, b) update the board, c) check who has moved, d) dispatch to srvr e) end turn and wait
+
 const GameCell = ({ 
   actor,
   callback,
@@ -38,6 +35,7 @@ const GameCell = ({
   };
 
   useEffect(() => {
+    // console.log("factor (actor) changed.");
     if (actor && actor[0] === "park&bark" && actor[2].x === row && actor[2].y === column) {
       const possiblyNull = document.querySelector(
         `[data-row="${row}"][data-column="${column}"]`
@@ -53,7 +51,7 @@ const GameCell = ({
     }
   }, [factor]);
   
-  // isActive && !actionsOpen ? j
+  // isActive && !actionsOpen ? 
   const openActions =(e: any) => {
     if (!editing) {      
       const { top, left } = e.target.getBoundingClientRect();
@@ -98,11 +96,8 @@ const GameCell = ({
   };
 
   const clickTargetUnit = (e: any) => {
-    // right now move is the only option
-    // but later this will need to support many functions
-    // think about that...
     if (!actor) {
-      console.error("there needs to be an eric, the actor, in order to click a target. otherwise who is acting? event:", e);
+      console.error("there needs to be an actor in order to click a target. event:", e);
       return;
     }
     openActions(e);
@@ -110,14 +105,14 @@ const GameCell = ({
 
   const confirm = () => {
     cancel(false, true);
-    callback(row, column, mapItem, isTarget ? isTarget : "move");
+    callback(row, column, mapItem, (isTarget ? isTarget : "move"));
   };
 
-  const onCellClick = isTarget ?
+  const onCellClick = (isTarget) ?
     clickTargetUnit :
-    isActive ?
+    (isActive) ?
       hilightMovementCells :
-      undefined;
+      () => { console.log("last resort"); setActor(false); cancel(true); };// experiment  - may not be necessary after e.stopPropagation() on cancel
 
   return (
     <div
@@ -154,5 +149,3 @@ const GameCell = ({
 };
   
 export default GameCell;
-
-// 19148793762 wtf is this ... oh god
