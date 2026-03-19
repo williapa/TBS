@@ -11,6 +11,7 @@ import {
   TransactWriteCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from 'uuid';
+import { WinCondition, winConditions } from "@TBS/common";
 
 type joinGameParams = {
   gameId: string;
@@ -35,6 +36,25 @@ export const createGame = async (req: Request, res: Response) => {
   const { email, map, mapData, name }: GameConfiguration = req.body;
   const open_timestamp = Date.now().toString();
   const uuid = uuidv4();
+  let winCondition: WinCondition = winConditions.ELIMINATION_ONLY;
+
+  const mapResult = await ddbDocClient.send(
+    new GetCommand({
+      TableName,
+      Key: {
+        id: `map#${map}`,
+        sk: `meta#${map}`,
+      },
+    })
+  );
+
+  if (!mapResult.Item) {
+    return res.status(404).json({ error: `map ${map} was not found` });
+  }
+
+  if (mapResult.Item.winCondition) {
+    winCondition = mapResult.Item.winCondition as WinCondition;
+  }
 
   const response: BatchWriteCommandOutput = await ddbDocClient.send(
     new BatchWriteCommand({
@@ -51,7 +71,8 @@ export const createGame = async (req: Request, res: Response) => {
                 name,
                 open_timestamp,
                 people: 1,
-                activeTurn: ""
+                activeTurn: "",
+                winCondition,
               }
             }
           },

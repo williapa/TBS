@@ -8,10 +8,14 @@ import {
   getAllCellsWhichCanBeReached,
   getAttackableCells,
   GameAction,
+  getWinningTeam,
   isTurnOver,
   MapItem,
   moveableOptions,
   moveMapUnit,
+  TeamOption,
+  WinCondition,
+  winConditions,
 } from "@TBS/common";
 
 const supportedActions = ["attack", "end", "move"];
@@ -30,6 +34,9 @@ type ProcessResult =
       map: MapItem[][];
       turnIsOver: boolean;
       newActiveTurn: string | undefined;
+      winner: TeamOption | undefined;
+      winnerEmail: string | undefined;
+      loserEmail: string | undefined;
     }
   | { ok: false; error: string };
 
@@ -73,6 +80,7 @@ const processGameAction = async (
 
   const gameItem = gameResult.Item;
   if (!gameItem) return { ok: false, error: "no game found" };
+  if (gameItem.winner) return { ok: false, error: "game already ended" };
   if (gameItem.activeTurn !== email)
     return { ok: false, error: "not your turn idiot" };
 
@@ -203,7 +211,12 @@ const processGameAction = async (
     }
   }
 
-  if (isTurnOver(activeTeam, Map, gameAction.action)) {
+  const gameWinCondition =
+    (gameItem.winCondition as WinCondition) ?? winConditions.ELIMINATION_ONLY;
+  const winner = getWinningTeam(Map, gameWinCondition);
+  const gameOver = winner !== undefined;
+
+  if (!gameOver && isTurnOver(activeTeam, Map, gameAction.action)) {
     gameEvents.push({
       id: `${gameId}#${Date.now().toString()}#endTurn`,
       sk: `game#${gameId}`,
@@ -212,7 +225,7 @@ const processGameAction = async (
     });
   }
 
-  const turnIsOver = isTurnOver(activeTeam, Map, gameAction.action);
+  const turnIsOver = !gameOver && isTurnOver(activeTeam, Map, gameAction.action);
   let mapForDb: MapItem[][] = Map;
   if (turnIsOver) {
     mapForDb = Map.map((row: MapItem[]) =>
@@ -229,12 +242,24 @@ const processGameAction = async (
       : gameItem.challenger
     : undefined;
 
+  const winnerEmail =
+    winner === "orange"
+      ? (gameItem.creator as string | undefined)
+      : (gameItem.challenger as string | undefined);
+  const loserEmail =
+    winner === "orange"
+      ? (gameItem.challenger as string | undefined)
+      : (gameItem.creator as string | undefined);
+
   return {
     ok: true,
     gameEvents,
     map: mapForDb,
     turnIsOver,
     newActiveTurn,
+    winner,
+    winnerEmail,
+    loserEmail,
   };
 };
 
@@ -246,7 +271,10 @@ const persistGameUpdate = async (
   gameEvents: any[],
   map: MapItem[][],
   turnIsOver: boolean,
-  newActiveTurn: string | undefined
+  newActiveTurn: string | undefined,
+  winner: TeamOption | undefined,
+  winnerEmail: string | undefined,
+  loserEmail: string | undefined
 ): Promise<void> => {
   const TransactItems: any[] = gameEvents.map((gameEvent: any) => ({
     Put: {
@@ -263,6 +291,12 @@ const persistGameUpdate = async (
     ExpressionAttributeValues[":a"] = newActiveTurn;
   }
 
+  if (winner) {
+    UpdateExpression += ", winner = :w, ended_timestamp = :et";
+    ExpressionAttributeValues[":w"] = winner;
+    ExpressionAttributeValues[":et"] = Date.now().toString();
+  }
+
   TransactItems.push({
     Update: {
       TableName,
@@ -274,6 +308,38 @@ const persistGameUpdate = async (
       ExpressionAttributeValues,
     },
   });
+
+  if (winner && winnerEmail && loserEmail) {
+    TransactItems.push({
+      Update: {
+        TableName,
+        Key: {
+          id: `user#${winnerEmail}`,
+          sk: `meta#${winnerEmail}`,
+        },
+        UpdateExpression: "SET wins = if_not_exists(wins, :zero) + :one",
+        ExpressionAttributeValues: {
+          ":zero": 0,
+          ":one": 1,
+        },
+      },
+    });
+
+    TransactItems.push({
+      Update: {
+        TableName,
+        Key: {
+          id: `user#${loserEmail}`,
+          sk: `meta#${loserEmail}`,
+        },
+        UpdateExpression: "SET losses = if_not_exists(losses, :zero) + :one",
+        ExpressionAttributeValues: {
+          ":zero": 0,
+          ":one": 1,
+        },
+      },
+    });
+  }
 
   await ddbDocClient.send(
     new TransactWriteCommand({
@@ -373,12 +439,15 @@ export const registerGameSockets = (io: Server) => {
           return;
         }
 
-        const { gameEvents, map, turnIsOver, newActiveTurn } = result as {
+        const { gameEvents, map, turnIsOver, newActiveTurn, winner, winnerEmail, loserEmail } = result as {
           ok: true;
           gameEvents: any[];
           map: MapItem[][];
           turnIsOver: boolean;
           newActiveTurn: string | undefined;
+          winner: TeamOption | undefined;
+          winnerEmail: string | undefined;
+          loserEmail: string | undefined;
         };
         console.log('checking game events: ');
         console.log(gameEvents);
@@ -388,7 +457,10 @@ export const registerGameSockets = (io: Server) => {
             gameEvents,
             map,
             turnIsOver,
-            newActiveTurn
+            newActiveTurn,
+            winner,
+            winnerEmail,
+            loserEmail
           );
         } catch (err: any) {
           console.error("persistGameUpdate failed:", err);
@@ -397,8 +469,13 @@ export const registerGameSockets = (io: Server) => {
           });
           return;
         }
-        const whosTurn = turnIsOver ? newActiveTurn : email;
-        io.to(gameId).emit("gameEvent", { events: gameEvents, mapData: map, activeTurn: whosTurn });
+        const whosTurn = winner ? undefined : turnIsOver ? newActiveTurn : email;
+        io.to(gameId).emit("gameEvent", {
+          events: gameEvents,
+          mapData: map,
+          activeTurn: whosTurn,
+          winner,
+        });
       }
     );
 

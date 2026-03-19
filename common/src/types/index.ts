@@ -15,6 +15,16 @@ export type Coords = {
   y: number;
 };
 
+export const teamOptions = ["orange", "purple"] as const;
+export type TeamOption = (typeof teamOptions)[number];
+
+export const winConditions = {
+  CAPITAL_OR_ELIMINATION: "capital-or-combat-elimination",
+  ELIMINATION_ONLY: "combat-elimination",
+} as const;
+
+export type WinCondition = (typeof winConditions)[keyof typeof winConditions];
+
 export const animalUnitOptions = [
   "dragon",
   "lion"

@@ -4,17 +4,36 @@ import isTurnOver from "./map/isTurnOver";
 import getAllCellsWhichCanBeReached from "./map/getAllCellsWhichCanBeReached";
 import getAttackableCells from "./map/getAttackableCells";
 import attackUnit from "./map/attackUnit";
-import { moveableOptions, MapItem, Coords, GameAction } from "./types";
+import checkMapHasCapitals from "./map/checkMapHasCapitals";
+import checkMapHasMovableCombatUnits from "./map/checkMapHasMovableCombatUnits";
+import getWinningTeam from "./map/getWinningTeam";
+import {
+  moveableOptions,
+  MapItem,
+  Coords,
+  GameAction,
+  teamOptions,
+  TeamOption,
+  winConditions,
+  WinCondition,
+} from "./types";
 
 export {
   attackUnit,
+  checkMapHasCapitals,
+  checkMapHasMovableCombatUnits,
   Coords,
   getAllCellsWhichCanBeReached,
   getAttackableCells,
+  getWinningTeam,
   GameAction,
   isTurnOver,
   MapItem,
   moveableOptions,
   moveMapUnit,
-  validateUser
+  teamOptions,
+  TeamOption,
+  validateUser,
+  winConditions,
+  WinCondition
 };
