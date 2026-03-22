@@ -23,6 +23,9 @@ const EventCell = ({ event }: { event: any }) => {
     case "endTurn":
       res = `${event.actor} ended turn.`;
       break;
+    case "gameOver":
+      res = `${event.actor} won the game! the game is over. `;
+      break;
     default: 
       res = "Unsupported event data. this may be an error, or a TODO.";
   }

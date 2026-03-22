@@ -16,7 +16,7 @@ const PlayerDetails = ({ activeTurn, color, email, money }: PlayerDetailsMap) =>
   const { sendMove, turn } = useGameSocket();
   const { user, pin } = useUser();
   const flip = color === "orange" ? "&flip=true" : "";
-  const currentActiveTurn = (turn.length > 0) ? (turn === email) : activeTurn;
+  const currentActiveTurn = (turn.length > 0 && turn !== "gameOver") ? (turn === email) : activeTurn;
   const endTurn = () => {
     sendMove({
       action: "end",

@@ -97,7 +97,7 @@ server/*.sqlite3
 
 # DynamoDB local persisted files
 server/dynamodb-local/data/
-server/dynamodb-local/*.db
+server/dynamodb-local/docker/dynamodb/*.db
 
 # ======================================
 # Misc

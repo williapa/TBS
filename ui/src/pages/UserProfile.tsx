@@ -55,7 +55,7 @@ const UserProfile = ({ email }: { email: string }) => {
             </div>
             <div>
               <p> <b> Win Rate: </b> </p>
-              <p> { wins + losses < 1 ? "0%": (wins / wins + losses) } </p>
+              <p> { wins + losses < 1 ? "0%": `${Math.floor((wins * 100 )/(wins + losses))}%` } </p>
             </div>
           </ColumnLayout>
         </Container>

@@ -10,18 +10,18 @@ const PURPLE = "purple" as TeamType.purple;
 
 const Game = (props: GameProps) => {
   // orange is on left, purple is on right
-  const creatorTurn = props.creator === props.activeTurn;
+  const creatorTurn = (props.creator === props.activeTurn);
 
   const { user } = useUser();
 
-  const activeTurn = user === props.activeTurn;
+  const activeTurn = props.winner ? false : (user === props.activeTurn);
   const isCreatorPerspective = user === props.creator;
   return (
     <>
       <div className="r1">
-        <PlayerDetails activeTurn={creatorTurn} color="orange" email={props.creator} money={1000} />
+        <PlayerDetails activeTurn={props.winner ? false : creatorTurn} color="orange" email={props.creator} money={1000} />
         <GameMap active={activeTurn} activeTeam={creatorTurn ? ORANGE : PURPLE } mapData={props.mapData} perspective={isCreatorPerspective ? ORANGE : PURPLE} />
-        <PlayerDetails activeTurn={!creatorTurn} color="purple" email={props.challenger} money={1000} />
+        <PlayerDetails activeTurn={props.winner? false : !creatorTurn} color="purple" email={props.challenger} money={1000} />
       </div>
       <div className="r2">
         <GamePanel />

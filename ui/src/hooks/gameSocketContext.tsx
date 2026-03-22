@@ -55,10 +55,15 @@ export function GameSocketProvider({
       window.location.reload();
     }
 
-    function onMove({ events, mapData, activeTurn }: { events: GameAction[], mapData: MapItem[][], activeTurn: string }) {
+    function onMove({ events, mapData, activeTurn, winner }: { events: GameAction[], mapData: MapItem[][], activeTurn: string, winner?: string }) {
       setMoves((prev) => [...events.reverse(), ...prev]);
       setMap(mapData);
-      setTurn(activeTurn);
+      // test fix for winner
+      if (winner) {
+        setTurn('gameOver');
+      } else if(activeTurn) {
+        setTurn(activeTurn);
+      }
     }
 
     function onPlayerJoined() {

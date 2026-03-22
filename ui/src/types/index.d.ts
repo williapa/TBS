@@ -214,6 +214,8 @@ type GameProps = {
   map: string;
   name: string;
   open_timestamp: string;
+  winCondition?: string;
+  winner?: string;
 };
 
 type ActiveMapProps = {

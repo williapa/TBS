@@ -216,6 +216,15 @@ const processGameAction = async (
   const winner = getWinningTeam(Map, gameWinCondition);
   const gameOver = winner !== undefined;
 
+  if (gameOver) {
+    gameEvents.push({
+      id: `${gameId}#${Date.now().toString()}#gameOver`,
+      sk: `game#${gameId}`,
+      action: `gameOver`,
+      actor: winner === "orange" ? gameItem.creator : gameItem.challenger // actor here is the winner
+    });
+  }
+
   if (!gameOver && isTurnOver(activeTeam, Map, gameAction.action)) {
     gameEvents.push({
       id: `${gameId}#${Date.now().toString()}#endTurn`,

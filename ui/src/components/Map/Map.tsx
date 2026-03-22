@@ -45,7 +45,7 @@ const Map = ({ mode = "editor", name, dimension = 16, defaultTerrain = "forest" 
       console.log(data);
       navigate("/lobby");
     }).catch((e) => {
-      alert("error");
+      alert("Submitted map is not valid - must contain at least one movable combat unit for each team.");
       console.error(e.message);
     });
   };
@@ -69,8 +69,9 @@ const Map = ({ mode = "editor", name, dimension = 16, defaultTerrain = "forest" 
           alignItems: "center"
         }}
       > 
-        <button onClick={create} style={{ maxWidth: "200px", marginBottom: "40px" }}> 
-          Create Map {name} 
+        <p> Maps must contain at least one movable combat unit per team. </p>
+        <button onClick={create} style={{ maxWidth: "200px", marginLeft: "8px" }}> 
+          Create map "{name}"
         </button>
       </div>
       <HexGrid
