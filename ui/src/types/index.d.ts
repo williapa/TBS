@@ -208,8 +208,10 @@ type OptionGroup = [string, SelectTypes];
 
 type GameProps = {
   activeTurn: string;
+  challengerMoney: number;
   mapData: MapItem[][];
   creator: string;
+  creatorMoney: number;
   challenger: string;
   map: string;
   name: string;

@@ -12,6 +12,8 @@ import { MapItem, GameAction } from "@TBS/common";
 
 
 type GameSocketContextValue = {
+  challengerMoney: number | null;
+  creatorMoney: number | null;
   isConnected: boolean;
   joinGame: (email: string) => void;
   map: MapItem[][];
@@ -33,6 +35,8 @@ export function GameSocketProvider({
   const [isConnected, setIsConnected] = useState(false);
   const [moves, setMoves] = useState<GameAction[]>([]);
   const [map, setMap] = useState<MapItem[][]>([[]]);
+  const [creatorMoney, setCreatorMoney] = useState<number | null>(null);
+  const [challengerMoney, setChallengerMoney] = useState<number | null>(null);
   const [turn, setTurn] = useState<string>('');
 
   useEffect(() => {
@@ -55,9 +59,25 @@ export function GameSocketProvider({
       window.location.reload();
     }
 
-    function onMove({ events, mapData, activeTurn, winner }: { events: GameAction[], mapData: MapItem[][], activeTurn: string, winner?: string }) {
+    function onMove({
+      activeTurn,
+      challengerMoney,
+      creatorMoney,
+      events,
+      mapData,
+      winner,
+    }: {
+      activeTurn: string;
+      challengerMoney: number;
+      creatorMoney: number;
+      events: GameAction[];
+      mapData: MapItem[][];
+      winner?: string;
+    }) {
       setMoves((prev) => [...events.reverse(), ...prev]);
       setMap(mapData);
+      setChallengerMoney(challengerMoney);
+      setCreatorMoney(creatorMoney);
       // test fix for winner
       if (winner) {
         setTurn('gameOver');
@@ -140,6 +160,8 @@ export function GameSocketProvider({
   const value = useMemo(
     () => ({
       isConnected,
+      challengerMoney,
+      creatorMoney,
       joinGame,
       map,
       moves,
@@ -148,7 +170,18 @@ export function GameSocketProvider({
       turn,
       clearMoves,
     }),
-    [isConnected, joinGame, map, moves, sendMove, setMap, turn, clearMoves]
+    [
+      isConnected,
+      challengerMoney,
+      creatorMoney,
+      joinGame,
+      map,
+      moves,
+      sendMove,
+      setMap,
+      turn,
+      clearMoves,
+    ]
   );
 
   return (

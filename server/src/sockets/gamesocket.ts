@@ -8,6 +8,7 @@ import {
   getAllCellsWhichCanBeReached,
   getAttackableCells,
   GameAction,
+  getUnitIncome,
   getWinningTeam,
   isTurnOver,
   MapItem,
@@ -32,6 +33,8 @@ type ProcessResult =
       ok: true;
       gameEvents: any[];
       map: MapItem[][];
+      creatorMoney: number;
+      challengerMoney: number;
       turnIsOver: boolean;
       newActiveTurn: string | undefined;
       winner: TeamOption | undefined;
@@ -39,6 +42,8 @@ type ProcessResult =
       loserEmail: string | undefined;
     }
   | { ok: false; error: string };
+
+const STARTING_MONEY = 1000;
 
 const checkForDead = (
   map: MapItem[][],
@@ -51,6 +56,22 @@ const checkForDead = (
     map[defenderEndPosition.x][defenderEndPosition.y].unit === "none";
   return [attackerDied, defenderDied];
 };
+
+const getTeamForPlayer = (
+  playerEmail: string,
+  challengerEmail: string
+): TeamOption => (playerEmail === challengerEmail ? "purple" : "orange");
+
+const getIncomeForTeam = (map: MapItem[][], team: TeamOption): number =>
+  map.reduce(
+    (total, row) =>
+      total +
+      row.reduce((rowTotal, item) => {
+        if (item.team !== team) return rowTotal;
+        return rowTotal + getUnitIncome(item);
+      }, 0),
+    0
+  );
 
 /**
  * Validates the game action, applies it to the map, and builds the list of game events.
@@ -112,6 +133,8 @@ const processGameAction = async (
     gameItem.activeTurn === gameItem.challenger ? "purple" : "orange";
   let gameEvents: any[] = [];
   let Map = (gameItem.mapData as MapItem[][]) ?? [];
+  let creatorMoney = Number(gameItem.creatorMoney);
+  let challengerMoney = Number(gameItem.challengerMoney);
 
   if (gameAction.action === "end") {
     // No map change; may still add endTurn below
@@ -225,16 +248,34 @@ const processGameAction = async (
     });
   }
 
-  if (!gameOver && isTurnOver(activeTeam, Map, gameAction.action)) {
+  const turnIsOver = !gameOver && isTurnOver(activeTeam, Map, gameAction.action);
+  const newActiveTurn = turnIsOver
+    ? gameItem.activeTurn === gameItem.challenger
+      ? gameItem.creator
+      : gameItem.challenger
+    : undefined;
+
+  if (turnIsOver && newActiveTurn) {
+    const nextTeam = getTeamForPlayer(newActiveTurn, gameItem.challenger);
+    const income = getIncomeForTeam(Map, nextTeam);
+
+    if (nextTeam === "orange") {
+      creatorMoney += income;
+    } else {
+      challengerMoney += income;
+    }
+
     gameEvents.push({
       id: `${gameId}#${Date.now().toString()}#endTurn`,
       sk: `game#${gameId}`,
       action: "endTurn",
       actor: email,
+      income,
+      creatorMoney,
+      challengerMoney,
     });
   }
 
-  const turnIsOver = !gameOver && isTurnOver(activeTeam, Map, gameAction.action);
   let mapForDb: MapItem[][] = Map;
   if (turnIsOver) {
     mapForDb = Map.map((row: MapItem[]) =>
@@ -244,12 +285,6 @@ const processGameAction = async (
       })
     );
   }
-
-  const newActiveTurn = turnIsOver
-    ? gameItem.activeTurn === gameItem.challenger
-      ? gameItem.creator
-      : gameItem.challenger
-    : undefined;
 
   const winnerEmail =
     winner === "orange"
@@ -262,6 +297,8 @@ const processGameAction = async (
 
   return {
     ok: true,
+    challengerMoney,
+    creatorMoney,
     gameEvents,
     map: mapForDb,
     turnIsOver,
@@ -279,6 +316,8 @@ const persistGameUpdate = async (
   gameId: string,
   gameEvents: any[],
   map: MapItem[][],
+  creatorMoney: number,
+  challengerMoney: number,
   turnIsOver: boolean,
   newActiveTurn: string | undefined,
   winner: TeamOption | undefined,
@@ -292,8 +331,13 @@ const persistGameUpdate = async (
     },
   }));
 
-  let UpdateExpression = "SET mapData = :m";
-  const ExpressionAttributeValues: any = { ":m": map };
+  let UpdateExpression =
+    "SET mapData = :m, creatorMoney = :creatorMoney, challengerMoney = :challengerMoney";
+  const ExpressionAttributeValues: any = {
+    ":m": map,
+    ":creatorMoney": creatorMoney,
+    ":challengerMoney": challengerMoney,
+  };
 
   if (turnIsOver && newActiveTurn !== undefined) {
     UpdateExpression += ", activeTurn = :a";
@@ -381,10 +425,11 @@ const persistJoinGame = async (gameId: string, email: string): Promise<void> => 
               id: `game#${gameId}`, 
               sk: `meta#${gameId}`,
             },
-            UpdateExpression: "REMOVE open_timestamp SET people = people + :p, started_timestamp = :st, challenger = :c, activeTurn = :c",
+            UpdateExpression: "REMOVE open_timestamp SET people = people + :p, started_timestamp = :st, challenger = :c, challengerMoney = :cm, activeTurn = :c",
             ConditionExpression: "people <= :limit",
             ExpressionAttributeValues: {
               ":c": email,
+              ":cm": STARTING_MONEY,
               ":p": 1,
               ":st": Date.now().toString(),
               ":limit": 2,
@@ -448,8 +493,10 @@ export const registerGameSockets = (io: Server) => {
           return;
         }
 
-        const { gameEvents, map, turnIsOver, newActiveTurn, winner, winnerEmail, loserEmail } = result as {
+        const { challengerMoney, creatorMoney, gameEvents, map, turnIsOver, newActiveTurn, winner, winnerEmail, loserEmail } = result as {
           ok: true;
+          challengerMoney: number;
+          creatorMoney: number;
           gameEvents: any[];
           map: MapItem[][];
           turnIsOver: boolean;
@@ -465,6 +512,8 @@ export const registerGameSockets = (io: Server) => {
             gameId,
             gameEvents,
             map,
+            creatorMoney,
+            challengerMoney,
             turnIsOver,
             newActiveTurn,
             winner,
@@ -480,6 +529,8 @@ export const registerGameSockets = (io: Server) => {
         }
         const whosTurn = winner ? undefined : turnIsOver ? newActiveTurn : email;
         io.to(gameId).emit("gameEvent", {
+          challengerMoney,
+          creatorMoney,
           events: gameEvents,
           mapData: map,
           activeTurn: whosTurn,

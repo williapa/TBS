@@ -53,14 +53,6 @@ const PlayerDetails = ({ activeTurn, color, email, money }: PlayerDetailsMap) =>
           <b> Money: </b> 
           <span> {money} </span>
         </p>
-        <p>
-          <b> Income: </b> 
-          <span> calculated </span>
-        </p>
-        <p>
-          <b> Units: </b> 
-          <span> todo: by type </span>
-        </p>
       </div>
     </div>
   );

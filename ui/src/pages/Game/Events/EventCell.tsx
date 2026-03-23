@@ -21,7 +21,7 @@ const EventCell = ({ event }: { event: any }) => {
       res = `${event.actor} moved unit ${event.unit} from ${event.start.x},${event.start.y} to ${event.end.x},${event.end.y}.`;
       break;
     case "endTurn":
-      res = `${event.actor} ended turn.`;
+      res = `${event.actor} ended turn. Next player gained ${event.income} income.`;
       break;
     case "gameOver":
       res = `${event.actor} won the game! the game is over. `;

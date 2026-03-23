@@ -7,6 +7,7 @@ import attackUnit from "./map/attackUnit";
 import checkMapHasCapitals from "./map/checkMapHasCapitals";
 import checkMapHasMovableCombatUnits from "./map/checkMapHasMovableCombatUnits";
 import getWinningTeam from "./map/getWinningTeam";
+import getUnitIncome from "./map/getUnitIncome";
 import {
   moveableOptions,
   MapItem,
@@ -25,6 +26,7 @@ export {
   Coords,
   getAllCellsWhichCanBeReached,
   getAttackableCells,
+  getUnitIncome,
   getWinningTeam,
   GameAction,
   isTurnOver,
