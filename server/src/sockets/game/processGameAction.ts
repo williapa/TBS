@@ -15,8 +15,8 @@ import {
   WinCondition,
   winConditions
 } from "@TBS/common";
-import ddbDocClient from "../../data/docClient";
-import TableName from "../../data/tableName";
+import ddbDocClient from "../../data/docClient.js";
+import TableName from "../../data/tableName.js";
 import { GetCommand } from "@aws-sdk/lib-dynamodb";
 /**
  * Validates the game action, applies it to the map, and builds the list of game events.

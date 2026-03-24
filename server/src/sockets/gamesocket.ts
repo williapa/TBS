@@ -1,7 +1,7 @@
 import { Server, Socket } from "socket.io";
-import { persistJoinGame } from "../data/persist/persistJoinGame";
-import { persistGameUpdate } from "../data/persist/persistGameUpdate";
-import { processGameAction } from "./game/processGameAction";
+import { persistJoinGame } from "../data/persist/persistJoinGame.js";
+import { persistGameUpdate } from "../data/persist/persistGameUpdate.js";
+import { processGameAction } from "./game/processGameAction.js";
 import {
   GameAction,
   MapItem,

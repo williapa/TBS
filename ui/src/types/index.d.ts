@@ -1,12 +1,12 @@
 interface CellProps extends RowCol {
-  actor?: Actor;
   callback?: any;
   damage?: number;
   editing?: boolean;
+  gameMenu?: GameCellMenu;
   hilightTargets?: (targets: number[]) => void;
   isActive: boolean;
-  isTarget?: string | false;
   index: number;
+  onGameCellClick?: (mapItem: MapItem, position: MenuPosition) => void;
   setActor?: (args: any) => void;
   setEdit?: (args: any) => void;
   mode: ModeType;
@@ -14,6 +14,7 @@ interface CellProps extends RowCol {
   neighbors?: number[];
   team?: TeamType;
   terrain: TerrainType;
+  targetType?: GameCellTargetType | null;
   unit?: UnitTypes;
   width?: number;
   height?: number;
@@ -237,13 +238,19 @@ type dim = {
 }
 
 type CellFormProps = {
-  attack: (targets: number[]) => void;
+  attack?: (targets: number[]) => void;
   cancel: any;
   initialValues: MapItem;
   top: number;
-  left: number; 
+  left: number;
   save: any;
-  targetType?: string | false;
+}
+
+type ActionFormProps = {
+  onAction: (action: GameMenuActionId) => void;
+  options: GameMenuOption[];
+  top: number;
+  left: number;
 }
 
 type Coords = {
@@ -272,7 +279,67 @@ type Move = {
 
 type GameAction = Attack | End | Move;
 
-type Actor = [string, number[], Coords] | false;
+type GameInteractionMode = "idle" | "unitSelected" | "actionMenu" | "targetingAttack";
+
+type GameCellTargetType = "move" | "attack";
+
+type GameMenuActionId = "move" | "chooseAttack" | "confirmAttack" | "cancel";
+
+type MenuPosition = {
+  top: number;
+  left: number;
+};
+
+type GameMenuOption = {
+  id: GameMenuActionId;
+  label: string;
+};
+
+type GameCellMenu = {
+  options: GameMenuOption[];
+  position: MenuPosition;
+  onAction: (action: GameMenuActionId) => void;
+};
+
+type GameActionMenuState = {
+  cellIndex: number;
+  kind: "origin" | "move" | "attack";
+  options: GameMenuOption[];
+  position: MenuPosition;
+};
+
+type GameInteractionState = {
+  availableAttackTargets: number[];
+  availableMoveTargets: number[];
+  menu: GameActionMenuState | null;
+  mode: GameInteractionMode;
+  origin: Coords | null;
+  pendingAction: "attack" | "move" | null;
+  previewDestination: Coords | null;
+  selectedAttackTarget: Coords | null;
+  selectedUnit: MapItem | null;
+};
+
+type GameGridInteractionProps = {
+  interactive: boolean;
+  menu: GameActionMenuState | null;
+  onCellClick: (mapItem: MapItem, position: MenuPosition) => void;
+  onMenuAction: (action: GameMenuActionId) => void;
+  targetedCellIndexes: number[];
+  targetType: GameCellTargetType | null;
+};
+
+type ActiveGameView = {
+  challengerMoney: number;
+  creatorMoney: number;
+  currentMap: MapItem[][];
+  currentTurn: string;
+  isCreatorPerspective: boolean;
+  isGameOver: boolean;
+  isLocalPlayersTurn: boolean;
+  opponentTeam: TeamType.orange | TeamType.purple;
+  perspectiveTeam: TeamType.orange | TeamType.purple;
+};
 
 type updateGameParams = {
   email: string;

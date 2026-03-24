@@ -1,4 +1,3 @@
-import { useState } from "react";
 import HexGrid from "../../components/HexGrid/HexGrid";
 import useWindowDimensions from "../../hooks/useWindowDimensions";
 
@@ -8,8 +7,6 @@ const HEIGHT_OFFSET = 270;
 const ReadOnlyMap = ({ mapData = [[]] }: { mapData: MapItem[][] }) => {
   
   const { width, height } = useWindowDimensions();
-  const attackTargets = useState<number[]>([]);
-
   const dimensions = { 
     width: width - 2 * PADDING_LEFT,
     height: height - HEIGHT_OFFSET
@@ -23,10 +20,7 @@ const ReadOnlyMap = ({ mapData = [[]] }: { mapData: MapItem[][] }) => {
       }}
     >
       <HexGrid
-        attackTargets={attackTargets}
-        callback={()=> undefined}
         dimensions={dimensions}
-        editing={false}
         mapData={mapData} />
     </div>
   );

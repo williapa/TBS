@@ -12,7 +12,8 @@
     "dev:ui": "npm run start -w @TBS/ui",
     "db:create": "npm run db:create -w @TBS/server",
     "db:delete": "npm run db:delete -w @TBS/server",
-    "db:clear-games": "npm run db:clear-games -w @TBS/server"
+    "db:clear-games": "npm run db:clear-games -w @TBS/server",
+    "ui:test": "npm run test -w @TBS/ui"
   },
   "devDependencies": {
     "dynamodb-admin": "^5.1.3"

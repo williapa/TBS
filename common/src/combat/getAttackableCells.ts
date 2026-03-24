@@ -2,9 +2,11 @@ import { MapItem } from "../types";
 import getRowAndColumn from "../map/getRowAndColumn";
 import canBeAttacked from "./canBeAttacked";
 
-const getAttackableCells = (team: "orange" | "purple", cellsInMovementRange: number[], map: MapItem[][]) => {
+const getAttackableCells = (team: "orange" | "purple" | "gray", cellsInMovementRange: number[], map: MapItem[][]) => {
 
   const uniqueAttackableCells = [];
+
+  if (team === "gray") return uniqueAttackableCells;
   
   for (const cellIndex of cellsInMovementRange) {
 

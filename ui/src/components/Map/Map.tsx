@@ -25,7 +25,6 @@ const Map = ({ mode = "editor", name, dimension = 16, defaultTerrain = "forest" 
 
   const [mapData, setMapData] = useState(initialGridData);
   const [editing, setEditing] = useState(false);
-  const attackTargets = useState<number[]>([]);
 
   const create = () => {
     fetch("http://localhost:8420/createMap", {
@@ -75,7 +74,6 @@ const Map = ({ mode = "editor", name, dimension = 16, defaultTerrain = "forest" 
         </button>
       </div>
       <HexGrid
-        attackTargets={attackTargets}
         callback={updateCell}
         dimensions={{ width: .6 * width, height: height - 110 }}
         editing={editing}
