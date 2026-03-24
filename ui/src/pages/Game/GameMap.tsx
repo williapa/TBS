@@ -8,7 +8,7 @@ import getRowAndColumn from "../../utils/getRowAndColumn";
 import { useGameSocket } from "../../hooks/gameSocketContext";
 
 // use game map instead of active turn map?
-const GameMap = ({ active, activeTeam, mapData: initialMapData, perspective }: ActiveMapProps) => {
+const GameMap = ({ active, mapData: initialMapData, perspective }: ActiveMapProps) => {
   const parentRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState<dim>({ width: 100, height: 100 });
   const attackTargets = useState<number[]>([]);

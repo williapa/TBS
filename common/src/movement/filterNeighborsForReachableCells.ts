@@ -1,6 +1,6 @@
-import getRowAndColumn from "./getRowAndColumn";
+import getRowAndColumn from "../map/getRowAndColumn";
 import { MapItem } from "../types";
-import getTerrainUnitMovementCost from "./getTerrainUnitMovementCost";
+import getTerrainUnitMovementCost from "../movement/getTerrainUnitMovementCost";
 
 const filterNeighborsForReachableCells = (unit: string, availableEnergy: number, neighbors: number[], map: MapItem[][]) => {
   const width = map[0].length;

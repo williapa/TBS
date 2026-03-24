@@ -1,6 +1,8 @@
 
 # Testing
 
+In order to most effectively used token allotments, the vast majority of testing is manual. The approach for agent tasks is to give specific and focused work plans, then validate via manual code review and testing.
+
 ## Current Test Setup
 
 The current test setup is that there are not nearly enough tests. The UI workspace has its own test installation of jest and its own sparing unit tests. This was started as a toy project and tests were added for some core game mechanics like the hexagonal grid, and some base react functions, but aside from that, there are not many unit tests. In the future, there may be an additional e2e test workspace that contains integration tests for the server functions and UI tests with a tool like playwright, but the primary focus right now is to implement more core features of a turn-based game.

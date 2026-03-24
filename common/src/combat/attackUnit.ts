@@ -1,5 +1,5 @@
 import { Coords, MapItem } from "../types"
-import moveMapUnit from "./moveMapUnit";
+import moveMapUnit from "../movement/moveMapUnit";
 import calculateDamage from "./calculateDamage";
 
 const isUnitDead = (dmg: number, unit: MapItem) => {

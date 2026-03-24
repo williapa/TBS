@@ -1,5 +1,5 @@
 import { MapItem, moveableOptions, teamOptions, TeamOption } from "../types";
-import canUnitAttack from "./canUnitAttack";
+import canUnitAttack from "../combat/canUnitAttack";
 
 const checkMapHasMovableCombatUnits = (map: MapItem[][]): TeamOption[] => {
   if (!Array.isArray(map)) {

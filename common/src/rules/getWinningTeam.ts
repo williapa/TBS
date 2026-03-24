@@ -1,6 +1,6 @@
 import { MapItem, teamOptions, TeamOption, WinCondition, winConditions } from "../types";
-import checkMapHasCapitals from "./checkMapHasCapitals";
-import checkMapHasMovableCombatUnits from "./checkMapHasMovableCombatUnits";
+import checkMapHasCapitals from "../map/checkMapHasCapitals";
+import checkMapHasMovableCombatUnits from "../map/checkMapHasMovableCombatUnits";
 
 const getWinningTeam = (
   map: MapItem[][],

@@ -222,7 +222,6 @@ type GameProps = {
 
 type ActiveMapProps = {
   active?: boolean;
-  activeTeam: TeamType.purple | TeamType.orange;
   mapData: MapItem[][];
   perspective: TeamType.purple | TeamType.orange;
 };

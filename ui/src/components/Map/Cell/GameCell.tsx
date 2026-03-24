@@ -41,8 +41,6 @@ const GameCell = ({
         `[data-row="${row}"][data-column="${column}"]`
       );
       if (possiblyNull) {
-        console.log("check it");
-        console.log(editing);
         const { top, left } = possiblyNull.getBoundingClientRect();
         const pos = { top: (top + window.scrollY), left: (left + window.scrollX) }
         setActionsPosition(pos);

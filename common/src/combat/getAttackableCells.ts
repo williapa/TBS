@@ -1,5 +1,5 @@
 import { MapItem } from "../types";
-import getRowAndColumn from "./getRowAndColumn";
+import getRowAndColumn from "../map/getRowAndColumn";
 import canBeAttacked from "./canBeAttacked";
 
 const getAttackableCells = (team: "orange" | "purple", cellsInMovementRange: number[], map: MapItem[][]) => {

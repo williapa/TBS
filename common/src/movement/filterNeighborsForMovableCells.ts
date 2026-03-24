@@ -1,4 +1,4 @@
-import getRowAndColumn from "./getRowAndColumn";
+import getRowAndColumn from "../map/getRowAndColumn";
 import { MapItem } from "../types";
 
 const filterNeighborsForMovableCells = (neighbors: number[], map: MapItem[][]): number[] => {

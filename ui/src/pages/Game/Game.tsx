@@ -24,7 +24,7 @@ const Game = (props: GameProps) => {
     <>
       <div className="r1">
         <PlayerDetails activeTurn={props.winner ? false : creatorTurn} color="orange" email={props.creator} money={currentCreatorMoney} />
-        <GameMap active={activeTurn} activeTeam={creatorTurn ? ORANGE : PURPLE } mapData={props.mapData} perspective={isCreatorPerspective ? ORANGE : PURPLE} />
+        <GameMap active={activeTurn} mapData={props.mapData} perspective={isCreatorPerspective ? ORANGE : PURPLE} />
         <PlayerDetails activeTurn={props.winner? false : !creatorTurn} color="purple" email={props.challenger} money={currentChallengerMoney} />
       </div>
       <div className="r2">

@@ -4,7 +4,7 @@ import getDefaultUnitEnergy from "./getDefaultUnitEnergy";
 import filterNeighborsForMovableCells from "./filterNeighborsForMovableCells";
 import filterNeighborsForReachableCells from "./filterNeighborsForReachableCells";
 import getTerrainUnitMovementCost from "./getTerrainUnitMovementCost";
-import getRowAndColumn from "./getRowAndColumn";
+import getRowAndColumn from "../map/getRowAndColumn";
 
 // helper function to get the cell object for a given cell index
 const getCellFromIndex = (index: number, boardCells: MapItem[][]) => {
