@@ -127,7 +127,7 @@ export function GameSocketProvider({
     (email: string) => {
       const socket = getGameSocket();
       console.log("emitting 'join game' to socket.'");
-      // todo: change to "challengeAccepted"
+      
       socket.emit("joinPlayer", { gameId, playerId: email });
     },
     [gameId]
@@ -136,7 +136,7 @@ export function GameSocketProvider({
   const sendMove = useCallback(
     (gameAction: GameAction, email: string, pin: string) => {
       const socket = getGameSocket();
-      // TODO: move is not right, should be gameAction, existing type
+
       const payload = {
         gameId, 
         gameAction,
@@ -146,8 +146,6 @@ export function GameSocketProvider({
 
       socket.emit("gameAction", payload);
 
-      // Optional optimistic update: I think it's better not to, for now
-      // setMoves((prev) => [...prev, payload]);
     },
     [gameId]
   );

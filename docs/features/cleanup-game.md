@@ -1,5 +1,7 @@
 # Feature - Cleanup Game Logic Related to Displaying User Action Options
 
+STATUS - COMPLETE (MERGED) 
+
 The react code for the game interface, specifically for the game interface for players (as opposed to the read-only or map-creation views) is getting messy. Specifically, the game logic is starting to feel difficult to trace through, and is spread across many layers of components.
 
 I will attempt to explain the existing design by tracing through the active game components.

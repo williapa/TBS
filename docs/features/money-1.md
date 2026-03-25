@@ -1,5 +1,7 @@
 # Money Feature
 
+Status - COMPLETE (MERGED)
+
 ## Summary
 - Add `creatorMoney` and `challengerMoney` to active game records.
 - Initialize both players at `1000` money.
