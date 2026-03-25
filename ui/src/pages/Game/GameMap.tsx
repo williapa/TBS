@@ -7,6 +7,7 @@ import { useGameSocket } from "../../hooks/gameSocketContext";
 import {
   buildAttackAction,
   buildMoveAction,
+  buildSpawnAction,
   createInitialGameInteractionState,
   gameInteractionReducer,
   getSelectableUnit,
@@ -17,7 +18,7 @@ import {
 const sameCoords = (a: Coords | null, b: Coords) =>
   Boolean(a && a.x === b.x && a.y === b.y);
 
-const GameMap = ({ active = false, mapData, perspective }: ActiveMapProps) => {
+const GameMap = ({ active = false, availableFunds, mapData, perspective }: ActiveMapProps) => {
   const parentRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState<dim>({ width: 100, height: 100 });
   const windowSize = useWindowDimensions();
@@ -56,10 +57,19 @@ const GameMap = ({ active = false, mapData, perspective }: ActiveMapProps) => {
       return;
     }
 
+    if (
+      interactionState.pendingAction === "spawn" &&
+      interactionState.availableSpawnTargets.includes(mapItem.index)
+    ) {
+      dispatch({ type: "SELECT_SPAWN_TARGET", cell: mapItem, position });
+      return;
+    }
+
     if (getSelectableUnit(mapItem, perspective)) {
       if (sameCoords(interactionState.origin, { x: mapItem.row, y: mapItem.column })) {
         dispatch({
           type: "OPEN_ORIGIN_MENU",
+          availableFunds,
           map: mapData,
           perspective,
           position,
@@ -67,7 +77,13 @@ const GameMap = ({ active = false, mapData, perspective }: ActiveMapProps) => {
         return;
       }
 
-      dispatch({ type: "SELECT_UNIT", map: mapData, unit: mapItem });
+      dispatch({
+        type: "SELECT_ACTOR",
+        availableFunds,
+        map: mapData,
+        position,
+        unit: mapItem,
+      });
       return;
     }
 
@@ -96,6 +112,15 @@ const GameMap = ({ active = false, mapData, perspective }: ActiveMapProps) => {
       return;
     }
 
+    if (action.startsWith("spawn:")) {
+      dispatch({
+        type: "CHOOSE_SPAWN_UNIT",
+        map: mapData,
+        unit: action.replace("spawn:", "") as SpawnableUnitType,
+      });
+      return;
+    }
+
     if (action === "move") {
       const moveAction = buildMoveAction(interactionState);
 
@@ -119,6 +144,19 @@ const GameMap = ({ active = false, mapData, perspective }: ActiveMapProps) => {
       }
 
       sendMove(attackAction, user, pin);
+      dispatch({ type: "CANCEL_FLOW" });
+      return;
+    }
+
+    if (action === "confirmSpawn") {
+      const spawnAction = buildSpawnAction(interactionState);
+
+      if (!spawnAction) {
+        dispatch({ type: "CANCEL_FLOW" });
+        return;
+      }
+
+      sendMove(spawnAction, user, pin);
       dispatch({ type: "CANCEL_FLOW" });
     }
   };

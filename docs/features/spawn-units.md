@@ -1,5 +1,7 @@
 # Feature - Buildings Spawn Units 
 
+STATUS - COMPLETE (MERGED)
+
 This document describes a new feature to be implemented via agent - to allow a new game actions, enabling player buildings to spawn new units.
 
 # Description 

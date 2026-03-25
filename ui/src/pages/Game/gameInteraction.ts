@@ -3,44 +3,66 @@ import {
   MapItem,
   getAllCellsWhichCanBeReached,
   getAttackableCells,
+  getSpawnableCells,
+  getSpawnOptions,
 } from "@TBS/common";
+import units from "../../components/Map/Unit/units";
 import { moveableOptions } from "../../components/Map/Unit/unitOptions";
+import prettyPrint from "../../utils/prettyPrint";
 
 const emptyState = (): GameInteractionState => ({
   availableAttackTargets: [],
   availableMoveTargets: [],
+  availableSpawnTargets: [],
   menu: null,
   mode: "idle",
   origin: null,
   pendingAction: null,
   previewDestination: null,
   selectedAttackTarget: null,
+  selectedSpawnUnit: null,
   selectedUnit: null,
 });
 
 const hasAttackTargets = (targets: number[]) => targets.length > 0;
 
-const buildMenuOptions = (
-  kind: GameActionMenuState["kind"],
-  attackTargets: number[]
-): GameMenuOption[] => {
+const buildMoveMenuOptions = (attackTargets: number[]): GameMenuOption[] => {
   const options: GameMenuOption[] = [];
 
-  if (kind !== "attack" && hasAttackTargets(attackTargets)) {
+  if (hasAttackTargets(attackTargets)) {
     options.push({ id: "chooseAttack", label: "Attack" });
   }
 
-  if (kind === "move") {
-    options.push({ id: "move", label: "Move" });
-  }
-
-  if (kind === "attack") {
-    options.push({ id: "confirmAttack", label: "Confirm attack" });
-  }
-
+  options.push({ id: "move", label: "Move" });
   options.push({ id: "cancel", label: "Cancel" });
 
   return options;
+};
+
+const buildAttackMenuOptions = (): GameMenuOption[] => [
+  { id: "confirmAttack", label: "Confirm attack" },
+  { id: "cancel", label: "Cancel" },
+];
+
+const buildSpawnConfirmMenuOptions = (): GameMenuOption[] => [
+  { id: "confirmSpawn", label: "Confirm spawn" },
+  { id: "cancel", label: "Cancel" },
+];
+
+const buildSpawnMenuOptions = (buildingType: UnitTypes, availableFunds: number): GameMenuOption[] => {
+  const affordableUnits = new Set(
+    getSpawnOptions(buildingType, availableFunds).map(({ unit }) => unit)
+  );
+  const allOptions = getSpawnOptions(buildingType, Number.MAX_SAFE_INTEGER);
+
+  return [
+    ...allOptions.map(({ cost, unit }) => ({
+      disabled: !affordableUnits.has(unit),
+      id: `spawn:${unit}` as GameMenuActionId,
+      label: `${units[unit].symbol} ${prettyPrint(unit)} ($${cost})`,
+    })),
+    { id: "cancel", label: "Cancel" },
+  ];
 };
 
 const getCellFromCoords = (map: HexMap, coords: Coords) => map[coords.x]?.[coords.y];
@@ -66,7 +88,10 @@ export const getSelectableUnit = (mapItem: MapItem, activeTeam: TeamType) => {
     return false;
   }
 
-  return moveableOptions.includes(mapItem.unit);
+  return (
+    moveableOptions.includes(mapItem.unit) ||
+    getSpawnOptions(mapItem.unit, Number.MAX_SAFE_INTEGER).length > 0
+  );
 };
 
 export const getMoveTargets = (mapItem: MapItem, map: HexMap) =>
@@ -92,12 +117,20 @@ export const getTargetedCellIndexes = (state: GameInteractionState) => {
     return state.availableAttackTargets;
   }
 
+  if (state.pendingAction === "spawn") {
+    return state.availableSpawnTargets;
+  }
+
   return state.availableMoveTargets;
 };
 
 export const getTargetType = (state: GameInteractionState): GameCellTargetType | null => {
   if (state.pendingAction === "attack" && state.availableAttackTargets.length > 0) {
     return "attack";
+  }
+
+  if (state.pendingAction === "spawn" && state.availableSpawnTargets.length > 0) {
+    return "spawn";
   }
 
   if (state.availableMoveTargets.length > 0) {
@@ -108,11 +141,25 @@ export const getTargetType = (state: GameInteractionState): GameCellTargetType |
 };
 
 type InteractionReducerAction =
-  | { type: "SELECT_UNIT"; unit: MapItem; map: HexMap }
-  | { type: "OPEN_ORIGIN_MENU"; position: MenuPosition; map: HexMap; perspective: TeamType }
+  | {
+      type: "SELECT_ACTOR";
+      unit: MapItem;
+      map: HexMap;
+      position: MenuPosition;
+      availableFunds: number;
+    }
+  | {
+      type: "OPEN_ORIGIN_MENU";
+      position: MenuPosition;
+      map: HexMap;
+      perspective: TeamType;
+      availableFunds: number;
+    }
   | { type: "CHOOSE_MOVE_TARGET"; cell: MapItem; position: MenuPosition; map: HexMap; perspective: TeamType }
   | { type: "CHOOSE_ATTACK_MODE"; map: HexMap; perspective: TeamType }
   | { type: "SELECT_ATTACK_TARGET"; cell: MapItem; position: MenuPosition }
+  | { type: "CHOOSE_SPAWN_UNIT"; map: HexMap; unit: SpawnableUnitType }
+  | { type: "SELECT_SPAWN_TARGET"; cell: MapItem; position: MenuPosition }
   | { type: "CANCEL_FLOW" }
   | { type: "RESET_AFTER_SERVER_EVENT" };
 
@@ -121,18 +168,41 @@ export const gameInteractionReducer = (
   action: InteractionReducerAction
 ): GameInteractionState => {
   switch (action.type) {
-    case "SELECT_UNIT": {
-      const moveTargets = getMoveTargets(action.unit, action.map);
+    case "SELECT_ACTOR": {
+      const spawnOptions = buildSpawnMenuOptions(action.unit.unit, action.availableFunds);
+
+      if (spawnOptions.length > 1) {
+        return {
+          availableAttackTargets: [],
+          availableMoveTargets: [],
+          availableSpawnTargets: [],
+          menu: {
+            cellIndex: action.unit.index,
+            kind: "origin",
+            options: spawnOptions,
+            position: action.position,
+          },
+          mode: "actionMenu",
+          origin: { x: action.unit.row, y: action.unit.column },
+          pendingAction: null,
+          previewDestination: null,
+          selectedAttackTarget: null,
+          selectedSpawnUnit: null,
+          selectedUnit: action.unit,
+        };
+      }
 
       return {
         availableAttackTargets: [],
-        availableMoveTargets: moveTargets,
+        availableMoveTargets: getMoveTargets(action.unit, action.map),
+        availableSpawnTargets: [],
         menu: null,
         mode: "unitSelected",
         origin: { x: action.unit.row, y: action.unit.column },
         pendingAction: null,
         previewDestination: null,
         selectedAttackTarget: null,
+        selectedSpawnUnit: null,
         selectedUnit: action.unit,
       };
     }
@@ -141,21 +211,24 @@ export const gameInteractionReducer = (
         return state;
       }
 
+      const spawnOptions = buildSpawnMenuOptions(state.selectedUnit.unit, action.availableFunds);
       const attackTargets = getAttackTargets(action.perspective, action.map, state.origin, null);
 
       return {
         ...state,
         availableAttackTargets: attackTargets,
+        availableSpawnTargets: [],
         menu: {
           cellIndex: state.selectedUnit.index,
           kind: "origin",
-          options: buildMenuOptions("origin", attackTargets),
+          options: spawnOptions.length > 1 ? spawnOptions : buildMoveMenuOptions(attackTargets),
           position: action.position,
         },
         mode: "actionMenu",
         pendingAction: null,
         previewDestination: null,
         selectedAttackTarget: null,
+        selectedSpawnUnit: null,
       };
     }
     case "CHOOSE_MOVE_TARGET": {
@@ -174,16 +247,18 @@ export const gameInteractionReducer = (
       return {
         ...state,
         availableAttackTargets: attackTargets,
+        availableSpawnTargets: [],
         menu: {
           cellIndex: action.cell.index,
           kind: "move",
-          options: buildMenuOptions("move", attackTargets),
+          options: buildMoveMenuOptions(attackTargets),
           position: action.position,
         },
         mode: "actionMenu",
         pendingAction: null,
         previewDestination,
         selectedAttackTarget: null,
+        selectedSpawnUnit: null,
       };
     }
     case "CHOOSE_ATTACK_MODE": {
@@ -199,6 +274,7 @@ export const gameInteractionReducer = (
           state.origin,
           state.previewDestination
         ),
+        availableSpawnTargets: [],
         menu: null,
         mode: "targetingAttack",
         pendingAction: "attack",
@@ -210,12 +286,44 @@ export const gameInteractionReducer = (
         menu: {
           cellIndex: action.cell.index,
           kind: "attack",
-          options: buildMenuOptions("attack", []),
+          options: buildAttackMenuOptions(),
           position: action.position,
         },
         mode: "actionMenu",
         pendingAction: "attack",
         selectedAttackTarget: { x: action.cell.row, y: action.cell.column },
+      };
+    }
+    case "CHOOSE_SPAWN_UNIT": {
+      if (!state.origin) {
+        return state;
+      }
+
+      return {
+        ...state,
+        availableAttackTargets: [],
+        availableMoveTargets: [],
+        availableSpawnTargets: getSpawnableCells(action.map, state.origin, action.unit),
+        menu: null,
+        mode: "targetingSpawn",
+        pendingAction: "spawn",
+        previewDestination: null,
+        selectedAttackTarget: null,
+        selectedSpawnUnit: action.unit,
+      };
+    }
+    case "SELECT_SPAWN_TARGET": {
+      return {
+        ...state,
+        menu: {
+          cellIndex: action.cell.index,
+          kind: "spawn",
+          options: buildSpawnConfirmMenuOptions(),
+          position: action.position,
+        },
+        mode: "actionMenu",
+        pendingAction: "spawn",
+        previewDestination: { x: action.cell.row, y: action.cell.column },
       };
     }
     case "CANCEL_FLOW":
@@ -250,5 +358,18 @@ export const buildAttackAction = (state: GameInteractionState): GameAction | nul
     attacker: state.origin,
     defender: state.selectedAttackTarget,
     end: state.previewDestination ?? state.origin,
+  };
+};
+
+export const buildSpawnAction = (state: GameInteractionState): GameAction | null => {
+  if (!state.origin || !state.previewDestination || !state.selectedSpawnUnit) {
+    return null;
+  }
+
+  return {
+    action: "spawn",
+    building: state.origin,
+    end: state.previewDestination,
+    unit: state.selectedSpawnUnit,
   };
 };

@@ -223,6 +223,7 @@ type GameProps = {
 
 type ActiveMapProps = {
   active?: boolean;
+  availableFunds: number;
   mapData: MapItem[][];
   perspective: TeamType.purple | TeamType.orange;
 };
@@ -258,7 +259,30 @@ type Coords = {
   y: number;
 }
 
-type gameActions = "attack" | "end" |  "move";
+type SpawnableUnitType =
+  | AnimalType.dragon
+  | AnimalType.lion
+  | PersonType.bluesMusician
+  | PersonType.constructionWorker
+  | PersonType.doctor
+  | PersonType.engineer
+  | PersonType.leader
+  | PersonType.michaelJackson
+  | PersonType.pilot
+  | PersonType.priest
+  | PersonType.scientist
+  | PersonType.soldier
+  | PersonType.studentAthlete
+  | PersonType.worker
+  | PersonType.zuckerbird
+  | VehicleType.airplane
+  | VehicleType.ambulance
+  | VehicleType.bigTruck
+  | VehicleType.helicopter
+  | VehicleType.sub
+  | VehicleType.truck;
+
+type gameActions = "attack" | "end" |  "move" | "spawn";
 
 type Attack = {
   action: "attack";
@@ -277,13 +301,72 @@ type Move = {
   end: Coords;
 };
 
-type GameAction = Attack | End | Move;
+type Spawn = {
+  action: "spawn";
+  building: Coords;
+  end: Coords;
+  unit: SpawnableUnitType;
+};
 
-type GameInteractionMode = "idle" | "unitSelected" | "actionMenu" | "targetingAttack";
+type GameAction = Attack | End | Move | Spawn;
 
-type GameCellTargetType = "move" | "attack";
+type BaseGameEvent = {
+  id: string;
+  sk: string;
+  actor: string;
+};
 
-type GameMenuActionId = "move" | "chooseAttack" | "confirmAttack" | "cancel";
+type AttackEvent = BaseGameEvent & {
+  action: "attack";
+  defender: Coords;
+  start: Coords;
+  end: Coords;
+  unit: string;
+  defendingUnit: string;
+  attackDamage: number;
+  defenseDamage: number;
+  deaths: unknown[];
+};
+
+type EndTurnEvent = BaseGameEvent & {
+  action: "endTurn";
+  income: number;
+  creatorMoney: number;
+  challengerMoney: number;
+};
+
+type GameOverEvent = BaseGameEvent & {
+  action: "gameOver";
+};
+
+type MoveEvent = BaseGameEvent & {
+  action: "move";
+  start: Coords;
+  end: Coords;
+  unit: string;
+};
+
+type SpawnEvent = BaseGameEvent & {
+  action: "spawn";
+  building: Coords;
+  cost: number;
+  end: Coords;
+  unit: SpawnableUnitType;
+};
+
+type GameEvent = AttackEvent | EndTurnEvent | GameOverEvent | MoveEvent | SpawnEvent;
+
+type GameInteractionMode = "idle" | "unitSelected" | "actionMenu" | "targetingAttack" | "targetingSpawn";
+
+type GameCellTargetType = "move" | "attack" | "spawn";
+
+type GameMenuActionId =
+  | "move"
+  | "chooseAttack"
+  | "confirmAttack"
+  | "confirmSpawn"
+  | "cancel"
+  | `spawn:${SpawnableUnitType}`;
 
 type MenuPosition = {
   top: number;
@@ -291,6 +374,7 @@ type MenuPosition = {
 };
 
 type GameMenuOption = {
+  disabled?: boolean;
   id: GameMenuActionId;
   label: string;
 };
@@ -303,7 +387,7 @@ type GameCellMenu = {
 
 type GameActionMenuState = {
   cellIndex: number;
-  kind: "origin" | "move" | "attack";
+  kind: "origin" | "move" | "attack" | "spawn";
   options: GameMenuOption[];
   position: MenuPosition;
 };
@@ -311,12 +395,14 @@ type GameActionMenuState = {
 type GameInteractionState = {
   availableAttackTargets: number[];
   availableMoveTargets: number[];
+  availableSpawnTargets: number[];
   menu: GameActionMenuState | null;
   mode: GameInteractionMode;
   origin: Coords | null;
-  pendingAction: "attack" | "move" | null;
+  pendingAction: "attack" | "move" | "spawn" | null;
   previewDestination: Coords | null;
   selectedAttackTarget: Coords | null;
+  selectedSpawnUnit: SpawnableUnitType | null;
   selectedUnit: MapItem | null;
 };
 
@@ -348,5 +434,5 @@ type updateGameParams = {
 };
 
 type Events = {
-  Items: any[]
+  Items: GameEvent[]
 }

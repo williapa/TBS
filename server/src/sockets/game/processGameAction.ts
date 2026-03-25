@@ -1,16 +1,21 @@
 import {
   attackUnit,
+  buildingUnitOptions,
   checkForDead,
   GameAction,
+  GameEvent,
   getAllCellsWhichCanBeReached,
   getAttackableCells,
   getIncomeForTeam,
+  getSpawnableCells,
+  getSpawnOptions,
   getTeamForPlayer,
   getWinningTeam,
   isTurnOver,
   MapItem,
   moveableOptions,
   moveMapUnit,
+  supportedActions,
   TeamOption,
   WinCondition,
   winConditions
@@ -23,8 +28,6 @@ import { GetCommand } from "@aws-sdk/lib-dynamodb";
  * Does not persist to DynamoDB; caller is responsible for that and for broadcasting.
  */
 
-const supportedActions = ["attack", "end", "move"];
-
 type UpdateGameParams = {
   email: string;
   gameId: string;
@@ -35,7 +38,7 @@ type UpdateGameParams = {
 type ProcessResult =
   | {
       ok: true;
-      gameEvents: any[];
+      gameEvents: GameEvent[];
       map: MapItem[][];
       creatorMoney: number;
       challengerMoney: number;
@@ -95,16 +98,17 @@ export const processGameAction = async (
     return {
       ok: false,
       error:
-        "not a valid action. valid actions are - 'move', 'end', 'attack'.",
+        "not a valid action. valid actions are - 'move', 'end', 'attack', 'spawn'.",
     };
   }
 
   const activeTeam =
     gameItem.activeTurn === gameItem.challenger ? "purple" : "orange";
-  let gameEvents: any[] = [];
+  let gameEvents: GameEvent[] = [];
   let Map = (gameItem.mapData as MapItem[][]) ?? [];
   let creatorMoney = Number(gameItem.creatorMoney);
   let challengerMoney = Number(gameItem.challengerMoney);
+  const getActiveMoney = () => activeTeam === "orange" ? creatorMoney : challengerMoney;
 
   if (gameAction.action === "end") {
     // No map change; may still add endTurn below
@@ -202,6 +206,70 @@ export const processGameAction = async (
         },
       ];
     }
+  } else if (gameAction.action === "spawn") {
+    const building = Map[gameAction.building.x]?.[gameAction.building.y];
+    const destination = Map[gameAction.end.x]?.[gameAction.end.y];
+
+    if (!building || !destination) {
+      return { ok: false, error: "invalid spawn coordinates" };
+    }
+
+    if (building.team !== activeTeam) {
+      return { ok: false, error: "that isn't your building" };
+    }
+
+    if (building.moved) {
+      return { ok: false, error: "that building has already acted" };
+    }
+
+    if (buildingUnitOptions.indexOf(building.unit) < 0) {
+      return { ok: false, error: "that piece cannot spawn units" };
+    }
+
+    const spawnOption = getSpawnOptions(building.unit, getActiveMoney())
+      .find((option) => option.unit === gameAction.unit);
+
+    if (!spawnOption) {
+      return { ok: false, error: "that unit cannot be spawned by this building" };
+    }
+
+    const validSpawnCells = getSpawnableCells(Map, gameAction.building, gameAction.unit);
+
+    if (validSpawnCells.indexOf(destination.index) < 0) {
+      return { ok: false, error: "spawn destination must be adjacent, empty, and valid terrain" };
+    }
+
+    Map[gameAction.building.x][gameAction.building.y] = {
+      ...building,
+      moved: true,
+    };
+
+    Map[gameAction.end.x][gameAction.end.y] = {
+      ...destination,
+      damage: undefined,
+      moved: true,
+      team: activeTeam,
+      unit: gameAction.unit,
+    };
+
+    if (activeTeam === "orange") {
+      creatorMoney -= spawnOption.cost;
+    } else {
+      challengerMoney -= spawnOption.cost;
+    }
+
+    gameEvents = [
+      {
+        id: `${gameId}#${Date.now().toString()}`,
+        sk: `game#${gameId}`,
+        action: "spawn",
+        actor: email,
+        building: gameAction.building,
+        cost: spawnOption.cost,
+        end: gameAction.end,
+        unit: gameAction.unit,
+      },
+    ];
   }
 
   const gameWinCondition =
@@ -218,7 +286,7 @@ export const processGameAction = async (
     });
   }
 
-  const turnIsOver = !gameOver && isTurnOver(activeTeam, Map, gameAction.action);
+  const turnIsOver = !gameOver && isTurnOver(activeTeam, Map, gameAction.action, getActiveMoney());
   const newActiveTurn = turnIsOver
     ? gameItem.activeTurn === gameItem.challenger
       ? gameItem.creator

@@ -4,6 +4,7 @@ import { persistGameUpdate } from "../data/persist/persistGameUpdate.js";
 import { processGameAction } from "./game/processGameAction.js";
 import {
   GameAction,
+  GameEvent,
   MapItem,
   TeamOption
 } from "@TBS/common";
@@ -62,7 +63,7 @@ export const registerGameSockets = (io: Server) => {
           ok: true;
           challengerMoney: number;
           creatorMoney: number;
-          gameEvents: any[];
+          gameEvents: GameEvent[];
           map: MapItem[][];
           turnIsOver: boolean;
           newActiveTurn: string | undefined;

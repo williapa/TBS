@@ -2,6 +2,7 @@
 import { PropsWithChildren } from "react";
 import useFetch from "react-fetch-hook";
 import { useParams } from "react-router-dom";
+import { GameEvent } from "@TBS/common";
 import EventsTable from "./EventsTable";
 import { useGameSocket } from "../../../hooks/gameSocketContext";
 
@@ -22,8 +23,8 @@ const EventsPanel = () => {
 
   if (error) return <EventWrapper><p> Error: {error.message}</p></EventWrapper>;
   
-  const x = data as Events;
-  const y: Events = {
+  const x = data as { Items: GameEvent[] };
+  const y: { Items: GameEvent[] } = {
     Items: [...moves, ...x.Items]
   };
   /*

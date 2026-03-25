@@ -42,7 +42,9 @@ export const buildingUnitOptions = [
   "office",
   "port",
   "zoo"
-];
+ ] as const;
+
+export type BuildingUnitOption = (typeof buildingUnitOptions)[number];
 
 export const objectUnitOptions = [
   "missile",
@@ -76,7 +78,9 @@ export const TerrainOptions = [
   "plains", // white
   "desert", // yellow
   "water", // blue
-];
+ ] as const;
+
+export type TerrainOption = (typeof TerrainOptions)[number];
 
 export const vehicleUnitOptions = [
   "airplane",
@@ -120,11 +124,44 @@ export const flyingOptions = [
   vehicleUnitOptions[3],
 ];
 
-export const supportedActions = ["attack", "end", "move"];
+export const spawnableUnitOptions = [
+  "airplane",
+  "ambulance",
+  "bigTruck",
+  "bluesMusician",
+  "constructionWorker",
+  "doctor",
+  "dragon",
+  "engineer",
+  "helicopter",
+  "leader",
+  "lion",
+  "michaelJackson",
+  "pilot",
+  "priest",
+  "scientist",
+  "soldier",
+  "studentAthlete",
+  "sub",
+  "truck",
+  "worker",
+  "zuckerbird",
+] as const;
 
-export type gameActions = "attack" | "end" | "move";
+export type SpawnableUnitOption = (typeof spawnableUnitOptions)[number];
 
-export type GameAction = Attack | End | Move;
+export type SpawnOption = {
+  unit: SpawnableUnitOption;
+  cost: number;
+  invalidTerrains: TerrainOption[];
+};
+
+export const supportedActions = ["attack", "end", "move", "spawn"] as const;
+
+export type gameActions = (typeof supportedActions)[number];
+
+export type GameAction = Attack | End | Move | Spawn;
+export type GameEvent = AttackEvent | EndTurnEvent | GameOverEvent | MoveEvent | SpawnEvent;
 
 type Attack = {
   action: "attack";
@@ -141,5 +178,56 @@ export type Move = {
   action: "move";
   start: Coords;
   end: Coords;
+};
+
+export type Spawn = {
+  action: "spawn";
+  building: Coords;
+  end: Coords;
+  unit: SpawnableUnitOption;
+};
+
+type BaseGameEvent = {
+  id: string;
+  sk: string;
+  actor: string;
+};
+
+export type AttackEvent = BaseGameEvent & {
+  action: "attack";
+  defender: Coords;
+  start: Coords;
+  end: Coords;
+  unit: string;
+  defendingUnit: string;
+  attackDamage: number;
+  defenseDamage: number;
+  deaths: unknown[];
+};
+
+export type EndTurnEvent = BaseGameEvent & {
+  action: "endTurn";
+  income: number;
+  creatorMoney: number;
+  challengerMoney: number;
+};
+
+export type GameOverEvent = BaseGameEvent & {
+  action: "gameOver";
+};
+
+export type MoveEvent = BaseGameEvent & {
+  action: "move";
+  start: Coords;
+  end: Coords;
+  unit: string;
+};
+
+export type SpawnEvent = BaseGameEvent & {
+  action: "spawn";
+  building: Coords;
+  cost: number;
+  end: Coords;
+  unit: SpawnableUnitOption;
 };
 

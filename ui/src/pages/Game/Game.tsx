@@ -20,6 +20,9 @@ const Game = (props: GameProps) => {
         />
         <GameMap
           active={view.isLocalPlayersTurn}
+          availableFunds={
+            view.perspectiveTeam === "orange" ? view.creatorMoney : view.challengerMoney
+          }
           mapData={view.currentMap}
           perspective={view.perspectiveTeam}
         />

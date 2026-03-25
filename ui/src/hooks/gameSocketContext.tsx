@@ -8,7 +8,7 @@ import React, {
 } from "react";
 import { useParams } from "react-router-dom";
 import { getGameSocket } from "../utils/socket";
-import { MapItem, GameAction } from "@TBS/common";
+import { GameAction, GameEvent, MapItem } from "@TBS/common";
 
 
 type GameSocketContextValue = {
@@ -17,7 +17,7 @@ type GameSocketContextValue = {
   isConnected: boolean;
   joinGame: (email: string) => void;
   map: MapItem[][];
-  moves: GameAction[];
+  moves: GameEvent[];
   sendMove: (move: GameAction, email: string, pin: string) => void;
   setMap: React.Dispatch<React.SetStateAction<MapItem[][]>>;
   turn: string;
@@ -33,7 +33,7 @@ export function GameSocketProvider({
 }) {
   const { id: gameId } = useParams();
   const [isConnected, setIsConnected] = useState(false);
-  const [moves, setMoves] = useState<GameAction[]>([]);
+  const [moves, setMoves] = useState<GameEvent[]>([]);
   const [map, setMap] = useState<MapItem[][]>([[]]);
   const [creatorMoney, setCreatorMoney] = useState<number | null>(null);
   const [challengerMoney, setChallengerMoney] = useState<number | null>(null);
@@ -70,7 +70,7 @@ export function GameSocketProvider({
       activeTurn: string;
       challengerMoney: number;
       creatorMoney: number;
-      events: GameAction[];
+      events: GameEvent[];
       mapData: MapItem[][];
       winner?: string;
     }) {

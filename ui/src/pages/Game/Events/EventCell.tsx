@@ -1,11 +1,11 @@
-// unit action actor start end 
-const EventCell = ({ event }: { event: any }) => {
-  
-  const action = event.action || "";
+import { GameEvent } from "@TBS/common";
+import prettyPrint from "../../../utils/prettyPrint";
 
+// unit action actor start end 
+const EventCell = ({ event }: { event: GameEvent }) => {
   let res = '';
 
-  switch (action) {
+  switch (event.action) {
     case "attack":
       res = [
         `${event.actor} moved unit ${event.unit} from ${event.start.x}`,
@@ -22,6 +22,9 @@ const EventCell = ({ event }: { event: any }) => {
       break;
     case "endTurn":
       res = `${event.actor} ended turn. Next player gained ${event.income} income.`;
+      break;
+    case "spawn":
+      res = `${event.actor} spent ${event.cost} to spawn a ${prettyPrint(event.unit).toLowerCase()}.`;
       break;
     case "gameOver":
       res = `${event.actor} won the game! the game is over. `;

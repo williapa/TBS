@@ -1,3 +1,4 @@
+import { getSpawnOptions, moveableOptions } from "@TBS/common";
 import Cell from "../../components/Map/Cell/Cell";
 import { terrainColors } from "../../components/Map/Cell/Terrain/terrainColors";
 import replaceOpacity from "../../utils/replaceOpacity";
@@ -40,10 +41,17 @@ const HexGrid = ({
   const borderX = `${borderWidth}px solid transparent`;
 
   const isActiveTeam = (team: TeamType) => team === activeTeam && activeTeam !== "gray";
-  const isActiveCell = (item: MapItem) => isActiveTeam(item.team) && !item.moved;
+  const isActionableCell = (item: MapItem) =>
+    isActiveTeam(item.team) &&
+    !item.moved &&
+    (
+      moveableOptions.includes(item.unit) ||
+      getSpawnOptions(item.unit, Number.MAX_SAFE_INTEGER).length > 0
+    );
+  const isActiveCell = (item: MapItem) => isActionableCell(item);
   const buildCursor = (item: MapItem) => {
     if (mode === "game" && gameInteraction?.interactive) {
-      return !item.moved && (isActiveTeam(item.team) || targetCells.includes(item.index))
+      return (isActionableCell(item) || targetCells.includes(item.index))
         ? "pointer"
         : "default";
     }

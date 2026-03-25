@@ -1,4 +1,4 @@
-import { MapItem, TeamOption } from "@TBS/common";
+import { GameEvent, MapItem, TeamOption } from "@TBS/common";
 import TableName from "../tableName.js";
 import ddbDocClient from "../docClient.js";
 import { TransactWriteCommand } from "@aws-sdk/lib-dynamodb";
@@ -7,7 +7,7 @@ import { TransactWriteCommand } from "@aws-sdk/lib-dynamodb";
  */
 export const persistGameUpdate = async (
   gameId: string,
-  gameEvents: any[],
+  gameEvents: GameEvent[],
   map: MapItem[][],
   creatorMoney: number,
   challengerMoney: number,
@@ -17,7 +17,7 @@ export const persistGameUpdate = async (
   winnerEmail: string | undefined,
   loserEmail: string | undefined
 ): Promise<void> => {
-  const TransactItems: any[] = gameEvents.map((gameEvent: any) => ({
+  const TransactItems: any[] = gameEvents.map((gameEvent: GameEvent) => ({
     Put: {
       TableName,
       Item: gameEvent,

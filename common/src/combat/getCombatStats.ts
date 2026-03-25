@@ -1,8 +1,16 @@
-import { buildingUnitOptions, MapItem, vehicleUnitOptions } from "../types";
+import {
+  BuildingUnitOption,
+  buildingUnitOptions,
+  MapItem,
+  vehicleUnitOptions
+} from "../types";
 
 function isKeyOfObject<T extends object>(key: PropertyKey, obj: T): key is keyof T {
   return key in obj;
 }
+
+const isBuildingUnit = (unit: string): unit is BuildingUnitOption =>
+  (buildingUnitOptions as readonly string[]).includes(unit);
 
 const getCombatStats = (item: MapItem) => {
 
@@ -10,7 +18,7 @@ const getCombatStats = (item: MapItem) => {
 
   if (unit === "office") return [0, 40];
 
-  if (buildingUnitOptions.indexOf(unit) > -1) return [0,80];
+  if (isBuildingUnit(unit)) return [0,80];
 
   if (vehicleUnitOptions.indexOf(unit) > -1) return [0, 60];
 
