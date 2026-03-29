@@ -1,12 +1,15 @@
 import {
   GameAction,
   MapItem,
+  canUnitCollectObjects,
   getAllCellsWhichCanBeReached,
   getAttackableCells,
+  getConsumableObjectAtCell,
   getConstructionOptions,
   getConstructableCells,
   getSpawnableCells,
   getSpawnOptions,
+  objectUnitOptions,
   moveMapUnit,
   peopleUnitOptions,
   vehicleUnitOptions,
@@ -87,6 +90,16 @@ const buildUnitMenuOptions = (
 
 const buildAttackMenuOptions = (): GameMenuOption[] => [
   { id: "confirmAttack", label: "Confirm attack" },
+  { id: "cancel", label: "Cancel" },
+];
+
+const buildMissileMenuOptions = (): GameMenuOption[] => [
+  { id: "confirmMissileLaunch", label: "Confirm missile launch" },
+  { id: "cancel", label: "Cancel" },
+];
+
+const buildNukeMenuOptions = (): GameMenuOption[] => [
+  { id: "confirmNukeLaunch", label: "Confirm nuke launch" },
   { id: "cancel", label: "Cancel" },
 ];
 
@@ -211,6 +224,18 @@ const getPreviewMap = (state: GameInteractionState, map: HexMap) => {
   );
 };
 
+const getProjectileTargetIndexes = (map: HexMap, perspective: TeamType) =>
+  map
+    .flat()
+    .filter(
+      (cell) =>
+        cell.team !== perspective &&
+        cell.team !== "gray" &&
+        cell.unit !== "none" &&
+        !objectUnitOptions.includes(cell.unit as ObjectType)
+    )
+    .map((cell) => cell.index);
+
 const getLoadableVehicleIndexes = (
   map: HexMap,
   actorCoords: Coords | null,
@@ -265,6 +290,10 @@ export const getTargetedCellIndexes = (state: GameInteractionState) => {
     return state.availableAttackTargets;
   }
 
+  if (state.pendingAction === "missile" || state.pendingAction === "nuke") {
+    return state.availableAttackTargets;
+  }
+
   if (state.pendingAction === "construct") {
     return state.availableConstructTargets;
   }
@@ -286,6 +315,13 @@ export const getTargetedCellIndexes = (state: GameInteractionState) => {
 
 export const getTargetType = (state: GameInteractionState): GameCellTargetType | null => {
   if (state.pendingAction === "attack" && state.availableAttackTargets.length > 0) {
+    return "attack";
+  }
+
+  if (
+    (state.pendingAction === "missile" || state.pendingAction === "nuke") &&
+    state.availableAttackTargets.length > 0
+  ) {
     return "attack";
   }
 
@@ -336,6 +372,7 @@ type InteractionReducerAction =
   | { type: "SELECT_CONSTRUCT_TARGET"; cell: MapItem; position: MenuPosition }
   | { type: "SELECT_LOAD_TARGET"; cell: MapItem; position: MenuPosition }
   | { type: "SELECT_ATTACK_TARGET"; cell: MapItem; position: MenuPosition }
+  | { type: "SELECT_OBJECT_TARGET"; cell: MapItem; position: MenuPosition }
   | { type: "CHOOSE_SPAWN_UNIT"; map: HexMap; unit: SpawnableUnitType }
   | { type: "SELECT_SPAWN_TARGET"; cell: MapItem; position: MenuPosition }
   | { type: "CHOOSE_UNLOAD_MODE"; map: HexMap }
@@ -475,6 +512,33 @@ export const gameInteractionReducer = (
     case "CHOOSE_MOVE_TARGET": {
       if (!state.selectedUnit || !state.origin) {
         return state;
+      }
+
+      const destinationObject = getConsumableObjectAtCell(action.cell);
+
+      if (
+        (destinationObject === "missile" || destinationObject === "nuke") &&
+        canUnitCollectObjects(state.selectedUnit.unit)
+      ) {
+        return {
+          ...state,
+          availableAttackTargets: getProjectileTargetIndexes(action.map, action.perspective),
+          availableConstructTargets: [],
+          availableLoadTargets: [],
+          availableMoveTargets: [],
+          availableSpawnTargets: [],
+          availableUnloadTargets: [],
+          menu: null,
+          mode: destinationObject === "missile" ? "targetingMissile" : "targetingNuke",
+          pendingAction: destinationObject,
+          previewDestination: { x: action.cell.row, y: action.cell.column },
+          selectedAttackTarget: null,
+          selectedConstructBuilding: null,
+          selectedConstructTarget: null,
+          selectedLoadVehicle: null,
+          selectedSpawnUnit: null,
+          selectedUnloadTarget: null,
+        };
       }
 
       const previewDestination = { x: action.cell.row, y: action.cell.column };
@@ -673,6 +737,22 @@ export const gameInteractionReducer = (
         selectedAttackTarget: { x: action.cell.row, y: action.cell.column },
       };
     }
+    case "SELECT_OBJECT_TARGET": {
+      return {
+        ...state,
+        menu: {
+          cellIndex: action.cell.index,
+          kind: state.pendingAction === "missile" ? "missile" : "nuke",
+          options: state.pendingAction === "missile"
+            ? buildMissileMenuOptions()
+            : buildNukeMenuOptions(),
+          position: action.position,
+        },
+        mode: "actionMenu",
+        pendingAction: state.pendingAction,
+        selectedAttackTarget: { x: action.cell.row, y: action.cell.column },
+      };
+    }
     case "CHOOSE_SPAWN_UNIT": {
       if (!state.origin) {
         return state;
@@ -767,6 +847,9 @@ export const buildMoveAction = (state: GameInteractionState): GameAction | null 
   return {
     action: "move",
     end: state.previewDestination,
+    ...(state.pendingAction === "missile" || state.pendingAction === "nuke"
+      ? { objectTarget: state.selectedAttackTarget ?? undefined }
+      : {}),
     start: state.origin,
   };
 };

@@ -1,3 +1,4 @@
+import { isObjectUnit } from "../objects";
 import { MapItem, moveableOptions } from "../types";
 // import canUnitAttack from "./canUnitAttack";
 import getDefaultUnitEnergy from "./getDefaultUnitEnergy";
@@ -22,15 +23,17 @@ const getAllCellsWhichCanBeReached = (startingUnitIndex: number, boardCells: Map
     const [currentIndex, currentEnergy] = queue.shift()!; // get the next cell from the queue
     visited.add(currentIndex); // mark the cell as visited
     const currentCell = getCellFromIndex(currentIndex, boardCells); // get the current cell object
-    const movableNeighbors = filterNeighborsForMovableCells(currentCell.neighbors || [], boardCells); // filter the default neighbors for movable indexes
+    const movableNeighbors = filterNeighborsForMovableCells(initialUnitType, currentCell.neighbors || [], boardCells); // filter the default neighbors for movable indexes
     const reachableNeighbors = filterNeighborsForReachableCells(initialUnitType, currentEnergy, movableNeighbors, boardCells); // filter the neighbors for reachable cells
 
     reachableNeighbors.forEach((neighborIndex) => {
       if (!visited.has(neighborIndex)) { // if the neighbor has not been visited yet
         reachableCells.add(neighborIndex); // add the neighbor to the reachable cells
         const neighborCell = getCellFromIndex(neighborIndex, boardCells); // get the neighbor cell object
-        const neighborEnergy = currentEnergy - getTerrainUnitMovementCost(initialUnitType, neighborCell.terrain); // calculate the remaining energy after moving to the neighbor cell
-        queue.push([neighborIndex, neighborEnergy]); // add the neighbor to the queue with its remaining energy
+        if (!isObjectUnit(neighborCell.unit)) {
+          const neighborEnergy = currentEnergy - getTerrainUnitMovementCost(initialUnitType, neighborCell.terrain); // calculate the remaining energy after moving to the neighbor cell
+          queue.push([neighborIndex, neighborEnergy]); // add the neighbor to the queue with its remaining energy
+        }
       }
     });
   }

@@ -59,7 +59,8 @@ export const objectUnitOptions = [
   "money",
   "none",
   "nuke",
-];
+] as const;
+export type ObjectUnitOption = Exclude<(typeof objectUnitOptions)[number], "none">;
 
 export const peopleUnitOptions = [
   "bluesMusician",
@@ -215,6 +216,7 @@ export type Move = {
   action: "move";
   start: Coords;
   end: Coords;
+  objectTarget?: Coords;
 };
 
 export type Spawn = {
@@ -247,6 +249,8 @@ export type AttackEvent = BaseGameEvent & {
   attackDamage: number;
   defenseDamage: number;
   deaths: unknown[];
+  consumedObject?: ObjectUnitOption;
+  moneyAward?: number;
 };
 
 export type EndTurnEvent = BaseGameEvent & {
@@ -262,6 +266,8 @@ export type ConstructEvent = BaseGameEvent & {
   cell: Coords;
   cost: number;
   worker: Coords;
+  consumedObject?: ObjectUnitOption;
+  moneyAward?: number;
 };
 
 export type GameOverEvent = BaseGameEvent & {
@@ -275,6 +281,8 @@ export type LoadEvent = BaseGameEvent & {
   vehicle: Coords;
   unit: string;
   vehicleUnit: string;
+  consumedObject?: ObjectUnitOption;
+  moneyAward?: number;
 };
 
 export type MoveEvent = BaseGameEvent & {
@@ -282,6 +290,16 @@ export type MoveEvent = BaseGameEvent & {
   start: Coords;
   end: Coords;
   unit: string;
+  consumedObject?: ObjectUnitOption;
+  moneyAward?: number;
+  objectTarget?: Coords;
+  objectPreventedByPriest?: boolean;
+  objectDamage?: {
+    cell: Coords;
+    damage: number;
+    unit: string;
+    killed: boolean;
+  }[];
 };
 
 export type SpawnEvent = BaseGameEvent & {
@@ -299,5 +317,7 @@ export type UnloadEvent = BaseGameEvent & {
   cell: Coords;
   unit: string;
   vehicleUnit: string;
+  consumedObject?: ObjectUnitOption;
+  moneyAward?: number;
 };
 

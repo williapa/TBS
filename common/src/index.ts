@@ -14,6 +14,15 @@ import { startingMoney } from "./income/startingMoney";
 import { checkForDead } from "./combat/checkForDead";
 import getConstructionOptions from "./construction/getConstructionOptions";
 import getConstructableCells from "./construction/getConstructableCells";
+import {
+  canUnitCollectObjects,
+  getConsumableObjectAtCell,
+  isObjectUnit,
+  MISSILE_OBJECT_DAMAGE,
+  MONEY_OBJECT_REWARD,
+  NUKE_OBJECT_SPLASH_DAMAGE,
+  NUKE_OBJECT_TARGET_DAMAGE,
+} from "./objects";
 import getSpawnOptions from "./spawn/getSpawnOptions";
 import getSpawnableCells from "./spawn/getSpawnableCells";
 import {
@@ -22,6 +31,8 @@ import {
   ConstructionOption,
   moveableOptions,
   MapItem,
+  objectUnitOptions,
+  ObjectUnitOption,
   peopleUnitOptions,
   Coords,
   GameEvent,
@@ -45,11 +56,14 @@ export {
   ConstructionOption,
   BuildingUnitOption,
   Coords,
+  canUnitCollectObjects,
   getAllCellsWhichCanBeReached,
   getAttackableCells,
   getConstructionOptions,
+  getConsumableObjectAtCell,
   getConstructableCells,
   getIncomeForTeam,
+  isObjectUnit,
   getSpawnOptions,
   getSpawnableCells,
   getTeamForPlayer,
@@ -59,11 +73,17 @@ export {
   GameAction,
   isTurnOver,
   MapItem,
+  MISSILE_OBJECT_DAMAGE,
+  MONEY_OBJECT_REWARD,
+  NUKE_OBJECT_SPLASH_DAMAGE,
+  NUKE_OBJECT_TARGET_DAMAGE,
+  ObjectUnitOption,
   SpawnOption,
   SpawnableUnitOption,
   TerrainOption,
   buildingUnitOptions,
   moveableOptions,
+  objectUnitOptions,
   peopleUnitOptions,
   moveMapUnit,
   startingMoney,

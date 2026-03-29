@@ -16,24 +16,51 @@ const EventCell = ({ event }: { event: GameEvent }) => {
       [` The attacking ${event.unit}`, ` The defending ${event.defendingUnit}`].forEach((unit, index) => {
         if (event.deaths[index]) res += ` ${unit} died.`;
       });
+      if (event.consumedObject === "money" && event.moneyAward) {
+        res += ` They collected $${event.moneyAward}.`;
+      }
       break;
     case "move":
       res = `${event.actor} moved unit ${event.unit} from ${event.start.x},${event.start.y} to ${event.end.x},${event.end.y}.`;
+      if (event.consumedObject === "money" && event.moneyAward) {
+        res += ` They collected $${event.moneyAward}.`;
+      }
+      if (event.consumedObject === "missile" || event.consumedObject === "nuke") {
+        res += ` They launched a ${prettyPrint(event.consumedObject).toLowerCase()}`;
+        if (event.objectTarget) {
+          res += ` at ${event.objectTarget.x},${event.objectTarget.y}`;
+        }
+        res += ".";
+        if (event.objectPreventedByPriest) {
+          res += " The enemy priest prevented all damage.";
+        } else if (event.objectDamage?.length) {
+          res += ` It damaged ${event.objectDamage.length} unit${event.objectDamage.length === 1 ? "" : "s"}.`;
+        }
+      }
       break;
     case "endTurn":
       res = `${event.actor} ended turn. Next player gained ${event.income} income.`;
       break;
     case "construct":
       res = `${event.actor} spent ${event.cost} to construct a ${prettyPrint(event.building).toLowerCase()}.`;
+      if (event.consumedObject === "money" && event.moneyAward) {
+        res += ` They collected $${event.moneyAward}.`;
+      }
       break;
     case "load":
       res = `${event.actor} loaded ${prettyPrint(event.unit).toLowerCase()} into ${prettyPrint(event.vehicleUnit).toLowerCase()}.`;
+      if (event.consumedObject === "money" && event.moneyAward) {
+        res += ` They collected $${event.moneyAward}.`;
+      }
       break;
     case "spawn":
       res = `${event.actor} spent ${event.cost} to spawn a ${prettyPrint(event.unit).toLowerCase()}.`;
       break;
     case "unload":
       res = `${event.actor} unloaded ${prettyPrint(event.unit).toLowerCase()} from ${prettyPrint(event.vehicleUnit).toLowerCase()}.`;
+      if (event.consumedObject === "money" && event.moneyAward) {
+        res += ` They collected $${event.moneyAward}.`;
+      }
       break;
     case "gameOver":
       res = `${event.actor} won the game! the game is over. `;

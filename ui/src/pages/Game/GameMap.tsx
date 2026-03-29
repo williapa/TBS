@@ -61,6 +61,15 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
     }
 
     if (
+      (interactionState.pendingAction === "missile" ||
+        interactionState.pendingAction === "nuke") &&
+      interactionState.availableAttackTargets.includes(mapItem.index)
+    ) {
+      dispatch({ type: "SELECT_OBJECT_TARGET", cell: mapItem, position });
+      return;
+    }
+
+    if (
       interactionState.pendingAction === "construct" &&
       interactionState.availableConstructTargets.includes(mapItem.index)
     ) {
@@ -205,6 +214,19 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
       }
 
       sendMove(attackAction, user, pin);
+      dispatch({ type: "CANCEL_FLOW" });
+      return;
+    }
+
+    if (action === "confirmMissileLaunch" || action === "confirmNukeLaunch") {
+      const moveAction = buildMoveAction(interactionState);
+
+      if (!moveAction || moveAction.action !== "move" || !moveAction.objectTarget) {
+        dispatch({ type: "CANCEL_FLOW" });
+        return;
+      }
+
+      sendMove(moveAction, user, pin);
       dispatch({ type: "CANCEL_FLOW" });
       return;
     }

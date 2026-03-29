@@ -1,7 +1,9 @@
 import {
   attackUnit,
+  canUnitCollectObjects,
   buildingUnitOptions,
   checkForDead,
+  getConsumableObjectAtCell,
   getConstructionOptions,
   getConstructableCells,
   GameAction,
@@ -9,15 +11,20 @@ import {
   getAllCellsWhichCanBeReached,
   getAttackableCells,
   getIncomeForTeam,
-  peopleUnitOptions,
   getSpawnableCells,
   getSpawnOptions,
   getTeamForPlayer,
   getWinningTeam,
   isTurnOver,
   MapItem,
+  MISSILE_OBJECT_DAMAGE,
+  MONEY_OBJECT_REWARD,
   moveableOptions,
   moveMapUnit,
+  NUKE_OBJECT_SPLASH_DAMAGE,
+  NUKE_OBJECT_TARGET_DAMAGE,
+  ObjectUnitOption,
+  peopleUnitOptions,
   supportedActions,
   TeamOption,
   vehicleUnitOptions,
@@ -68,6 +75,150 @@ const clearUnitFromCell = (cell: MapItem): MapItem => ({
   team: "gray",
   unit: "none",
 });
+
+const applyMoneyReward = (activeTeam: TeamOption) => ({
+  challengerMoneyDelta: activeTeam === "purple" ? MONEY_OBJECT_REWARD : 0,
+  creatorMoneyDelta: activeTeam === "orange" ? MONEY_OBJECT_REWARD : 0,
+});
+
+const isDamageableUnit = (cell?: MapItem) =>
+  Boolean(cell && cell.unit !== "none" && !getConsumableObjectAtCell(cell));
+
+const doesTeamHavePriest = (map: MapItem[][], team: string) =>
+  map.flat().some((cell) => cell.team === team && cell.unit === "priest");
+
+const applyFlatDamageToCell = (
+  map: MapItem[][],
+  coords: { x: number; y: number },
+  damage: number
+) => {
+  const cell = map[coords.x]?.[coords.y];
+
+  if (!isDamageableUnit(cell)) {
+    return null;
+  }
+
+  const currentDamage = cell.damage || 0;
+  const resultingDamage = currentDamage + damage;
+  const killed = resultingDamage >= 100;
+  const unit = cell.unit;
+
+  if (killed) {
+    map[coords.x][coords.y] = clearUnitFromCell(cell);
+  } else {
+    map[coords.x][coords.y] = {
+      ...cell,
+      damage: resultingDamage,
+    };
+  }
+
+  return {
+    cell: coords,
+    damage: killed ? 100 - currentDamage : damage,
+    killed,
+    unit,
+  };
+};
+
+const getProjectileTargetCells = (map: MapItem[][], target: { x: number; y: number }, objectUnit: ObjectUnitOption) => {
+  const targetCell = map[target.x]?.[target.y];
+
+  if (!targetCell) {
+    return [];
+  }
+
+  if (objectUnit === "missile") {
+    return [{ damage: MISSILE_OBJECT_DAMAGE, x: target.x, y: target.y }];
+  }
+
+  return [
+    { damage: NUKE_OBJECT_TARGET_DAMAGE, x: target.x, y: target.y },
+    ...((targetCell.neighbors ?? [])
+      .map((neighborIndex) =>
+        map
+          .flat()
+          .find((cell) => cell.index === neighborIndex)
+      )
+      .filter((cell): cell is MapItem => Boolean(cell))
+      .map((cell) => ({
+        damage: NUKE_OBJECT_SPLASH_DAMAGE,
+        x: cell.row,
+        y: cell.column,
+      }))),
+  ];
+};
+
+const applyConsumedObjectEffect = ({
+  activeTeam,
+  gameEvent,
+  map,
+  objectTarget,
+  originalDestinationObject,
+}: {
+  activeTeam: TeamOption;
+  gameEvent: Extract<GameEvent, { action: "move" }>;
+  map: MapItem[][];
+  objectTarget?: { x: number; y: number };
+  originalDestinationObject: ObjectUnitOption | null;
+}) => {
+  if (!originalDestinationObject) {
+    return { challengerMoneyDelta: 0, creatorMoneyDelta: 0, gameEvent, map };
+  }
+
+  if (originalDestinationObject === "money") {
+    return {
+      ...applyMoneyReward(activeTeam),
+      gameEvent: {
+        ...gameEvent,
+        consumedObject: originalDestinationObject,
+        moneyAward: MONEY_OBJECT_REWARD,
+      },
+      map,
+    };
+  }
+
+  const targetCell = objectTarget ? map[objectTarget.x]?.[objectTarget.y] : undefined;
+
+  if (!objectTarget || !targetCell) {
+    return {
+      challengerMoneyDelta: 0,
+      creatorMoneyDelta: 0,
+      error: "projectile object target is required",
+      gameEvent,
+      map,
+    };
+  }
+
+  if (targetCell.team === activeTeam || targetCell.team === "gray" || !isDamageableUnit(targetCell)) {
+    return {
+      challengerMoneyDelta: 0,
+      creatorMoneyDelta: 0,
+      error: "projectile target must be an enemy unit",
+      gameEvent,
+      map,
+    };
+  }
+
+  const preventedByPriest = doesTeamHavePriest(map, targetCell.team);
+  const objectDamage = preventedByPriest
+    ? []
+    : getProjectileTargetCells(map, objectTarget, originalDestinationObject)
+        .map(({ damage, x, y }) => applyFlatDamageToCell(map, { x, y }, damage))
+        .filter((item): item is NonNullable<typeof item> => Boolean(item));
+
+  return {
+    challengerMoneyDelta: 0,
+    creatorMoneyDelta: 0,
+    gameEvent: {
+      ...gameEvent,
+      consumedObject: originalDestinationObject,
+      objectDamage,
+      objectPreventedByPriest: preventedByPriest,
+      objectTarget,
+    },
+    map,
+  };
+};
   
 export const processGameAction = async (
   params: UpdateGameParams
@@ -150,12 +301,32 @@ export const processGameAction = async (
       return { ok: false, error: "that piece isn't movable" };
 
     const destinationUnit = Map[endX][endY];
+    const destinationObject = getConsumableObjectAtCell(destinationUnit);
+    const canConsumeDestinationObject =
+      Boolean(destinationObject) && canUnitCollectObjects(movingUnitType);
 
     if (
       gameAction.action === "move" &&
-      destinationUnit.unit !== "none"
+      destinationUnit.unit !== "none" &&
+      !canConsumeDestinationObject
     ) {
       return { ok: false, error: "destination must be an empty space" };
+    }
+
+    if (
+      gameAction.action === "attack" &&
+      destinationObject &&
+      !canConsumeDestinationObject
+    ) {
+      return { ok: false, error: "only people and vehicles can move onto object cells" };
+    }
+
+    if (
+      destinationObject &&
+      (destinationObject === "missile" || destinationObject === "nuke") &&
+      gameAction.action !== "move"
+    ) {
+      return { ok: false, error: "missiles and nukes must be launched as a move action" };
     }
 
     const reachableCells = getAllCellsWhichCanBeReached(movingUnit.index, Map);
@@ -209,21 +380,49 @@ export const processGameAction = async (
           attackDamage: attackResult[1][1],
           defenseDamage: attackResult[1][0],
           deaths: deadGuys,
+          ...(destinationObject === "money"
+            ? {
+                consumedObject: destinationObject,
+                moneyAward: MONEY_OBJECT_REWARD,
+              }
+            : {}),
         },
       ];
+
+      if (destinationObject === "money") {
+        const moneyReward = applyMoneyReward(activeTeam);
+        creatorMoney += moneyReward.creatorMoneyDelta;
+        challengerMoney += moneyReward.challengerMoneyDelta;
+      }
     } else {
       Map = moveMapUnit(Map, gameAction.start, gameAction.end);
-      gameEvents = [
-        {
-          id: `${gameId}#${Date.now().toString()}`,
-          sk: `game#${gameId}`,
-          action: "move",
-          actor: email,
-          start: gameAction.start,
-          end: gameAction.end,
-          unit: movingUnitType,
-        },
-      ];
+      let moveEvent: Extract<GameEvent, { action: "move" }> = {
+        id: `${gameId}#${Date.now().toString()}`,
+        sk: `game#${gameId}`,
+        action: "move",
+        actor: email,
+        start: gameAction.start,
+        end: gameAction.end,
+        unit: movingUnitType,
+      };
+
+      const objectResolution = applyConsumedObjectEffect({
+        activeTeam,
+        gameEvent: moveEvent,
+        map: Map,
+        objectTarget: gameAction.objectTarget,
+        originalDestinationObject: destinationObject,
+      });
+
+      if (objectResolution.error) {
+        return { ok: false, error: objectResolution.error };
+      }
+
+      Map = objectResolution.map;
+      creatorMoney += objectResolution.creatorMoneyDelta;
+      challengerMoney += objectResolution.challengerMoneyDelta;
+      moveEvent = objectResolution.gameEvent;
+      gameEvents = [moveEvent];
     }
   } else if (gameAction.action === "spawn") {
     const building = Map[gameAction.building.x]?.[gameAction.building.y];
@@ -324,7 +523,13 @@ export const processGameAction = async (
     let mapForConstruction = Map;
 
     if (workerMoved) {
-      if (workerDestination.unit !== "none") {
+      if (
+        workerDestination.unit !== "none" &&
+        !(
+          getConsumableObjectAtCell(workerDestination) === "money" &&
+          canUnitCollectObjects(worker.unit)
+        )
+      ) {
         return { ok: false, error: "worker destination must be an empty space" };
       }
 
@@ -376,6 +581,14 @@ export const processGameAction = async (
       challengerMoney -= constructionOption.cost;
     }
 
+    const constructionDestinationObject = getConsumableObjectAtCell(workerDestination);
+
+    if (constructionDestinationObject === "money") {
+      const moneyReward = applyMoneyReward(activeTeam);
+      creatorMoney += moneyReward.creatorMoneyDelta;
+      challengerMoney += moneyReward.challengerMoneyDelta;
+    }
+
     gameEvents = [
       {
         id: `${gameId}#${Date.now().toString()}`,
@@ -386,6 +599,12 @@ export const processGameAction = async (
         cell: gameAction.cell,
         cost: constructionOption.cost,
         worker: gameAction.end,
+        ...(constructionDestinationObject === "money"
+          ? {
+              consumedObject: constructionDestinationObject,
+              moneyAward: MONEY_OBJECT_REWARD,
+            }
+          : {}),
       },
     ];
   } else if (gameAction.action === "load") {
@@ -425,7 +644,13 @@ export const processGameAction = async (
       !sameCoords(gameAction.start, gameAction.end);
 
     if (loadingUnitMoves) {
-      if (destination.unit !== "none") {
+      if (
+        destination.unit !== "none" &&
+        !(
+          getConsumableObjectAtCell(destination) === "money" &&
+          canUnitCollectObjects(loadingUnit.unit)
+        )
+      ) {
         return { ok: false, error: "destination must be an empty space" };
       }
 
@@ -461,6 +686,14 @@ export const processGameAction = async (
     };
     Map[gameAction.end.x][gameAction.end.y] = clearUnitFromCell(loadingCell);
 
+    const loadDestinationObject = getConsumableObjectAtCell(destination);
+
+    if (loadDestinationObject === "money") {
+      const moneyReward = applyMoneyReward(activeTeam);
+      creatorMoney += moneyReward.creatorMoneyDelta;
+      challengerMoney += moneyReward.challengerMoneyDelta;
+    }
+
     gameEvents = [
       {
         id: `${gameId}#${Date.now().toString()}`,
@@ -472,6 +705,12 @@ export const processGameAction = async (
         unit: loadingUnit.unit,
         vehicle: gameAction.vehicle,
         vehicleUnit: loadingVehicle.unit,
+        ...(loadDestinationObject === "money"
+          ? {
+              consumedObject: loadDestinationObject,
+              moneyAward: MONEY_OBJECT_REWARD,
+            }
+          : {}),
       },
     ];
   } else if (gameAction.action === "unload") {
@@ -503,7 +742,13 @@ export const processGameAction = async (
       !sameCoords(gameAction.start, gameAction.end);
 
     if (vehicleMoves) {
-      if (destination.unit !== "none") {
+      if (
+        destination.unit !== "none" &&
+        !(
+          getConsumableObjectAtCell(destination) === "money" &&
+          canUnitCollectObjects(vehicle.unit)
+        )
+      ) {
         return { ok: false, error: "destination must be an empty space" };
       }
 
@@ -554,6 +799,14 @@ export const processGameAction = async (
       moved: true,
     };
 
+    const unloadDestinationObject = getConsumableObjectAtCell(destination);
+
+    if (unloadDestinationObject === "money") {
+      const moneyReward = applyMoneyReward(activeTeam);
+      creatorMoney += moneyReward.creatorMoneyDelta;
+      challengerMoney += moneyReward.challengerMoneyDelta;
+    }
+
     gameEvents = [
       {
         id: `${gameId}#${Date.now().toString()}`,
@@ -565,6 +818,12 @@ export const processGameAction = async (
         start: gameAction.start,
         unit: unloadedUnit.unit,
         vehicleUnit: activeVehicle.unit,
+        ...(unloadDestinationObject === "money"
+          ? {
+              consumedObject: unloadDestinationObject,
+              moneyAward: MONEY_OBJECT_REWARD,
+            }
+          : {}),
       },
     ];
   }

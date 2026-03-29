@@ -324,6 +324,7 @@ type Move = {
   action: "move";
   start: Coords;
   end: Coords;
+  objectTarget?: Coords;
 };
 
 type Spawn = {
@@ -358,6 +359,8 @@ type AttackEvent = BaseGameEvent & {
   attackDamage: number;
   defenseDamage: number;
   deaths: unknown[];
+  consumedObject?: ObjectType.money | ObjectType.missile | ObjectType.nuke;
+  moneyAward?: number;
 };
 
 type EndTurnEvent = BaseGameEvent & {
@@ -373,6 +376,8 @@ type ConstructEvent = BaseGameEvent & {
   cell: Coords;
   cost: number;
   worker: Coords;
+  consumedObject?: ObjectType.money | ObjectType.missile | ObjectType.nuke;
+  moneyAward?: number;
 };
 
 type GameOverEvent = BaseGameEvent & {
@@ -386,6 +391,8 @@ type LoadEvent = BaseGameEvent & {
   vehicle: Coords;
   unit: string;
   vehicleUnit: string;
+  consumedObject?: ObjectType.money | ObjectType.missile | ObjectType.nuke;
+  moneyAward?: number;
 };
 
 type MoveEvent = BaseGameEvent & {
@@ -393,6 +400,16 @@ type MoveEvent = BaseGameEvent & {
   start: Coords;
   end: Coords;
   unit: string;
+  consumedObject?: ObjectType.money | ObjectType.missile | ObjectType.nuke;
+  moneyAward?: number;
+  objectTarget?: Coords;
+  objectPreventedByPriest?: boolean;
+  objectDamage?: {
+    cell: Coords;
+    damage: number;
+    unit: string;
+    killed: boolean;
+  }[];
 };
 
 type SpawnEvent = BaseGameEvent & {
@@ -410,6 +427,8 @@ type UnloadEvent = BaseGameEvent & {
   cell: Coords;
   unit: string;
   vehicleUnit: string;
+  consumedObject?: ObjectType.money | ObjectType.missile | ObjectType.nuke;
+  moneyAward?: number;
 };
 
 type GameEvent =
@@ -427,6 +446,8 @@ type GameInteractionMode =
   | "unitSelected"
   | "actionMenu"
   | "targetingAttack"
+  | "targetingMissile"
+  | "targetingNuke"
   | "targetingConstruct"
   | "targetingLoad"
   | "targetingSpawn"
@@ -441,6 +462,8 @@ type GameMenuActionId =
   | "chooseLoad"
   | "chooseUnload"
   | "confirmAttack"
+  | "confirmMissileLaunch"
+  | "confirmNukeLaunch"
   | "confirmConstruct"
   | "confirmLoad"
   | "confirmSpawn"
@@ -468,7 +491,7 @@ type GameCellMenu = {
 
 type GameActionMenuState = {
   cellIndex: number;
-  kind: "origin" | "move" | "attack" | "construct" | "constructSelection" | "load" | "spawn" | "unload";
+  kind: "origin" | "move" | "attack" | "missile" | "nuke" | "construct" | "constructSelection" | "load" | "spawn" | "unload";
   options: GameMenuOption[];
   position: MenuPosition;
 };
@@ -483,7 +506,7 @@ type GameInteractionState = {
   menu: GameActionMenuState | null;
   mode: GameInteractionMode;
   origin: Coords | null;
-  pendingAction: "attack" | "construct" | "load" | "move" | "spawn" | "unload" | null;
+  pendingAction: "attack" | "construct" | "load" | "missile" | "move" | "nuke" | "spawn" | "unload" | null;
   previewDestination: Coords | null;
   selectedAttackTarget: Coords | null;
   selectedConstructBuilding: BuildingType | null;
