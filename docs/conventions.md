@@ -2,7 +2,9 @@
 
 ## General Principles
 
-- use typescript
+- Don't Repeat Yourself (the "dry" principle) 
+- avoid magic numbers/strings in favor of centrally defined constants
+- use typescript (& avoid use of "any")
 - define types relevant to the game logic in the /common workspace
 - favor brevity for code (the easiest code to read is the shortest) 
 - style rules are defined through eslint and should be adhered to
@@ -16,5 +18,3 @@
 ## Documentation Expectations
 
 - always update the documentation when changes make impact the accuracy of existing documentation.
-
-
