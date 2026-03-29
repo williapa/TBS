@@ -26,20 +26,20 @@ const getCombatStats = (item: MapItem) => {
   const unitMap = {
     dragon: [90, 40],
     lion: [90, 25],
-    bluesMusician: [10, 30], // special: increase people combat stats
-    constructionWorker: [15, 5], // special: construction
+    bluesMusician: [10, 30], // special: boost people combat stats
+    constructionWorker: [15, 5], // special: construction DONE
     doctor: [5, 1], // special: heal units (also ambulance should too)
     engineer: [3, 1], // special: heal buildings
     leader: [50, 35],
-    michaelJackson: [100,86], 
+    michaelJackson: [100,86], // todo: rename to "Pop star"; pop stars are unstoppable!!!
     pilot: [15,5], // special: heal air vehicles
-    priest: [1,1], // special: stop bombs / missiles
-    scientist: [1,1], // special: increase building stats
+    priest: [1,1], // special: stop bombs / missiles DONE
+    scientist: [1,1], // special: boost building stats
     soldier: [30,15],
-    studentAthlete: [10,10], // special: bonus against leader
+    studentAthlete: [10,10], // special: bonus against people (people love student athletes)
     worker: [10,2], // special: heal ground vehicles
-    zookeeper: [4,4], // special: increase animal stats
-    zuckerbird: [8,8] // special: extra damage to capitals
+    zookeeper: [4,4], // special: boost animal stats
+    zuckerbird: [8,8] // special: bonus attack vs capitals, (fb topples governments), defense against dragons (lizard)...might need to rename to "zucklebird" 
   };
 
   if (isKeyOfObject(unit, unitMap)) {
