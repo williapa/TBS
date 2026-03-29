@@ -2,6 +2,8 @@ import {
   attackUnit,
   buildingUnitOptions,
   checkForDead,
+  getConstructionOptions,
+  getConstructableCells,
   GameAction,
   GameEvent,
   getAllCellsWhichCanBeReached,
@@ -98,7 +100,7 @@ export const processGameAction = async (
     return {
       ok: false,
       error:
-        "not a valid action. valid actions are - 'move', 'end', 'attack', 'spawn'.",
+        "not a valid action. valid actions are - 'move', 'end', 'attack', 'spawn', 'construct'.",
     };
   }
 
@@ -268,6 +270,105 @@ export const processGameAction = async (
         cost: spawnOption.cost,
         end: gameAction.end,
         unit: gameAction.unit,
+      },
+    ];
+  } else if (gameAction.action === "construct") {
+    const worker = Map[gameAction.worker.x]?.[gameAction.worker.y];
+    const workerDestination = Map[gameAction.end.x]?.[gameAction.end.y];
+    const activeMoney = getActiveMoney();
+
+    if (!worker || !workerDestination) {
+      return { ok: false, error: "invalid construction coordinates" };
+    }
+
+    if (worker.team !== activeTeam) {
+      return { ok: false, error: "that isn't your piece" };
+    }
+
+    if (worker.moved) {
+      return { ok: false, error: "that worker has already acted" };
+    }
+
+    if (worker.unit !== "constructionWorker") {
+      return { ok: false, error: "that piece cannot construct buildings" };
+    }
+
+    const constructionOption = getConstructionOptions(activeMoney)
+      .find((option) => option.building === gameAction.building);
+
+    if (!constructionOption) {
+      return { ok: false, error: "that building cannot be constructed with current funds" };
+    }
+
+    const workerMoved =
+      gameAction.worker.x !== gameAction.end.x ||
+      gameAction.worker.y !== gameAction.end.y;
+
+    let mapForConstruction = Map;
+
+    if (workerMoved) {
+      if (workerDestination.unit !== "none") {
+        return { ok: false, error: "worker destination must be an empty space" };
+      }
+
+      const reachableCells = getAllCellsWhichCanBeReached(worker.index, Map);
+
+      if (reachableCells.indexOf(workerDestination.index) < 0) {
+        return { ok: false, error: "worker destination must be in range" };
+      }
+
+      mapForConstruction = moveMapUnit(
+        Map.map((row) => row.map((item) => ({ ...item }))),
+        gameAction.worker,
+        gameAction.end
+      );
+    }
+
+    const constructionCell = mapForConstruction[gameAction.cell.x]?.[gameAction.cell.y];
+
+    if (!constructionCell) {
+      return { ok: false, error: "invalid construction cell" };
+    }
+
+    const validConstructionCells = getConstructableCells(
+      mapForConstruction,
+      gameAction.end,
+      gameAction.building
+    );
+
+    if (validConstructionCells.indexOf(constructionCell.index) < 0) {
+      return { ok: false, error: "construction cell must be adjacent, empty, and valid terrain" };
+    }
+
+    Map = mapForConstruction;
+    Map[gameAction.end.x][gameAction.end.y] = {
+      ...Map[gameAction.end.x][gameAction.end.y],
+      moved: true,
+    };
+    Map[gameAction.cell.x][gameAction.cell.y] = {
+      ...constructionCell,
+      damage: undefined,
+      moved: true,
+      team: activeTeam,
+      unit: gameAction.building,
+    };
+
+    if (activeTeam === "orange") {
+      creatorMoney -= constructionOption.cost;
+    } else {
+      challengerMoney -= constructionOption.cost;
+    }
+
+    gameEvents = [
+      {
+        id: `${gameId}#${Date.now().toString()}`,
+        sk: `game#${gameId}`,
+        action: "construct",
+        actor: email,
+        building: gameAction.building,
+        cell: gameAction.cell,
+        cost: constructionOption.cost,
+        worker: gameAction.end,
       },
     ];
   }

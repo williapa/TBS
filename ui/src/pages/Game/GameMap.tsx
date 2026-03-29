@@ -6,6 +6,7 @@ import useUser from "../../hooks/useUser";
 import { useGameSocket } from "../../hooks/gameSocketContext";
 import {
   buildAttackAction,
+  buildConstructAction,
   buildMoveAction,
   buildSpawnAction,
   createInitialGameInteractionState,
@@ -54,6 +55,14 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
       interactionState.availableAttackTargets.includes(mapItem.index)
     ) {
       dispatch({ type: "SELECT_ATTACK_TARGET", cell: mapItem, position });
+      return;
+    }
+
+    if (
+      interactionState.pendingAction === "construct" &&
+      interactionState.availableConstructTargets.includes(mapItem.index)
+    ) {
+      dispatch({ type: "SELECT_CONSTRUCT_TARGET", cell: mapItem, position });
       return;
     }
 
@@ -112,6 +121,25 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
       return;
     }
 
+    if (action === "chooseConstruct") {
+      dispatch({
+        type: "CHOOSE_CONSTRUCT_MODE",
+        availableFunds,
+        map: mapData,
+        position: interactionState.menu?.position ?? { left: 0, top: 0 },
+      });
+      return;
+    }
+
+    if (action.startsWith("construct:")) {
+      dispatch({
+        type: "CHOOSE_CONSTRUCT_BUILDING",
+        building: action.replace("construct:", "") as BuildingType,
+        map: mapData,
+      });
+      return;
+    }
+
     if (action.startsWith("spawn:")) {
       dispatch({
         type: "CHOOSE_SPAWN_UNIT",
@@ -122,6 +150,11 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
     }
 
     if (action === "move") {
+      if (!interactionState.previewDestination) {
+        dispatch({ type: "CHOOSE_MOVE_MODE", map: mapData });
+        return;
+      }
+
       const moveAction = buildMoveAction(interactionState);
 
       if (!moveAction || moveAction.action !== "move") {
@@ -144,6 +177,19 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
       }
 
       sendMove(attackAction, user, pin);
+      dispatch({ type: "CANCEL_FLOW" });
+      return;
+    }
+
+    if (action === "confirmConstruct") {
+      const constructAction = buildConstructAction(interactionState);
+
+      if (!constructAction) {
+        dispatch({ type: "CANCEL_FLOW" });
+        return;
+      }
+
+      sendMove(constructAction, user, pin);
       dispatch({ type: "CANCEL_FLOW" });
       return;
     }

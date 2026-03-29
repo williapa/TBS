@@ -156,12 +156,18 @@ export type SpawnOption = {
   invalidTerrains: TerrainOption[];
 };
 
-export const supportedActions = ["attack", "end", "move", "spawn"] as const;
+export type ConstructionOption = {
+  building: BuildingUnitOption;
+  cost: number;
+  invalidTerrains: TerrainOption[];
+};
+
+export const supportedActions = ["attack", "construct", "end", "move", "spawn"] as const;
 
 export type gameActions = (typeof supportedActions)[number];
 
-export type GameAction = Attack | End | Move | Spawn;
-export type GameEvent = AttackEvent | EndTurnEvent | GameOverEvent | MoveEvent | SpawnEvent;
+export type GameAction = Attack | Construct | End | Move | Spawn;
+export type GameEvent = AttackEvent | ConstructEvent | EndTurnEvent | GameOverEvent | MoveEvent | SpawnEvent;
 
 type Attack = {
   action: "attack";
@@ -172,6 +178,14 @@ type Attack = {
 
 export type End = {
   action: "end";
+};
+
+export type Construct = {
+  action: "construct";
+  worker: Coords;
+  end: Coords;
+  cell: Coords;
+  building: BuildingUnitOption;
 };
 
 export type Move = {
@@ -210,6 +224,14 @@ export type EndTurnEvent = BaseGameEvent & {
   income: number;
   creatorMoney: number;
   challengerMoney: number;
+};
+
+export type ConstructEvent = BaseGameEvent & {
+  action: "construct";
+  building: BuildingUnitOption;
+  cell: Coords;
+  cost: number;
+  worker: Coords;
 };
 
 export type GameOverEvent = BaseGameEvent & {

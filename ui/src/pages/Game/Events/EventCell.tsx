@@ -23,6 +23,9 @@ const EventCell = ({ event }: { event: GameEvent }) => {
     case "endTurn":
       res = `${event.actor} ended turn. Next player gained ${event.income} income.`;
       break;
+    case "construct":
+      res = `${event.actor} spent ${event.cost} to construct a ${prettyPrint(event.building).toLowerCase()}.`;
+      break;
     case "spawn":
       res = `${event.actor} spent ${event.cost} to spawn a ${prettyPrint(event.unit).toLowerCase()}.`;
       break;

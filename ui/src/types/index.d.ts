@@ -282,7 +282,7 @@ type SpawnableUnitType =
   | VehicleType.sub
   | VehicleType.truck;
 
-type gameActions = "attack" | "end" |  "move" | "spawn";
+type gameActions = "attack" | "construct" | "end" |  "move" | "spawn";
 
 type Attack = {
   action: "attack";
@@ -293,6 +293,14 @@ type Attack = {
 
 type End = {
   action: "end"
+};
+
+type Construct = {
+  action: "construct";
+  worker: Coords;
+  end: Coords;
+  cell: Coords;
+  building: BuildingType;
 };
 
 type Move = {
@@ -308,7 +316,7 @@ type Spawn = {
   unit: SpawnableUnitType;
 };
 
-type GameAction = Attack | End | Move | Spawn;
+type GameAction = Attack | Construct | End | Move | Spawn;
 
 type BaseGameEvent = {
   id: string;
@@ -335,6 +343,14 @@ type EndTurnEvent = BaseGameEvent & {
   challengerMoney: number;
 };
 
+type ConstructEvent = BaseGameEvent & {
+  action: "construct";
+  building: BuildingType;
+  cell: Coords;
+  cost: number;
+  worker: Coords;
+};
+
 type GameOverEvent = BaseGameEvent & {
   action: "gameOver";
 };
@@ -354,18 +370,21 @@ type SpawnEvent = BaseGameEvent & {
   unit: SpawnableUnitType;
 };
 
-type GameEvent = AttackEvent | EndTurnEvent | GameOverEvent | MoveEvent | SpawnEvent;
+type GameEvent = AttackEvent | ConstructEvent | EndTurnEvent | GameOverEvent | MoveEvent | SpawnEvent;
 
-type GameInteractionMode = "idle" | "unitSelected" | "actionMenu" | "targetingAttack" | "targetingSpawn";
+type GameInteractionMode = "idle" | "unitSelected" | "actionMenu" | "targetingAttack" | "targetingConstruct" | "targetingSpawn";
 
-type GameCellTargetType = "move" | "attack" | "spawn";
+type GameCellTargetType = "move" | "attack" | "construct" | "spawn";
 
 type GameMenuActionId =
   | "move"
   | "chooseAttack"
+  | "chooseConstruct"
   | "confirmAttack"
+  | "confirmConstruct"
   | "confirmSpawn"
   | "cancel"
+  | `construct:${BuildingType}`
   | `spawn:${SpawnableUnitType}`;
 
 type MenuPosition = {
@@ -387,21 +406,24 @@ type GameCellMenu = {
 
 type GameActionMenuState = {
   cellIndex: number;
-  kind: "origin" | "move" | "attack" | "spawn";
+  kind: "origin" | "move" | "attack" | "construct" | "constructSelection" | "spawn";
   options: GameMenuOption[];
   position: MenuPosition;
 };
 
 type GameInteractionState = {
   availableAttackTargets: number[];
+  availableConstructTargets: number[];
   availableMoveTargets: number[];
   availableSpawnTargets: number[];
   menu: GameActionMenuState | null;
   mode: GameInteractionMode;
   origin: Coords | null;
-  pendingAction: "attack" | "move" | "spawn" | null;
+  pendingAction: "attack" | "construct" | "move" | "spawn" | null;
   previewDestination: Coords | null;
   selectedAttackTarget: Coords | null;
+  selectedConstructBuilding: BuildingType | null;
+  selectedConstructTarget: Coords | null;
   selectedSpawnUnit: SpawnableUnitType | null;
   selectedUnit: MapItem | null;
 };

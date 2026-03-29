@@ -12,10 +12,14 @@ import { getIncomeForTeam } from "./income/getIncomeForTeam";
 import { getTeamForPlayer } from "./rules/getTeamForPlayer";
 import { startingMoney } from "./income/startingMoney";
 import { checkForDead } from "./combat/checkForDead";
+import getConstructionOptions from "./construction/getConstructionOptions";
+import getConstructableCells from "./construction/getConstructableCells";
 import getSpawnOptions from "./spawn/getSpawnOptions";
 import getSpawnableCells from "./spawn/getSpawnableCells";
 import {
   buildingUnitOptions,
+  BuildingUnitOption,
+  ConstructionOption,
   moveableOptions,
   MapItem,
   Coords,
@@ -36,9 +40,13 @@ export {
   checkForDead,
   checkMapHasCapitals,
   checkMapHasMovableCombatUnits,
+  ConstructionOption,
+  BuildingUnitOption,
   Coords,
   getAllCellsWhichCanBeReached,
   getAttackableCells,
+  getConstructionOptions,
+  getConstructableCells,
   getIncomeForTeam,
   getSpawnOptions,
   getSpawnableCells,
