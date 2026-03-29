@@ -9,6 +9,7 @@ import {
   getAllCellsWhichCanBeReached,
   getAttackableCells,
   getIncomeForTeam,
+  peopleUnitOptions,
   getSpawnableCells,
   getSpawnOptions,
   getTeamForPlayer,
@@ -19,6 +20,7 @@ import {
   moveMapUnit,
   supportedActions,
   TeamOption,
+  vehicleUnitOptions,
   WinCondition,
   winConditions
 } from "@TBS/common";
@@ -51,6 +53,21 @@ type ProcessResult =
       loserEmail: string | undefined;
     }
   | { ok: false; error: string };
+
+const sameCoords = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+  a.x === b.x && a.y === b.y;
+
+const isAdjacent = (origin: MapItem, target: MapItem) =>
+  (origin.neighbors ?? []).indexOf(target.index) > -1;
+
+const clearUnitFromCell = (cell: MapItem): MapItem => ({
+  ...cell,
+  damage: undefined,
+  loadedUnit: undefined,
+  moved: undefined,
+  team: "gray",
+  unit: "none",
+});
   
 export const processGameAction = async (
   params: UpdateGameParams
@@ -100,7 +117,7 @@ export const processGameAction = async (
     return {
       ok: false,
       error:
-        "not a valid action. valid actions are - 'move', 'end', 'attack', 'spawn', 'construct'.",
+        "not a valid action. valid actions are - 'move', 'end', 'attack', 'spawn', 'construct', 'load', 'unload'.",
     };
   }
 
@@ -371,6 +388,185 @@ export const processGameAction = async (
         worker: gameAction.end,
       },
     ];
+  } else if (gameAction.action === "load") {
+    const loadingUnit = Map[gameAction.start.x]?.[gameAction.start.y];
+    const destination = Map[gameAction.end.x]?.[gameAction.end.y];
+    const vehicle = Map[gameAction.vehicle.x]?.[gameAction.vehicle.y];
+
+    if (!loadingUnit || !destination || !vehicle) {
+      return { ok: false, error: "invalid load coordinates" };
+    }
+
+    if (loadingUnit.team !== activeTeam) {
+      return { ok: false, error: "that isn't your piece" };
+    }
+
+    if (loadingUnit.moved) {
+      return { ok: false, error: "that piece has already acted" };
+    }
+
+    if (peopleUnitOptions.indexOf(loadingUnit.unit) < 0) {
+      return { ok: false, error: "only people units can load into vehicles" };
+    }
+
+    if (vehicle.team !== activeTeam) {
+      return { ok: false, error: "that isn't your vehicle" };
+    }
+
+    if (vehicleUnitOptions.indexOf(vehicle.unit) < 0) {
+      return { ok: false, error: "load destination must be a vehicle" };
+    }
+
+    if (vehicle.loadedUnit) {
+      return { ok: false, error: "that vehicle is already carrying a unit" };
+    }
+
+    const loadingUnitMoves =
+      !sameCoords(gameAction.start, gameAction.end);
+
+    if (loadingUnitMoves) {
+      if (destination.unit !== "none") {
+        return { ok: false, error: "destination must be an empty space" };
+      }
+
+      const reachableCells = getAllCellsWhichCanBeReached(loadingUnit.index, Map);
+
+      if (reachableCells.indexOf(destination.index) < 0) {
+        return { ok: false, error: "destination must be in range" };
+      }
+
+      Map = moveMapUnit(Map, gameAction.start, gameAction.end);
+    }
+
+    const loadingCell = Map[gameAction.end.x]?.[gameAction.end.y];
+    const loadingVehicle = Map[gameAction.vehicle.x]?.[gameAction.vehicle.y];
+
+    if (!loadingCell || !loadingVehicle) {
+      return { ok: false, error: "invalid load coordinates" };
+    }
+
+    if (!isAdjacent(loadingCell, loadingVehicle)) {
+      return { ok: false, error: "vehicle must be adjacent to loading unit" };
+    }
+
+    if (loadingVehicle.loadedUnit) {
+      return { ok: false, error: "that vehicle is already carrying a unit" };
+    }
+
+    loadingVehicle.loadedUnit = {
+      damage: loadingCell.damage,
+      moved: true,
+      team: loadingCell.team,
+      unit: loadingCell.unit,
+    };
+    Map[gameAction.end.x][gameAction.end.y] = clearUnitFromCell(loadingCell);
+
+    gameEvents = [
+      {
+        id: `${gameId}#${Date.now().toString()}`,
+        sk: `game#${gameId}`,
+        action: "load",
+        actor: email,
+        end: gameAction.end,
+        start: gameAction.start,
+        unit: loadingUnit.unit,
+        vehicle: gameAction.vehicle,
+        vehicleUnit: loadingVehicle.unit,
+      },
+    ];
+  } else if (gameAction.action === "unload") {
+    const vehicle = Map[gameAction.start.x]?.[gameAction.start.y];
+    const destination = Map[gameAction.end.x]?.[gameAction.end.y];
+    const unloadCell = Map[gameAction.cell.x]?.[gameAction.cell.y];
+
+    if (!vehicle || !destination || !unloadCell) {
+      return { ok: false, error: "invalid unload coordinates" };
+    }
+
+    if (vehicle.team !== activeTeam) {
+      return { ok: false, error: "that isn't your piece" };
+    }
+
+    if (vehicle.moved) {
+      return { ok: false, error: "that vehicle has already acted" };
+    }
+
+    if (vehicleUnitOptions.indexOf(vehicle.unit) < 0) {
+      return { ok: false, error: "only vehicles can unload units" };
+    }
+
+    if (!vehicle.loadedUnit) {
+      return { ok: false, error: "that vehicle is not carrying a unit" };
+    }
+
+    const vehicleMoves =
+      !sameCoords(gameAction.start, gameAction.end);
+
+    if (vehicleMoves) {
+      if (destination.unit !== "none") {
+        return { ok: false, error: "destination must be an empty space" };
+      }
+
+      const reachableCells = getAllCellsWhichCanBeReached(vehicle.index, Map);
+
+      if (reachableCells.indexOf(destination.index) < 0) {
+        return { ok: false, error: "destination must be in range" };
+      }
+
+      Map = moveMapUnit(Map, gameAction.start, gameAction.end);
+    }
+
+    const activeVehicle = Map[gameAction.end.x]?.[gameAction.end.y];
+    const activeUnloadCell = Map[gameAction.cell.x]?.[gameAction.cell.y];
+
+    if (!activeVehicle || !activeUnloadCell) {
+      return { ok: false, error: "invalid unload coordinates" };
+    }
+
+    if (!activeVehicle.loadedUnit) {
+      return { ok: false, error: "that vehicle is not carrying a unit" };
+    }
+
+    if (!isAdjacent(activeVehicle, activeUnloadCell)) {
+      return { ok: false, error: "unload destination must be adjacent to the vehicle" };
+    }
+
+    if (activeUnloadCell.unit !== "none") {
+      return { ok: false, error: "unload destination must be empty" };
+    }
+
+    if (activeUnloadCell.terrain === "water") {
+      return { ok: false, error: "cannot unload onto water" };
+    }
+
+    const unloadedUnit = activeVehicle.loadedUnit;
+
+    Map[gameAction.cell.x][gameAction.cell.y] = {
+      ...activeUnloadCell,
+      damage: unloadedUnit.damage,
+      moved: unloadedUnit.moved ? true : undefined,
+      team: unloadedUnit.team,
+      unit: unloadedUnit.unit,
+    };
+    Map[gameAction.end.x][gameAction.end.y] = {
+      ...activeVehicle,
+      loadedUnit: undefined,
+      moved: true,
+    };
+
+    gameEvents = [
+      {
+        id: `${gameId}#${Date.now().toString()}`,
+        sk: `game#${gameId}`,
+        action: "unload",
+        actor: email,
+        cell: gameAction.cell,
+        end: gameAction.end,
+        start: gameAction.start,
+        unit: unloadedUnit.unit,
+        vehicleUnit: activeVehicle.unit,
+      },
+    ];
   }
 
   const gameWinCondition =
@@ -420,7 +616,17 @@ export const processGameAction = async (
     mapForDb = Map.map((row: MapItem[]) =>
       row.map((item: MapItem) => {
         const { moved, ...rest } = item;
-        return rest as MapItem;
+
+        if (!rest.loadedUnit) {
+          return rest as MapItem;
+        }
+
+        const { moved: _loadedUnitMoved, ...loadedUnitRest } = rest.loadedUnit;
+
+        return {
+          ...rest,
+          loadedUnit: loadedUnitRest,
+        } as MapItem;
       })
     );
   }

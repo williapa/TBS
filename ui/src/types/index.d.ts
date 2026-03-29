@@ -6,6 +6,7 @@ interface CellProps extends RowCol {
   hilightTargets?: (targets: number[]) => void;
   isActive: boolean;
   index: number;
+  loadedUnit?: LoadedUnit;
   onGameCellClick?: (mapItem: MapItem, position: MenuPosition) => void;
   setActor?: (args: any) => void;
   setEdit?: (args: any) => void;
@@ -111,6 +112,7 @@ enum TeamType {
 interface TerrainProps extends RowCol {
   damage?: number;
   height: number;
+  loadedUnit?: LoadedUnit;
   moved?: boolean;
   team?: TeamType;
   type: TerrainType;
@@ -184,11 +186,19 @@ const UnitType = { ...BuildingType, ...ObjectType, ...PersonType, ...AnimalType,
 type UnitType = typeof UnitType;
 type UnitTypes = BuildingType | ObjectType | PersonType | AnimalType | VehicleType;
 
+type LoadedUnit = {
+  damage?: number;
+  moved?: boolean;
+  team: TeamType;
+  unit: UnitTypes;
+};
+
 interface MapItem {
   damage?: number;
   row: number;
   column: number;
   index: number;
+  loadedUnit?: LoadedUnit;
   moved?: boolean;
   neighbors?: number[];
   terrain: TerrainType;
@@ -282,7 +292,7 @@ type SpawnableUnitType =
   | VehicleType.sub
   | VehicleType.truck;
 
-type gameActions = "attack" | "construct" | "end" |  "move" | "spawn";
+type gameActions = "attack" | "construct" | "end" | "load" | "move" | "spawn" | "unload";
 
 type Attack = {
   action: "attack";
@@ -303,6 +313,13 @@ type Construct = {
   building: BuildingType;
 };
 
+type Load = {
+  action: "load";
+  start: Coords;
+  end: Coords;
+  vehicle: Coords;
+};
+
 type Move = {
   action: "move";
   start: Coords;
@@ -316,7 +333,14 @@ type Spawn = {
   unit: SpawnableUnitType;
 };
 
-type GameAction = Attack | Construct | End | Move | Spawn;
+type Unload = {
+  action: "unload";
+  start: Coords;
+  end: Coords;
+  cell: Coords;
+};
+
+type GameAction = Attack | Construct | End | Load | Move | Spawn | Unload;
 
 type BaseGameEvent = {
   id: string;
@@ -355,6 +379,15 @@ type GameOverEvent = BaseGameEvent & {
   action: "gameOver";
 };
 
+type LoadEvent = BaseGameEvent & {
+  action: "load";
+  start: Coords;
+  end: Coords;
+  vehicle: Coords;
+  unit: string;
+  vehicleUnit: string;
+};
+
 type MoveEvent = BaseGameEvent & {
   action: "move";
   start: Coords;
@@ -370,19 +403,48 @@ type SpawnEvent = BaseGameEvent & {
   unit: SpawnableUnitType;
 };
 
-type GameEvent = AttackEvent | ConstructEvent | EndTurnEvent | GameOverEvent | MoveEvent | SpawnEvent;
+type UnloadEvent = BaseGameEvent & {
+  action: "unload";
+  start: Coords;
+  end: Coords;
+  cell: Coords;
+  unit: string;
+  vehicleUnit: string;
+};
 
-type GameInteractionMode = "idle" | "unitSelected" | "actionMenu" | "targetingAttack" | "targetingConstruct" | "targetingSpawn";
+type GameEvent =
+  | AttackEvent
+  | ConstructEvent
+  | EndTurnEvent
+  | GameOverEvent
+  | LoadEvent
+  | MoveEvent
+  | SpawnEvent
+  | UnloadEvent;
 
-type GameCellTargetType = "move" | "attack" | "construct" | "spawn";
+type GameInteractionMode =
+  | "idle"
+  | "unitSelected"
+  | "actionMenu"
+  | "targetingAttack"
+  | "targetingConstruct"
+  | "targetingLoad"
+  | "targetingSpawn"
+  | "targetingUnload";
+
+type GameCellTargetType = "move" | "attack" | "construct" | "load" | "spawn" | "unload";
 
 type GameMenuActionId =
   | "move"
   | "chooseAttack"
   | "chooseConstruct"
+  | "chooseLoad"
+  | "chooseUnload"
   | "confirmAttack"
   | "confirmConstruct"
+  | "confirmLoad"
   | "confirmSpawn"
+  | "confirmUnload"
   | "cancel"
   | `construct:${BuildingType}`
   | `spawn:${SpawnableUnitType}`;
@@ -406,7 +468,7 @@ type GameCellMenu = {
 
 type GameActionMenuState = {
   cellIndex: number;
-  kind: "origin" | "move" | "attack" | "construct" | "constructSelection" | "spawn";
+  kind: "origin" | "move" | "attack" | "construct" | "constructSelection" | "load" | "spawn" | "unload";
   options: GameMenuOption[];
   position: MenuPosition;
 };
@@ -414,18 +476,22 @@ type GameActionMenuState = {
 type GameInteractionState = {
   availableAttackTargets: number[];
   availableConstructTargets: number[];
+  availableLoadTargets: number[];
   availableMoveTargets: number[];
   availableSpawnTargets: number[];
+  availableUnloadTargets: number[];
   menu: GameActionMenuState | null;
   mode: GameInteractionMode;
   origin: Coords | null;
-  pendingAction: "attack" | "construct" | "move" | "spawn" | null;
+  pendingAction: "attack" | "construct" | "load" | "move" | "spawn" | "unload" | null;
   previewDestination: Coords | null;
   selectedAttackTarget: Coords | null;
   selectedConstructBuilding: BuildingType | null;
   selectedConstructTarget: Coords | null;
+  selectedLoadVehicle: Coords | null;
   selectedSpawnUnit: SpawnableUnitType | null;
   selectedUnit: MapItem | null;
+  selectedUnloadTarget: Coords | null;
 };
 
 type GameGridInteractionProps = {

@@ -7,8 +7,10 @@ import { useGameSocket } from "../../hooks/gameSocketContext";
 import {
   buildAttackAction,
   buildConstructAction,
+  buildLoadAction,
   buildMoveAction,
   buildSpawnAction,
+  buildUnloadAction,
   createInitialGameInteractionState,
   gameInteractionReducer,
   getSelectableUnit,
@@ -67,10 +69,26 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
     }
 
     if (
+      interactionState.pendingAction === "load" &&
+      interactionState.availableLoadTargets.includes(mapItem.index)
+    ) {
+      dispatch({ type: "SELECT_LOAD_TARGET", cell: mapItem, position });
+      return;
+    }
+
+    if (
       interactionState.pendingAction === "spawn" &&
       interactionState.availableSpawnTargets.includes(mapItem.index)
     ) {
       dispatch({ type: "SELECT_SPAWN_TARGET", cell: mapItem, position });
+      return;
+    }
+
+    if (
+      interactionState.pendingAction === "unload" &&
+      interactionState.availableUnloadTargets.includes(mapItem.index)
+    ) {
+      dispatch({ type: "SELECT_UNLOAD_TARGET", cell: mapItem, position });
       return;
     }
 
@@ -131,6 +149,16 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
       return;
     }
 
+    if (action === "chooseLoad") {
+      dispatch({ type: "CHOOSE_LOAD_MODE", map: mapData, perspective });
+      return;
+    }
+
+    if (action === "chooseUnload") {
+      dispatch({ type: "CHOOSE_UNLOAD_MODE", map: mapData });
+      return;
+    }
+
     if (action.startsWith("construct:")) {
       dispatch({
         type: "CHOOSE_CONSTRUCT_BUILDING",
@@ -181,6 +209,19 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
       return;
     }
 
+    if (action === "confirmLoad") {
+      const loadAction = buildLoadAction(interactionState);
+
+      if (!loadAction) {
+        dispatch({ type: "CANCEL_FLOW" });
+        return;
+      }
+
+      sendMove(loadAction, user, pin);
+      dispatch({ type: "CANCEL_FLOW" });
+      return;
+    }
+
     if (action === "confirmConstruct") {
       const constructAction = buildConstructAction(interactionState);
 
@@ -203,6 +244,19 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
       }
 
       sendMove(spawnAction, user, pin);
+      dispatch({ type: "CANCEL_FLOW" });
+      return;
+    }
+
+    if (action === "confirmUnload") {
+      const unloadAction = buildUnloadAction(interactionState);
+
+      if (!unloadAction) {
+        dispatch({ type: "CANCEL_FLOW" });
+        return;
+      }
+
+      sendMove(unloadAction, user, pin);
       dispatch({ type: "CANCEL_FLOW" });
     }
   };

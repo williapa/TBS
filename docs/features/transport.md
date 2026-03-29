@@ -1,5 +1,7 @@
 # Feature - transport
 
+STATUS - COMPLETE (MERGED)
+
 This document describes a feature for "transport". The goal is to make it possible for people units to be "carried" by vehicles, so that vehicles can be used to extend the range of those units, and transport them across the map.
 
 
@@ -33,3 +35,12 @@ When a people unit is unloaded, the people unit should have the same health as w
 ## Testing
 building the code and testing the code will be performed by me, manually, pending all code changes. You should attempt to make all necessary changes for the feature across common, server, and ui. 
 
+- [X] validate load
+- [X] validate move, then load
+- [X] validate unload
+- [X] validate move, then unload
+- [X] validate you cannot unload people on water (hilighting for unload, generally)
+- [X] validate moved status for people that loads & unloads same turn
+- [X] validate unmoved status for people that loads, then unloads next turn
+- [X] validate combat with loaded vehicle
+- [X] validate loaded unit dies when carrying vehicle dies

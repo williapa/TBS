@@ -18,6 +18,7 @@ const GameCell = ({
   height = 40,
   index,
   isActive,
+  loadedUnit,
   moved = false,
   neighbors,
   onGameCellClick,
@@ -28,7 +29,7 @@ const GameCell = ({
   unit = "none" as ObjectType.none,
   width = 80,
 }: CellProps) => {
-  const mapItem = { column, damage, index, moved, neighbors, row, team, terrain, unit };
+  const mapItem = { column, damage, index, loadedUnit, moved, neighbors, row, team, terrain, unit };
 
   const onCellClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!onGameCellClick) {
@@ -57,6 +58,7 @@ const GameCell = ({
           column={column}
           damage={damage}
           height={height}
+          loadedUnit={loadedUnit}
           moved={moved}
           row={row}
           team={team}

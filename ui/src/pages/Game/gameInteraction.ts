@@ -8,6 +8,8 @@ import {
   getSpawnableCells,
   getSpawnOptions,
   moveMapUnit,
+  peopleUnitOptions,
+  vehicleUnitOptions,
 } from "@TBS/common";
 import units from "../../components/Map/Unit/units";
 import { moveableOptions } from "../../components/Map/Unit/unitOptions";
@@ -16,8 +18,10 @@ import prettyPrint from "../../utils/prettyPrint";
 const emptyState = (): GameInteractionState => ({
   availableAttackTargets: [],
   availableConstructTargets: [],
+  availableLoadTargets: [],
   availableMoveTargets: [],
   availableSpawnTargets: [],
+  availableUnloadTargets: [],
   menu: null,
   mode: "idle",
   origin: null,
@@ -26,8 +30,10 @@ const emptyState = (): GameInteractionState => ({
   selectedAttackTarget: null,
   selectedConstructBuilding: null,
   selectedConstructTarget: null,
+  selectedLoadVehicle: null,
   selectedSpawnUnit: null,
   selectedUnit: null,
+  selectedUnloadTarget: null,
 });
 
 const hasAttackTargets = (targets: number[]) => targets.length > 0;
@@ -37,6 +43,11 @@ const isConstructionWorker = (unit: UnitTypes) => unit === "constructionWorker";
 const getCurrentActorCoords = (state: GameInteractionState) =>
   state.previewDestination ?? state.origin;
 
+const getCellFromCoords = (map: HexMap, coords: Coords) => map[coords.x]?.[coords.y];
+
+const getCellFromIndex = (map: HexMap, index: number) =>
+  map.flat().find((cell) => cell.index === index);
+
 const getCurrentActorCell = (map: HexMap, state: GameInteractionState) => {
   const coords = getCurrentActorCoords(state);
 
@@ -45,7 +56,9 @@ const getCurrentActorCell = (map: HexMap, state: GameInteractionState) => {
 
 const buildUnitMenuOptions = (
   attackTargets: number[],
-  allowConstruction: boolean
+  allowConstruction: boolean,
+  allowLoad: boolean,
+  allowUnload: boolean
 ): GameMenuOption[] => {
   const options: GameMenuOption[] = [];
 
@@ -53,6 +66,14 @@ const buildUnitMenuOptions = (
 
   if (allowConstruction) {
     options.push({ id: "chooseConstruct", label: "Construct" });
+  }
+
+  if (allowLoad) {
+    options.push({ id: "chooseLoad", label: "Load" });
+  }
+
+  if (allowUnload) {
+    options.push({ id: "chooseUnload", label: "Unload" });
   }
 
   if (hasAttackTargets(attackTargets)) {
@@ -69,13 +90,23 @@ const buildAttackMenuOptions = (): GameMenuOption[] => [
   { id: "cancel", label: "Cancel" },
 ];
 
+const buildConstructConfirmMenuOptions = (): GameMenuOption[] => [
+  { id: "confirmConstruct", label: "Confirm construction" },
+  { id: "cancel", label: "Cancel" },
+];
+
+const buildLoadConfirmMenuOptions = (): GameMenuOption[] => [
+  { id: "confirmLoad", label: "Confirm load" },
+  { id: "cancel", label: "Cancel" },
+];
+
 const buildSpawnConfirmMenuOptions = (): GameMenuOption[] => [
   { id: "confirmSpawn", label: "Confirm spawn" },
   { id: "cancel", label: "Cancel" },
 ];
 
-const buildConstructConfirmMenuOptions = (): GameMenuOption[] => [
-  { id: "confirmConstruct", label: "Confirm construction" },
+const buildUnloadConfirmMenuOptions = (): GameMenuOption[] => [
+  { id: "confirmUnload", label: "Confirm unload" },
   { id: "cancel", label: "Cancel" },
 ];
 
@@ -110,8 +141,6 @@ const buildConstructionMenuOptions = (availableFunds: number): GameMenuOption[] 
     { id: "cancel", label: "Cancel" },
   ];
 };
-
-const getCellFromCoords = (map: HexMap, coords: Coords) => map[coords.x]?.[coords.y];
 
 const getAttackOriginCell = (
   map: HexMap,
@@ -170,6 +199,67 @@ const getConstructableMap = (state: GameInteractionState, map: HexMap) => {
   );
 };
 
+const getPreviewMap = (state: GameInteractionState, map: HexMap) => {
+  if (!state.origin || !state.previewDestination) {
+    return map;
+  }
+
+  return moveMapUnit(
+    map.map((row) => row.map((item) => ({ ...item }))),
+    state.origin,
+    state.previewDestination
+  );
+};
+
+const getLoadableVehicleIndexes = (
+  map: HexMap,
+  actorCoords: Coords | null,
+  perspective: TeamType
+) => {
+  if (!actorCoords) {
+    return [];
+  }
+
+  const actorCell = getCellFromCoords(map, actorCoords);
+
+  if (!actorCell || !peopleUnitOptions.includes(actorCell.unit)) {
+    return [];
+  }
+
+  return (actorCell.neighbors ?? []).filter((neighborIndex) => {
+    const neighborCell = getCellFromIndex(map, neighborIndex);
+
+    return Boolean(
+      neighborCell &&
+      neighborCell.team === perspective &&
+      vehicleUnitOptions.includes(neighborCell.unit) &&
+      !neighborCell.loadedUnit
+    );
+  });
+};
+
+const getUnloadableCellIndexes = (map: HexMap, actorCoords: Coords | null) => {
+  if (!actorCoords) {
+    return [];
+  }
+
+  const actorCell = getCellFromCoords(map, actorCoords);
+
+  if (!actorCell || !vehicleUnitOptions.includes(actorCell.unit) || !actorCell.loadedUnit) {
+    return [];
+  }
+
+  return (actorCell.neighbors ?? []).filter((neighborIndex) => {
+    const neighborCell = getCellFromIndex(map, neighborIndex);
+
+    return Boolean(
+      neighborCell &&
+      neighborCell.unit === "none" &&
+      neighborCell.terrain !== "water"
+    );
+  });
+};
+
 export const getTargetedCellIndexes = (state: GameInteractionState) => {
   if (state.pendingAction === "attack") {
     return state.availableAttackTargets;
@@ -179,8 +269,16 @@ export const getTargetedCellIndexes = (state: GameInteractionState) => {
     return state.availableConstructTargets;
   }
 
+  if (state.pendingAction === "load") {
+    return state.availableLoadTargets;
+  }
+
   if (state.pendingAction === "spawn") {
     return state.availableSpawnTargets;
+  }
+
+  if (state.pendingAction === "unload") {
+    return state.availableUnloadTargets;
   }
 
   return state.availableMoveTargets;
@@ -195,8 +293,16 @@ export const getTargetType = (state: GameInteractionState): GameCellTargetType |
     return "construct";
   }
 
+  if (state.pendingAction === "load" && state.availableLoadTargets.length > 0) {
+    return "load";
+  }
+
   if (state.pendingAction === "spawn" && state.availableSpawnTargets.length > 0) {
     return "spawn";
+  }
+
+  if (state.pendingAction === "unload" && state.availableUnloadTargets.length > 0) {
+    return "unload";
   }
 
   if (state.availableMoveTargets.length > 0) {
@@ -226,10 +332,14 @@ type InteractionReducerAction =
   | { type: "CHOOSE_ATTACK_MODE"; map: HexMap; perspective: TeamType }
   | { type: "CHOOSE_CONSTRUCT_MODE"; availableFunds: number; map: HexMap; position: MenuPosition }
   | { type: "CHOOSE_CONSTRUCT_BUILDING"; building: BuildingType; map: HexMap }
+  | { type: "CHOOSE_LOAD_MODE"; map: HexMap; perspective: TeamType }
   | { type: "SELECT_CONSTRUCT_TARGET"; cell: MapItem; position: MenuPosition }
+  | { type: "SELECT_LOAD_TARGET"; cell: MapItem; position: MenuPosition }
   | { type: "SELECT_ATTACK_TARGET"; cell: MapItem; position: MenuPosition }
   | { type: "CHOOSE_SPAWN_UNIT"; map: HexMap; unit: SpawnableUnitType }
   | { type: "SELECT_SPAWN_TARGET"; cell: MapItem; position: MenuPosition }
+  | { type: "CHOOSE_UNLOAD_MODE"; map: HexMap }
+  | { type: "SELECT_UNLOAD_TARGET"; cell: MapItem; position: MenuPosition }
   | { type: "CANCEL_FLOW" }
   | { type: "RESET_AFTER_SERVER_EVENT" };
 
@@ -245,8 +355,10 @@ export const gameInteractionReducer = (
         return {
           availableAttackTargets: [],
           availableConstructTargets: [],
+          availableLoadTargets: [],
           availableMoveTargets: [],
           availableSpawnTargets: [],
+          availableUnloadTargets: [],
           menu: {
             cellIndex: action.unit.index,
             kind: "origin",
@@ -260,16 +372,20 @@ export const gameInteractionReducer = (
           selectedAttackTarget: null,
           selectedConstructBuilding: null,
           selectedConstructTarget: null,
+          selectedLoadVehicle: null,
           selectedSpawnUnit: null,
           selectedUnit: action.unit,
+          selectedUnloadTarget: null,
         };
       }
 
       return {
         availableAttackTargets: [],
         availableConstructTargets: [],
+        availableLoadTargets: [],
         availableMoveTargets: getMoveTargets(action.unit, action.map),
         availableSpawnTargets: [],
+        availableUnloadTargets: [],
         menu: null,
         mode: "unitSelected",
         origin: { x: action.unit.row, y: action.unit.column },
@@ -278,8 +394,10 @@ export const gameInteractionReducer = (
         selectedAttackTarget: null,
         selectedConstructBuilding: null,
         selectedConstructTarget: null,
+        selectedLoadVehicle: null,
         selectedSpawnUnit: null,
         selectedUnit: action.unit,
+        selectedUnloadTarget: null,
       };
     }
     case "OPEN_ORIGIN_MENU": {
@@ -287,26 +405,37 @@ export const gameInteractionReducer = (
         return state;
       }
 
+      const previewMap = getPreviewMap(state, action.map);
       const spawnOptions = buildSpawnMenuOptions(state.selectedUnit.unit, action.availableFunds);
       const attackTargets = getAttackTargets(
         action.perspective,
-        action.map,
+        previewMap,
         state.origin,
         state.previewDestination
       );
+      const actorCoords = getCurrentActorCoords(state);
+      const loadTargets = getLoadableVehicleIndexes(previewMap, actorCoords, action.perspective);
+      const unloadTargets = getUnloadableCellIndexes(previewMap, actorCoords);
       const allowConstruction = isConstructionWorker(state.selectedUnit.unit);
 
       return {
         ...state,
         availableAttackTargets: attackTargets,
         availableConstructTargets: [],
+        availableLoadTargets: loadTargets,
         availableSpawnTargets: [],
+        availableUnloadTargets: unloadTargets,
         menu: {
-          cellIndex: getCurrentActorCell(action.map, state)?.index ?? state.selectedUnit.index,
+          cellIndex: getCurrentActorCell(previewMap, state)?.index ?? state.selectedUnit.index,
           kind: "origin",
           options: spawnOptions.length > 1
             ? spawnOptions
-            : buildUnitMenuOptions(attackTargets, allowConstruction),
+            : buildUnitMenuOptions(
+                attackTargets,
+                allowConstruction,
+                loadTargets.length > 0,
+                unloadTargets.length > 0
+              ),
           position: action.position,
         },
         mode: "actionMenu",
@@ -314,7 +443,9 @@ export const gameInteractionReducer = (
         selectedAttackTarget: null,
         selectedConstructBuilding: null,
         selectedConstructTarget: null,
+        selectedLoadVehicle: null,
         selectedSpawnUnit: null,
+        selectedUnloadTarget: null,
       };
     }
     case "CHOOSE_MOVE_MODE": {
@@ -326,15 +457,19 @@ export const gameInteractionReducer = (
         ...state,
         availableAttackTargets: [],
         availableConstructTargets: [],
+        availableLoadTargets: [],
         availableMoveTargets: getMoveTargets(state.selectedUnit, action.map),
         availableSpawnTargets: [],
+        availableUnloadTargets: [],
         menu: null,
         mode: "unitSelected",
         pendingAction: null,
         selectedAttackTarget: null,
         selectedConstructBuilding: null,
         selectedConstructTarget: null,
+        selectedLoadVehicle: null,
         selectedSpawnUnit: null,
+        selectedUnloadTarget: null,
       };
     }
     case "CHOOSE_MOVE_TARGET": {
@@ -343,22 +478,36 @@ export const gameInteractionReducer = (
       }
 
       const previewDestination = { x: action.cell.row, y: action.cell.column };
+      const previewState = {
+        ...state,
+        previewDestination,
+      };
+      const previewMap = getPreviewMap(previewState, action.map);
       const attackTargets = getAttackTargets(
         action.perspective,
-        action.map,
+        previewMap,
         state.origin,
         previewDestination
       );
+      const loadTargets = getLoadableVehicleIndexes(previewMap, previewDestination, action.perspective);
+      const unloadTargets = getUnloadableCellIndexes(previewMap, previewDestination);
 
       return {
         ...state,
         availableAttackTargets: attackTargets,
         availableConstructTargets: [],
+        availableLoadTargets: loadTargets,
         availableSpawnTargets: [],
+        availableUnloadTargets: unloadTargets,
         menu: {
           cellIndex: action.cell.index,
           kind: "move",
-          options: buildUnitMenuOptions(attackTargets, isConstructionWorker(state.selectedUnit.unit)),
+          options: buildUnitMenuOptions(
+            attackTargets,
+            isConstructionWorker(state.selectedUnit.unit),
+            loadTargets.length > 0,
+            unloadTargets.length > 0
+          ),
           position: action.position,
         },
         mode: "actionMenu",
@@ -367,7 +516,9 @@ export const gameInteractionReducer = (
         selectedAttackTarget: null,
         selectedConstructBuilding: null,
         selectedConstructTarget: null,
+        selectedLoadVehicle: null,
         selectedSpawnUnit: null,
+        selectedUnloadTarget: null,
       };
     }
     case "CHOOSE_ATTACK_MODE": {
@@ -384,7 +535,9 @@ export const gameInteractionReducer = (
           state.previewDestination
         ),
         availableConstructTargets: [],
+        availableLoadTargets: [],
         availableSpawnTargets: [],
+        availableUnloadTargets: [],
         menu: null,
         mode: "targetingAttack",
         pendingAction: "attack",
@@ -405,8 +558,10 @@ export const gameInteractionReducer = (
         ...state,
         availableAttackTargets: [],
         availableConstructTargets: [],
+        availableLoadTargets: [],
         availableMoveTargets: [],
         availableSpawnTargets: [],
+        availableUnloadTargets: [],
         menu: {
           cellIndex: actorCell.index,
           kind: "constructSelection",
@@ -418,7 +573,9 @@ export const gameInteractionReducer = (
         selectedAttackTarget: null,
         selectedConstructBuilding: null,
         selectedConstructTarget: null,
+        selectedLoadVehicle: null,
         selectedSpawnUnit: null,
+        selectedUnloadTarget: null,
       };
     }
     case "CHOOSE_CONSTRUCT_BUILDING": {
@@ -437,14 +594,41 @@ export const gameInteractionReducer = (
           currentCoords,
           action.building
         ),
+        availableLoadTargets: [],
         availableSpawnTargets: [],
+        availableUnloadTargets: [],
         menu: null,
         mode: "targetingConstruct",
         pendingAction: "construct",
         selectedAttackTarget: null,
         selectedConstructBuilding: action.building,
         selectedConstructTarget: null,
+        selectedLoadVehicle: null,
         selectedSpawnUnit: null,
+        selectedUnloadTarget: null,
+      };
+    }
+    case "CHOOSE_LOAD_MODE": {
+      const currentCoords = getCurrentActorCoords(state);
+      const previewMap = getPreviewMap(state, action.map);
+
+      return {
+        ...state,
+        availableAttackTargets: [],
+        availableConstructTargets: [],
+        availableLoadTargets: getLoadableVehicleIndexes(previewMap, currentCoords, action.perspective),
+        availableMoveTargets: [],
+        availableSpawnTargets: [],
+        availableUnloadTargets: [],
+        menu: null,
+        mode: "targetingLoad",
+        pendingAction: "load",
+        selectedAttackTarget: null,
+        selectedConstructBuilding: null,
+        selectedConstructTarget: null,
+        selectedLoadVehicle: null,
+        selectedSpawnUnit: null,
+        selectedUnloadTarget: null,
       };
     }
     case "SELECT_CONSTRUCT_TARGET": {
@@ -459,6 +643,20 @@ export const gameInteractionReducer = (
         mode: "actionMenu",
         pendingAction: "construct",
         selectedConstructTarget: { x: action.cell.row, y: action.cell.column },
+      };
+    }
+    case "SELECT_LOAD_TARGET": {
+      return {
+        ...state,
+        menu: {
+          cellIndex: action.cell.index,
+          kind: "load",
+          options: buildLoadConfirmMenuOptions(),
+          position: action.position,
+        },
+        mode: "actionMenu",
+        pendingAction: "load",
+        selectedLoadVehicle: { x: action.cell.row, y: action.cell.column },
       };
     }
     case "SELECT_ATTACK_TARGET": {
@@ -485,7 +683,9 @@ export const gameInteractionReducer = (
         availableAttackTargets: [],
         availableMoveTargets: [],
         availableConstructTargets: [],
+        availableLoadTargets: [],
         availableSpawnTargets: getSpawnableCells(action.map, state.origin, action.unit),
+        availableUnloadTargets: [],
         menu: null,
         mode: "targetingSpawn",
         pendingAction: "spawn",
@@ -493,7 +693,9 @@ export const gameInteractionReducer = (
         selectedAttackTarget: null,
         selectedConstructBuilding: null,
         selectedConstructTarget: null,
+        selectedLoadVehicle: null,
         selectedSpawnUnit: action.unit,
+        selectedUnloadTarget: null,
       };
     }
     case "SELECT_SPAWN_TARGET": {
@@ -508,6 +710,43 @@ export const gameInteractionReducer = (
         mode: "actionMenu",
         pendingAction: "spawn",
         previewDestination: { x: action.cell.row, y: action.cell.column },
+      };
+    }
+    case "CHOOSE_UNLOAD_MODE": {
+      const currentCoords = getCurrentActorCoords(state);
+      const previewMap = getPreviewMap(state, action.map);
+
+      return {
+        ...state,
+        availableAttackTargets: [],
+        availableConstructTargets: [],
+        availableLoadTargets: [],
+        availableMoveTargets: [],
+        availableSpawnTargets: [],
+        availableUnloadTargets: getUnloadableCellIndexes(previewMap, currentCoords),
+        menu: null,
+        mode: "targetingUnload",
+        pendingAction: "unload",
+        selectedAttackTarget: null,
+        selectedConstructBuilding: null,
+        selectedConstructTarget: null,
+        selectedLoadVehicle: null,
+        selectedSpawnUnit: null,
+        selectedUnloadTarget: null,
+      };
+    }
+    case "SELECT_UNLOAD_TARGET": {
+      return {
+        ...state,
+        menu: {
+          cellIndex: action.cell.index,
+          kind: "unload",
+          options: buildUnloadConfirmMenuOptions(),
+          position: action.position,
+        },
+        mode: "actionMenu",
+        pendingAction: "unload",
+        selectedUnloadTarget: { x: action.cell.row, y: action.cell.column },
       };
     }
     case "CANCEL_FLOW":
@@ -559,6 +798,19 @@ export const buildConstructAction = (state: GameInteractionState): GameAction | 
   };
 };
 
+export const buildLoadAction = (state: GameInteractionState): GameAction | null => {
+  if (!state.origin || !state.selectedLoadVehicle) {
+    return null;
+  }
+
+  return {
+    action: "load",
+    end: state.previewDestination ?? state.origin,
+    start: state.origin,
+    vehicle: state.selectedLoadVehicle,
+  };
+};
+
 export const buildSpawnAction = (state: GameInteractionState): GameAction | null => {
   if (!state.origin || !state.previewDestination || !state.selectedSpawnUnit) {
     return null;
@@ -569,5 +821,18 @@ export const buildSpawnAction = (state: GameInteractionState): GameAction | null
     building: state.origin,
     end: state.previewDestination,
     unit: state.selectedSpawnUnit,
+  };
+};
+
+export const buildUnloadAction = (state: GameInteractionState): GameAction | null => {
+  if (!state.origin || !state.selectedUnloadTarget) {
+    return null;
+  }
+
+  return {
+    action: "unload",
+    cell: state.selectedUnloadTarget,
+    end: state.previewDestination ?? state.origin,
+    start: state.origin,
   };
 };

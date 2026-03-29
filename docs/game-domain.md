@@ -60,12 +60,22 @@ This section outlines game functions which have not yet been implemented.
 ## Units
 
 ### People
+
+Status: construction for construction workers is implemented. Other special abilities could come later
+
 There are multiple different types of people units. Eventually, each should have custom special abilties, beyond unique energy, attack, and defense. As one example, the "worker" might be able to transform cell terrain, such as changing a forest into a plain, or a plain into a road. a "construction worker" might be able to build certain types of buildings, like houses. A zookeeper might be able to create a zoo. Performing these actions would consume money and have to be done in place of an attack on that turn. More about money later.
 
+
 ### Vehicles
+
+Status: people can now load into vehicles and be unloaded, defined as "transport". combat stats are NOT currently augmented based on the caried unit. Vehicle movement does not yet consume money.
+
 currently, vehicles can move but not attack. In the future, it might make sense for vehicles to be able to "carry" people units, so that both units would occupy the same cell. Depending on the person and vehicle, the combination of the 2 units might be able to attack with increased attack/defense. Or, they might function simply as a way to extend range - consider a "boat" unit, being able to transport people across a set of water-terrain cells, as a shortcut. Once a "money" feature has been implemented, vehicle movement should consume some amount of money per cell, the idea being that the vehicle requires fuel, which costs money. 
 
 ### Buildings
+
+Status: "spawn" has been implemented, allowing all buildings to spawn units for cost.
+
 currently, buildings do nothing except act as a blocking/defense unit. However, in the future, buildings might be able to spawn new unit types, based on the type of building. An airport might be able to spawn pilots, or airplane vehicles. A zoo might be able to spawn animals. These definitions would need to be added to 'common'. 
 
 ### Objects
@@ -75,4 +85,7 @@ Currently, objects simply occupy cells and cannot be attacked or consumed. But, 
 Currently, terrain affects energy consumed by moving units. In the future, however, terrain could be used to impact attack / defense. If you are attacking from a "beach" cell, this might negatively impact your attack and defense. 
 
 ## Money 
+
+Status: "spawn" and "construction" now consume money. 
+
 Currently, money is a real game attribute and certain buildings can produce income each turn. In the future, this money will be able to be spent, allowing players to spawn new units, build buildings, and expand their power.

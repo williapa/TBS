@@ -8,8 +8,10 @@ const moveMapUnit = (mapData: MapItem[][], start: Coords, end: Coords) => {
   const oldItem = { ...mapData[start.x][start.y] };
   newItem.team = oldItem.team;
   newItem.unit = oldItem.unit;
+  newItem.loadedUnit = oldItem.loadedUnit;
   newItem.moved = true;
   newItem.damage = oldItem.damage;
+  oldItem.loadedUnit = undefined;
   oldItem.team = "gray";
   oldItem.unit = "none";
   oldItem.damage = undefined;

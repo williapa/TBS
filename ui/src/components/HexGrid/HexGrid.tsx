@@ -125,6 +125,7 @@ const HexGrid = ({
             height={triangleHeight}
             index={item.index}
             isActive={mode === "game" ? isActiveCell(item) : false}
+            loadedUnit={item.loadedUnit}
             mode={mode}
             moved={item.moved}
             neighbors={item.neighbors}

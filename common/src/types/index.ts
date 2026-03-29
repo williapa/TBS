@@ -3,12 +3,20 @@ export interface MapItem {
   column: number;
   damage?: number;
   index: number;
+  loadedUnit?: LoadedUnit;
   moved?: boolean;
   neighbors?: number[];
   terrain: any;
   unit: any;
   team: any;
 }
+
+export type LoadedUnit = {
+  damage?: number;
+  moved?: boolean;
+  team: any;
+  unit: any;
+};
 
 export type Coords = {
   x: number;
@@ -162,12 +170,20 @@ export type ConstructionOption = {
   invalidTerrains: TerrainOption[];
 };
 
-export const supportedActions = ["attack", "construct", "end", "move", "spawn"] as const;
+export const supportedActions = ["attack", "construct", "end", "load", "move", "spawn", "unload"] as const;
 
 export type gameActions = (typeof supportedActions)[number];
 
-export type GameAction = Attack | Construct | End | Move | Spawn;
-export type GameEvent = AttackEvent | ConstructEvent | EndTurnEvent | GameOverEvent | MoveEvent | SpawnEvent;
+export type GameAction = Attack | Construct | End | Load | Move | Spawn | Unload;
+export type GameEvent =
+  | AttackEvent
+  | ConstructEvent
+  | EndTurnEvent
+  | GameOverEvent
+  | LoadEvent
+  | MoveEvent
+  | SpawnEvent
+  | UnloadEvent;
 
 type Attack = {
   action: "attack";
@@ -188,6 +204,13 @@ export type Construct = {
   building: BuildingUnitOption;
 };
 
+export type Load = {
+  action: "load";
+  start: Coords;
+  end: Coords;
+  vehicle: Coords;
+};
+
 export type Move = {
   action: "move";
   start: Coords;
@@ -199,6 +222,13 @@ export type Spawn = {
   building: Coords;
   end: Coords;
   unit: SpawnableUnitOption;
+};
+
+export type Unload = {
+  action: "unload";
+  start: Coords;
+  end: Coords;
+  cell: Coords;
 };
 
 type BaseGameEvent = {
@@ -238,6 +268,15 @@ export type GameOverEvent = BaseGameEvent & {
   action: "gameOver";
 };
 
+export type LoadEvent = BaseGameEvent & {
+  action: "load";
+  start: Coords;
+  end: Coords;
+  vehicle: Coords;
+  unit: string;
+  vehicleUnit: string;
+};
+
 export type MoveEvent = BaseGameEvent & {
   action: "move";
   start: Coords;
@@ -251,5 +290,14 @@ export type SpawnEvent = BaseGameEvent & {
   cost: number;
   end: Coords;
   unit: SpawnableUnitOption;
+};
+
+export type UnloadEvent = BaseGameEvent & {
+  action: "unload";
+  start: Coords;
+  end: Coords;
+  cell: Coords;
+  unit: string;
+  vehicleUnit: string;
 };
 

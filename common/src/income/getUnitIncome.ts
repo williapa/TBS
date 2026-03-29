@@ -18,7 +18,7 @@ const getUnitIncome = (item: MapItem): number => {
   
   const unitType = item.unit;
 
-  if (buildingUnitOptions.indexOf(unitType) > 0) return 0;
+  if (buildingUnitOptions.indexOf(unitType) === -1) return 0;
 
   return buildingIncomeMap[unitType];
 

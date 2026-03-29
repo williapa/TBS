@@ -1,5 +1,7 @@
 # Feature - Construction
 
+STATUS - COMPLETE (MERGED)
+
 This file describes the "construction" feature. Construction will allow construction workers to construct buildings for a monetary fee. 
 
 ## Flow

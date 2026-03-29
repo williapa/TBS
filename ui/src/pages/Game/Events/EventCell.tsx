@@ -26,8 +26,14 @@ const EventCell = ({ event }: { event: GameEvent }) => {
     case "construct":
       res = `${event.actor} spent ${event.cost} to construct a ${prettyPrint(event.building).toLowerCase()}.`;
       break;
+    case "load":
+      res = `${event.actor} loaded ${prettyPrint(event.unit).toLowerCase()} into ${prettyPrint(event.vehicleUnit).toLowerCase()}.`;
+      break;
     case "spawn":
       res = `${event.actor} spent ${event.cost} to spawn a ${prettyPrint(event.unit).toLowerCase()}.`;
+      break;
+    case "unload":
+      res = `${event.actor} unloaded ${prettyPrint(event.unit).toLowerCase()} from ${prettyPrint(event.vehicleUnit).toLowerCase()}.`;
       break;
     case "gameOver":
       res = `${event.actor} won the game! the game is over. `;

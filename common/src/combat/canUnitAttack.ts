@@ -1,9 +1,8 @@
-import { animalUnitOptions, peopleUnitOptions } from "../types";
+import { animalUnitOptions, peopleUnitOptions, vehicleUnitOptions } from "../types";
 
 const canUnitAttack = (unit: string) => {
-  // soldier, dragon and lion can attack. that's it (for now)
-  const soldier = peopleUnitOptions[9] || "soldier";
-  return (animalUnitOptions.indexOf(unit) > -1 || unit === soldier);
+  // people, animals, and vehicles can attack
+  return (animalUnitOptions.indexOf(unit) > -1 || peopleUnitOptions.indexOf(unit) > -1 || vehicleUnitOptions.indexOf(unit) > -1);
 };
 
 export default canUnitAttack;

@@ -6,7 +6,7 @@ import {
 const constructionOptions: ConstructionOption[] = [
   { building: "airport", cost: 1000, invalidTerrains: ["water"] },
   { building: "bank", cost: 2000, invalidTerrains: ["water"] },
-  { building: "capital", cost: 10000, invalidTerrains: ["water"] },
+  { building: "capital", cost: 10000, invalidTerrains: ["water"] }, // todo: maybe don't have capitals be buildable? if so decide how win condition accounts for capitals, maybe enforce 1 capital max?
   { building: "church", cost: 1500, invalidTerrains: ["water"] },
   { building: "college", cost: 3000, invalidTerrains: ["water"] },
   { building: "factory", cost: 2000, invalidTerrains: ["water"] },

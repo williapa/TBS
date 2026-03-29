@@ -22,6 +22,7 @@ import {
   ConstructionOption,
   moveableOptions,
   MapItem,
+  peopleUnitOptions,
   Coords,
   GameEvent,
   GameAction,
@@ -31,6 +32,7 @@ import {
   TerrainOption,
   teamOptions,
   TeamOption,
+  vehicleUnitOptions,
   winConditions,
   WinCondition,
 } from "./types";
@@ -62,12 +64,14 @@ export {
   TerrainOption,
   buildingUnitOptions,
   moveableOptions,
+  peopleUnitOptions,
   moveMapUnit,
   startingMoney,
   supportedActions,
   teamOptions,
   TeamOption,
   validateUser,
+  vehicleUnitOptions,
   winConditions,
   WinCondition
 };
