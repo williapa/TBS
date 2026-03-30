@@ -37,7 +37,17 @@ const getEffectiveCombatStats = (item: MapItem, opponent: MapItem): CombatStats 
     (rule) => rule.unit === item.unit && rule.matches(opponent)
   );
 
-  return matchingRule?.stats ?? getCombatStats(item);
+  if (matchingRule) {
+    return matchingRule.stats;
+  }
+
+  const baseStats = getCombatStats(item);
+
+  if (item.boosted) {
+    return [baseStats[0] + 10, baseStats[1] + 10];
+  }
+
+  return baseStats;
 };
 
 export default getEffectiveCombatStats;

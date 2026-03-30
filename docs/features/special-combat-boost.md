@@ -12,7 +12,7 @@ All boosts will add +10 to the boosted unit's default attack AND defense stat, r
 
 A boost is secondary to a combat "bonus" - the bonus stats should override any boost effects. However, if a unit is in combat against an opponent who will receive a bonus stat enhancement, the unit not receiving the bonus should still be enhanced by a "boost", if it applies.
 
-Finally, a unit which has been boosted should be altered visually, so it is apparent to users that the unit has been boosted. I suggest that the emoji should be colored gold to reflect this change.
+Finally, a unit which has been boosted should be altered visually, so it is apparent to users that the unit has been boosted. I suggest that the emoji should be colored white to reflect this change.
 
 The units which can perform boosts, and their valid target units, are described below.
 
@@ -69,7 +69,7 @@ Implement boost as a new persistent unit state on `MapItem` and `LoadedUnit`, pl
   - Ensure the initial click still shows movement targets first; boost only appears after a move destination is chosen or origin is re-opened for a zero-move action.
 - Update unit rendering in `ui/src/components/Map/Cell/Terrain/Terrain.tsx` and/or `ui/src/components/Map/Unit/Unit.tsx`:
   - Pass `boosted` through rendering props.
-  - Visually distinguish boosted units with a gold treatment on the emoji/symbol.
+  - Visually distinguish boosted units with a white treatment on the emoji/symbol.
   - Apply the same indicator to loaded units if their `loadedUnit.boosted` is true, so persisted boost state stays visible consistently.
 
 ## Test Plan

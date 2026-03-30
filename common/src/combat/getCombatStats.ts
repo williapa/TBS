@@ -20,7 +20,7 @@ const getCombatStats = (item: MapItem): CombatStats => {
 
   if (unit === "office") return [0, 40];
 
-  if (isBuildingUnit(unit)) return [0,80];
+  if (isBuildingUnit(unit)) return [0,60];
 
   if (vehicleUnitOptions.indexOf(unit) > -1) return [20, 60]; // todo: define unique values in unitMap for vehicles
 

@@ -6,6 +6,7 @@ import useUser from "../../hooks/useUser";
 import { useGameSocket } from "../../hooks/gameSocketContext";
 import {
   buildAttackAction,
+  buildBoostAction,
   buildConstructAction,
   buildLoadAction,
   buildMoveAction,
@@ -74,6 +75,14 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
       interactionState.availableConstructTargets.includes(mapItem.index)
     ) {
       dispatch({ type: "SELECT_CONSTRUCT_TARGET", cell: mapItem, position });
+      return;
+    }
+
+    if (
+      interactionState.pendingAction === "boost" &&
+      interactionState.availableBoostTargets.includes(mapItem.index)
+    ) {
+      dispatch({ type: "SELECT_BOOST_TARGET", cell: mapItem, position });
       return;
     }
 
@@ -148,6 +157,11 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
       return;
     }
 
+    if (action === "chooseBoost") {
+      dispatch({ type: "CHOOSE_BOOST_MODE", map: mapData, perspective });
+      return;
+    }
+
     if (action === "chooseConstruct") {
       dispatch({
         type: "CHOOSE_CONSTRUCT_MODE",
@@ -218,6 +232,19 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
       return;
     }
 
+    if (action === "confirmBoost") {
+      const boostAction = buildBoostAction(interactionState);
+
+      if (!boostAction) {
+        dispatch({ type: "CANCEL_FLOW" });
+        return;
+      }
+
+      sendMove(boostAction, user, pin);
+      dispatch({ type: "CANCEL_FLOW" });
+      return;
+    }
+
     if (action === "confirmMissileLaunch" || action === "confirmNukeLaunch") {
       const moveAction = buildMoveAction(interactionState);
 
@@ -280,6 +307,7 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
 
       sendMove(unloadAction, user, pin);
       dispatch({ type: "CANCEL_FLOW" });
+      return;
     }
   };
 

@@ -117,6 +117,7 @@ const HexGrid = ({
           }}
         >
           <Cell
+            boosted={item.boosted}
             callback={callback}
             column={item.column}
             damage={item.damage}

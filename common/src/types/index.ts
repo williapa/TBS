@@ -2,6 +2,7 @@ export interface MapItem {
   row: number;
   column: number;
   damage?: number;
+  boosted?: boolean;
   index: number;
   loadedUnit?: LoadedUnit;
   moved?: boolean;
@@ -13,6 +14,7 @@ export interface MapItem {
 
 export type LoadedUnit = {
   damage?: number;
+  boosted?: boolean;
   moved?: boolean;
   team: any;
   unit: any;
@@ -171,13 +173,14 @@ export type ConstructionOption = {
   invalidTerrains: TerrainOption[];
 };
 
-export const supportedActions = ["attack", "construct", "end", "load", "move", "spawn", "unload"] as const;
+export const supportedActions = ["attack", "boost", "construct", "end", "load", "move", "spawn", "unload"] as const;
 
 export type gameActions = (typeof supportedActions)[number];
 
-export type GameAction = Attack | Construct | End | Load | Move | Spawn | Unload;
+export type GameAction = Attack | Boost | Construct | End | Load | Move | Spawn | Unload;
 export type GameEvent =
   | AttackEvent
+  | BoostEvent
   | ConstructEvent
   | EndTurnEvent
   | GameOverEvent
@@ -191,6 +194,13 @@ type Attack = {
   attacker: Coords;
   defender: Coords;
   end: Coords;
+};
+
+export type Boost = {
+  action: "boost";
+  start: Coords;
+  end: Coords;
+  target: Coords;
 };
 
 export type End = {
@@ -249,6 +259,17 @@ export type AttackEvent = BaseGameEvent & {
   attackDamage: number;
   defenseDamage: number;
   deaths: unknown[];
+  consumedObject?: ObjectUnitOption;
+  moneyAward?: number;
+};
+
+export type BoostEvent = BaseGameEvent & {
+  action: "boost";
+  start: Coords;
+  end: Coords;
+  target: Coords;
+  unit: string;
+  boostedUnit: string;
   consumedObject?: ObjectUnitOption;
   moneyAward?: number;
 };

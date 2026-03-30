@@ -1,5 +1,7 @@
 import {
   attackUnit,
+  canReceiveBoost,
+  canUnitBoost,
   canUnitCollectObjects,
   buildingUnitOptions,
   checkForDead,
@@ -70,6 +72,7 @@ const isAdjacent = (origin: MapItem, target: MapItem) =>
 const clearUnitFromCell = (cell: MapItem): MapItem => ({
   ...cell,
   damage: undefined,
+  boosted: undefined,
   loadedUnit: undefined,
   moved: undefined,
   team: "gray",
@@ -268,7 +271,7 @@ export const processGameAction = async (
     return {
       ok: false,
       error:
-        "not a valid action. valid actions are - 'move', 'end', 'attack', 'spawn', 'construct', 'load', 'unload'.",
+        "not a valid action. valid actions are - 'move', 'end', 'attack', 'boost', 'spawn', 'construct', 'load', 'unload'.",
     };
   }
 
@@ -424,6 +427,112 @@ export const processGameAction = async (
       moveEvent = objectResolution.gameEvent;
       gameEvents = [moveEvent];
     }
+  } else if (gameAction.action === "boost") {
+    const boostingUnit = Map[gameAction.start.x]?.[gameAction.start.y];
+    const destination = Map[gameAction.end.x]?.[gameAction.end.y];
+    const boostTarget = Map[gameAction.target.x]?.[gameAction.target.y];
+
+    if (!boostingUnit || !destination || !boostTarget) {
+      return { ok: false, error: "invalid boost coordinates" };
+    }
+
+    if (boostingUnit.team !== activeTeam) {
+      return { ok: false, error: "that isn't your piece" };
+    }
+
+    if (boostingUnit.moved) {
+      return { ok: false, error: "that piece has already acted" };
+    }
+
+    if (!canUnitBoost(boostingUnit.unit)) {
+      return { ok: false, error: "that piece cannot boost other units" };
+    }
+
+    const boostingUnitMoves = !sameCoords(gameAction.start, gameAction.end);
+
+    if (boostingUnitMoves) {
+      if (
+        destination.unit !== "none" &&
+        !(
+          getConsumableObjectAtCell(destination) === "money" &&
+          canUnitCollectObjects(boostingUnit.unit)
+        )
+      ) {
+        return { ok: false, error: "destination must be an empty space" };
+      }
+
+      const reachableCells = getAllCellsWhichCanBeReached(boostingUnit.index, Map);
+
+      if (reachableCells.indexOf(destination.index) < 0) {
+        return { ok: false, error: "destination must be in range" };
+      }
+
+      Map = moveMapUnit(Map, gameAction.start, gameAction.end);
+    }
+
+    const activeBoostingUnit = Map[gameAction.end.x]?.[gameAction.end.y];
+    const activeBoostTarget = Map[gameAction.target.x]?.[gameAction.target.y];
+
+    if (!activeBoostingUnit || !activeBoostTarget) {
+      return { ok: false, error: "invalid boost coordinates" };
+    }
+
+    if (!isAdjacent(activeBoostingUnit, activeBoostTarget)) {
+      return { ok: false, error: "boost target must be adjacent to the boosting unit" };
+    }
+
+    if (activeBoostTarget.team !== activeTeam) {
+      return { ok: false, error: "boost target must be a friendly unit" };
+    }
+
+    if (activeBoostTarget.unit === "none") {
+      return { ok: false, error: "boost target must contain a unit" };
+    }
+
+    if (activeBoostTarget.boosted) {
+      return { ok: false, error: "that unit has already been boosted" };
+    }
+
+    if (!canReceiveBoost(activeBoostingUnit.unit, activeBoostTarget.unit)) {
+      return { ok: false, error: "that unit cannot boost the selected target" };
+    }
+
+    const boostDestinationObject = getConsumableObjectAtCell(destination);
+
+    Map[gameAction.end.x][gameAction.end.y] = {
+      ...activeBoostingUnit,
+      moved: true,
+    };
+    Map[gameAction.target.x][gameAction.target.y] = {
+      ...activeBoostTarget,
+      boosted: true,
+    };
+
+    if (boostDestinationObject === "money") {
+      const moneyReward = applyMoneyReward(activeTeam);
+      creatorMoney += moneyReward.creatorMoneyDelta;
+      challengerMoney += moneyReward.challengerMoneyDelta;
+    }
+
+    gameEvents = [
+      {
+        id: `${gameId}#${Date.now().toString()}`,
+        sk: `game#${gameId}`,
+        action: "boost",
+        actor: email,
+        end: gameAction.end,
+        start: gameAction.start,
+        target: gameAction.target,
+        unit: boostingUnit.unit,
+        boostedUnit: activeBoostTarget.unit,
+        ...(boostDestinationObject === "money"
+          ? {
+              consumedObject: boostDestinationObject,
+              moneyAward: MONEY_OBJECT_REWARD,
+            }
+          : {}),
+      },
+    ];
   } else if (gameAction.action === "spawn") {
     const building = Map[gameAction.building.x]?.[gameAction.building.y];
     const destination = Map[gameAction.end.x]?.[gameAction.end.y];
@@ -680,6 +789,7 @@ export const processGameAction = async (
 
     loadingVehicle.loadedUnit = {
       damage: loadingCell.damage,
+      boosted: loadingCell.boosted,
       moved: true,
       team: loadingCell.team,
       unit: loadingCell.unit,
@@ -789,6 +899,7 @@ export const processGameAction = async (
     Map[gameAction.cell.x][gameAction.cell.y] = {
       ...activeUnloadCell,
       damage: unloadedUnit.damage,
+      boosted: unloadedUnit.boosted,
       moved: unloadedUnit.moved ? true : undefined,
       team: unloadedUnit.team,
       unit: unloadedUnit.unit,

@@ -25,6 +25,7 @@ import {
 } from "./objects";
 import getSpawnOptions from "./spawn/getSpawnOptions";
 import getSpawnableCells from "./spawn/getSpawnableCells";
+import { canReceiveBoost, canUnitBoost, getBoostableCellIndexes } from "./boost";
 import {
   buildingUnitOptions,
   BuildingUnitOption,
@@ -55,8 +56,11 @@ export {
   checkMapHasMovableCombatUnits,
   ConstructionOption,
   BuildingUnitOption,
+  canReceiveBoost,
+  canUnitBoost,
   Coords,
   canUnitCollectObjects,
+  getBoostableCellIndexes,
   getAllCellsWhichCanBeReached,
   getAttackableCells,
   getConstructionOptions,

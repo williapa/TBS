@@ -2,6 +2,7 @@ import {
   GameAction,
   MapItem,
   canUnitCollectObjects,
+  getBoostableCellIndexes,
   getAllCellsWhichCanBeReached,
   getAttackableCells,
   getConsumableObjectAtCell,
@@ -20,6 +21,7 @@ import prettyPrint from "../../utils/prettyPrint";
 
 const emptyState = (): GameInteractionState => ({
   availableAttackTargets: [],
+  availableBoostTargets: [],
   availableConstructTargets: [],
   availableLoadTargets: [],
   availableMoveTargets: [],
@@ -31,6 +33,7 @@ const emptyState = (): GameInteractionState => ({
   pendingAction: null,
   previewDestination: null,
   selectedAttackTarget: null,
+  selectedBoostTarget: null,
   selectedConstructBuilding: null,
   selectedConstructTarget: null,
   selectedLoadVehicle: null,
@@ -59,6 +62,7 @@ const getCurrentActorCell = (map: HexMap, state: GameInteractionState) => {
 
 const buildUnitMenuOptions = (
   attackTargets: number[],
+  boostTargets: number[],
   allowConstruction: boolean,
   allowLoad: boolean,
   allowUnload: boolean
@@ -79,6 +83,10 @@ const buildUnitMenuOptions = (
     options.push({ id: "chooseUnload", label: "Unload" });
   }
 
+  if (boostTargets.length > 0) {
+    options.push({ id: "chooseBoost", label: "Boost" });
+  }
+
   if (hasAttackTargets(attackTargets)) {
     options.push({ id: "chooseAttack", label: "Attack" });
   }
@@ -90,6 +98,11 @@ const buildUnitMenuOptions = (
 
 const buildAttackMenuOptions = (): GameMenuOption[] => [
   { id: "confirmAttack", label: "Confirm attack" },
+  { id: "cancel", label: "Cancel" },
+];
+
+const buildBoostMenuOptions = (): GameMenuOption[] => [
+  { id: "confirmBoost", label: "Confirm boost" },
   { id: "cancel", label: "Cancel" },
 ];
 
@@ -285,9 +298,27 @@ const getUnloadableCellIndexes = (map: HexMap, actorCoords: Coords | null) => {
   });
 };
 
+const getBoostableTargetIndexes = (
+  map: HexMap,
+  actorCoords: Coords | null,
+  perspective: TeamType
+) => {
+  if (!actorCoords) {
+    return [];
+  }
+
+  const actorCell = getCellFromCoords(map, actorCoords);
+
+  return getBoostableCellIndexes(map, actorCell, perspective);
+};
+
 export const getTargetedCellIndexes = (state: GameInteractionState) => {
   if (state.pendingAction === "attack") {
     return state.availableAttackTargets;
+  }
+
+  if (state.pendingAction === "boost") {
+    return state.availableBoostTargets;
   }
 
   if (state.pendingAction === "missile" || state.pendingAction === "nuke") {
@@ -316,6 +347,10 @@ export const getTargetedCellIndexes = (state: GameInteractionState) => {
 export const getTargetType = (state: GameInteractionState): GameCellTargetType | null => {
   if (state.pendingAction === "attack" && state.availableAttackTargets.length > 0) {
     return "attack";
+  }
+
+  if (state.pendingAction === "boost" && state.availableBoostTargets.length > 0) {
+    return "boost";
   }
 
   if (
@@ -366,12 +401,14 @@ type InteractionReducerAction =
   | { type: "CHOOSE_MOVE_MODE"; map: HexMap }
   | { type: "CHOOSE_MOVE_TARGET"; cell: MapItem; position: MenuPosition; map: HexMap; perspective: TeamType }
   | { type: "CHOOSE_ATTACK_MODE"; map: HexMap; perspective: TeamType }
+  | { type: "CHOOSE_BOOST_MODE"; map: HexMap; perspective: TeamType }
   | { type: "CHOOSE_CONSTRUCT_MODE"; availableFunds: number; map: HexMap; position: MenuPosition }
   | { type: "CHOOSE_CONSTRUCT_BUILDING"; building: BuildingType; map: HexMap }
   | { type: "CHOOSE_LOAD_MODE"; map: HexMap; perspective: TeamType }
   | { type: "SELECT_CONSTRUCT_TARGET"; cell: MapItem; position: MenuPosition }
   | { type: "SELECT_LOAD_TARGET"; cell: MapItem; position: MenuPosition }
   | { type: "SELECT_ATTACK_TARGET"; cell: MapItem; position: MenuPosition }
+  | { type: "SELECT_BOOST_TARGET"; cell: MapItem; position: MenuPosition }
   | { type: "SELECT_OBJECT_TARGET"; cell: MapItem; position: MenuPosition }
   | { type: "CHOOSE_SPAWN_UNIT"; map: HexMap; unit: SpawnableUnitType }
   | { type: "SELECT_SPAWN_TARGET"; cell: MapItem; position: MenuPosition }
@@ -391,6 +428,7 @@ export const gameInteractionReducer = (
       if (spawnOptions.length > 1) {
         return {
           availableAttackTargets: [],
+          availableBoostTargets: [],
           availableConstructTargets: [],
           availableLoadTargets: [],
           availableMoveTargets: [],
@@ -407,6 +445,7 @@ export const gameInteractionReducer = (
           pendingAction: null,
           previewDestination: null,
           selectedAttackTarget: null,
+          selectedBoostTarget: null,
           selectedConstructBuilding: null,
           selectedConstructTarget: null,
           selectedLoadVehicle: null,
@@ -418,6 +457,7 @@ export const gameInteractionReducer = (
 
       return {
         availableAttackTargets: [],
+        availableBoostTargets: [],
         availableConstructTargets: [],
         availableLoadTargets: [],
         availableMoveTargets: getMoveTargets(action.unit, action.map),
@@ -429,6 +469,7 @@ export const gameInteractionReducer = (
         pendingAction: null,
         previewDestination: null,
         selectedAttackTarget: null,
+        selectedBoostTarget: null,
         selectedConstructBuilding: null,
         selectedConstructTarget: null,
         selectedLoadVehicle: null,
@@ -451,6 +492,7 @@ export const gameInteractionReducer = (
         state.previewDestination
       );
       const actorCoords = getCurrentActorCoords(state);
+      const boostTargets = getBoostableTargetIndexes(previewMap, actorCoords, action.perspective);
       const loadTargets = getLoadableVehicleIndexes(previewMap, actorCoords, action.perspective);
       const unloadTargets = getUnloadableCellIndexes(previewMap, actorCoords);
       const allowConstruction = isConstructionWorker(state.selectedUnit.unit);
@@ -458,6 +500,7 @@ export const gameInteractionReducer = (
       return {
         ...state,
         availableAttackTargets: attackTargets,
+        availableBoostTargets: boostTargets,
         availableConstructTargets: [],
         availableLoadTargets: loadTargets,
         availableSpawnTargets: [],
@@ -469,6 +512,7 @@ export const gameInteractionReducer = (
             ? spawnOptions
             : buildUnitMenuOptions(
                 attackTargets,
+                boostTargets,
                 allowConstruction,
                 loadTargets.length > 0,
                 unloadTargets.length > 0
@@ -478,6 +522,7 @@ export const gameInteractionReducer = (
         mode: "actionMenu",
         pendingAction: null,
         selectedAttackTarget: null,
+        selectedBoostTarget: null,
         selectedConstructBuilding: null,
         selectedConstructTarget: null,
         selectedLoadVehicle: null,
@@ -493,6 +538,7 @@ export const gameInteractionReducer = (
       return {
         ...state,
         availableAttackTargets: [],
+        availableBoostTargets: [],
         availableConstructTargets: [],
         availableLoadTargets: [],
         availableMoveTargets: getMoveTargets(state.selectedUnit, action.map),
@@ -502,6 +548,7 @@ export const gameInteractionReducer = (
         mode: "unitSelected",
         pendingAction: null,
         selectedAttackTarget: null,
+        selectedBoostTarget: null,
         selectedConstructBuilding: null,
         selectedConstructTarget: null,
         selectedLoadVehicle: null,
@@ -523,6 +570,7 @@ export const gameInteractionReducer = (
         return {
           ...state,
           availableAttackTargets: getProjectileTargetIndexes(action.map, action.perspective),
+          availableBoostTargets: [],
           availableConstructTargets: [],
           availableLoadTargets: [],
           availableMoveTargets: [],
@@ -533,6 +581,7 @@ export const gameInteractionReducer = (
           pendingAction: destinationObject,
           previewDestination: { x: action.cell.row, y: action.cell.column },
           selectedAttackTarget: null,
+          selectedBoostTarget: null,
           selectedConstructBuilding: null,
           selectedConstructTarget: null,
           selectedLoadVehicle: null,
@@ -553,12 +602,14 @@ export const gameInteractionReducer = (
         state.origin,
         previewDestination
       );
+      const boostTargets = getBoostableTargetIndexes(previewMap, previewDestination, action.perspective);
       const loadTargets = getLoadableVehicleIndexes(previewMap, previewDestination, action.perspective);
       const unloadTargets = getUnloadableCellIndexes(previewMap, previewDestination);
 
       return {
         ...state,
         availableAttackTargets: attackTargets,
+        availableBoostTargets: boostTargets,
         availableConstructTargets: [],
         availableLoadTargets: loadTargets,
         availableSpawnTargets: [],
@@ -568,6 +619,7 @@ export const gameInteractionReducer = (
           kind: "move",
           options: buildUnitMenuOptions(
             attackTargets,
+            boostTargets,
             isConstructionWorker(state.selectedUnit.unit),
             loadTargets.length > 0,
             unloadTargets.length > 0
@@ -578,6 +630,7 @@ export const gameInteractionReducer = (
         pendingAction: null,
         previewDestination,
         selectedAttackTarget: null,
+        selectedBoostTarget: null,
         selectedConstructBuilding: null,
         selectedConstructTarget: null,
         selectedLoadVehicle: null,
@@ -598,6 +651,7 @@ export const gameInteractionReducer = (
           state.origin,
           state.previewDestination
         ),
+        availableBoostTargets: [],
         availableConstructTargets: [],
         availableLoadTargets: [],
         availableSpawnTargets: [],
@@ -605,6 +659,31 @@ export const gameInteractionReducer = (
         menu: null,
         mode: "targetingAttack",
         pendingAction: "attack",
+      };
+    }
+    case "CHOOSE_BOOST_MODE": {
+      const currentCoords = getCurrentActorCoords(state);
+      const previewMap = getPreviewMap(state, action.map);
+
+      return {
+        ...state,
+        availableAttackTargets: [],
+        availableBoostTargets: getBoostableTargetIndexes(previewMap, currentCoords, action.perspective),
+        availableConstructTargets: [],
+        availableLoadTargets: [],
+        availableMoveTargets: [],
+        availableSpawnTargets: [],
+        availableUnloadTargets: [],
+        menu: null,
+        mode: "targetingBoost",
+        pendingAction: "boost",
+        selectedAttackTarget: null,
+        selectedBoostTarget: null,
+        selectedConstructBuilding: null,
+        selectedConstructTarget: null,
+        selectedLoadVehicle: null,
+        selectedSpawnUnit: null,
+        selectedUnloadTarget: null,
       };
     }
     case "CHOOSE_CONSTRUCT_MODE": {
@@ -621,6 +700,7 @@ export const gameInteractionReducer = (
       return {
         ...state,
         availableAttackTargets: [],
+        availableBoostTargets: [],
         availableConstructTargets: [],
         availableLoadTargets: [],
         availableMoveTargets: [],
@@ -635,6 +715,7 @@ export const gameInteractionReducer = (
         mode: "actionMenu",
         pendingAction: null,
         selectedAttackTarget: null,
+        selectedBoostTarget: null,
         selectedConstructBuilding: null,
         selectedConstructTarget: null,
         selectedLoadVehicle: null,
@@ -652,6 +733,7 @@ export const gameInteractionReducer = (
       return {
         ...state,
         availableAttackTargets: [],
+        availableBoostTargets: [],
         availableMoveTargets: [],
         availableConstructTargets: getConstructableCells(
           getConstructableMap(state, action.map),
@@ -665,6 +747,7 @@ export const gameInteractionReducer = (
         mode: "targetingConstruct",
         pendingAction: "construct",
         selectedAttackTarget: null,
+        selectedBoostTarget: null,
         selectedConstructBuilding: action.building,
         selectedConstructTarget: null,
         selectedLoadVehicle: null,
@@ -679,6 +762,7 @@ export const gameInteractionReducer = (
       return {
         ...state,
         availableAttackTargets: [],
+        availableBoostTargets: [],
         availableConstructTargets: [],
         availableLoadTargets: getLoadableVehicleIndexes(previewMap, currentCoords, action.perspective),
         availableMoveTargets: [],
@@ -688,6 +772,7 @@ export const gameInteractionReducer = (
         mode: "targetingLoad",
         pendingAction: "load",
         selectedAttackTarget: null,
+        selectedBoostTarget: null,
         selectedConstructBuilding: null,
         selectedConstructTarget: null,
         selectedLoadVehicle: null,
@@ -721,6 +806,20 @@ export const gameInteractionReducer = (
         mode: "actionMenu",
         pendingAction: "load",
         selectedLoadVehicle: { x: action.cell.row, y: action.cell.column },
+      };
+    }
+    case "SELECT_BOOST_TARGET": {
+      return {
+        ...state,
+        menu: {
+          cellIndex: action.cell.index,
+          kind: "boost",
+          options: buildBoostMenuOptions(),
+          position: action.position,
+        },
+        mode: "actionMenu",
+        pendingAction: "boost",
+        selectedBoostTarget: { x: action.cell.row, y: action.cell.column },
       };
     }
     case "SELECT_ATTACK_TARGET": {
@@ -761,6 +860,7 @@ export const gameInteractionReducer = (
       return {
         ...state,
         availableAttackTargets: [],
+        availableBoostTargets: [],
         availableMoveTargets: [],
         availableConstructTargets: [],
         availableLoadTargets: [],
@@ -771,6 +871,7 @@ export const gameInteractionReducer = (
         pendingAction: "spawn",
         previewDestination: null,
         selectedAttackTarget: null,
+        selectedBoostTarget: null,
         selectedConstructBuilding: null,
         selectedConstructTarget: null,
         selectedLoadVehicle: null,
@@ -799,6 +900,7 @@ export const gameInteractionReducer = (
       return {
         ...state,
         availableAttackTargets: [],
+        availableBoostTargets: [],
         availableConstructTargets: [],
         availableLoadTargets: [],
         availableMoveTargets: [],
@@ -808,6 +910,7 @@ export const gameInteractionReducer = (
         mode: "targetingUnload",
         pendingAction: "unload",
         selectedAttackTarget: null,
+        selectedBoostTarget: null,
         selectedConstructBuilding: null,
         selectedConstructTarget: null,
         selectedLoadVehicle: null,
@@ -864,6 +967,19 @@ export const buildAttackAction = (state: GameInteractionState): GameAction | nul
     attacker: state.origin,
     defender: state.selectedAttackTarget,
     end: state.previewDestination ?? state.origin,
+  };
+};
+
+export const buildBoostAction = (state: GameInteractionState): GameAction | null => {
+  if (!state.origin || !state.selectedBoostTarget) {
+    return null;
+  }
+
+  return {
+    action: "boost",
+    end: state.previewDestination ?? state.origin,
+    start: state.origin,
+    target: state.selectedBoostTarget,
   };
 };
 

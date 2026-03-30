@@ -38,6 +38,12 @@ const EventCell = ({ event }: { event: GameEvent }) => {
         }
       }
       break;
+    case "boost":
+      res = `${event.actor} moved ${prettyPrint(event.unit).toLowerCase()} from ${event.start.x},${event.start.y} to ${event.end.x},${event.end.y} and boosted ${prettyPrint(event.boostedUnit).toLowerCase()} at ${event.target.x},${event.target.y}.`;
+      if (event.consumedObject === "money" && event.moneyAward) {
+        res += ` They collected $${event.moneyAward}.`;
+      }
+      break;
     case "endTurn":
       res = `${event.actor} ended turn. Next player gained ${event.income} income.`;
       break;

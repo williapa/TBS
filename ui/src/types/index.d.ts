@@ -1,5 +1,6 @@
 interface CellProps extends RowCol {
   callback?: any;
+  boosted?: boolean;
   damage?: number;
   editing?: boolean;
   gameMenu?: GameCellMenu;
@@ -110,6 +111,7 @@ enum TeamType {
 }
 
 interface TerrainProps extends RowCol {
+  boosted?: boolean;
   damage?: number;
   height: number;
   loadedUnit?: LoadedUnit;
@@ -187,6 +189,7 @@ type UnitType = typeof UnitType;
 type UnitTypes = BuildingType | ObjectType | PersonType | AnimalType | VehicleType;
 
 type LoadedUnit = {
+  boosted?: boolean;
   damage?: number;
   moved?: boolean;
   team: TeamType;
@@ -194,6 +197,7 @@ type LoadedUnit = {
 };
 
 interface MapItem {
+  boosted?: boolean;
   damage?: number;
   row: number;
   column: number;
@@ -292,13 +296,20 @@ type SpawnableUnitType =
   | VehicleType.sub
   | VehicleType.truck;
 
-type gameActions = "attack" | "construct" | "end" | "load" | "move" | "spawn" | "unload";
+type gameActions = "attack" | "boost" | "construct" | "end" | "load" | "move" | "spawn" | "unload";
 
 type Attack = {
   action: "attack";
   attacker: Coords;
   end: Coords;
   defender: Coords;
+};
+
+type Boost = {
+  action: "boost";
+  start: Coords;
+  end: Coords;
+  target: Coords;
 };
 
 type End = {
@@ -341,7 +352,7 @@ type Unload = {
   cell: Coords;
 };
 
-type GameAction = Attack | Construct | End | Load | Move | Spawn | Unload;
+type GameAction = Attack | Boost | Construct | End | Load | Move | Spawn | Unload;
 
 type BaseGameEvent = {
   id: string;
@@ -359,6 +370,17 @@ type AttackEvent = BaseGameEvent & {
   attackDamage: number;
   defenseDamage: number;
   deaths: unknown[];
+  consumedObject?: ObjectType.money | ObjectType.missile | ObjectType.nuke;
+  moneyAward?: number;
+};
+
+type BoostEvent = BaseGameEvent & {
+  action: "boost";
+  start: Coords;
+  end: Coords;
+  target: Coords;
+  unit: string;
+  boostedUnit: string;
   consumedObject?: ObjectType.money | ObjectType.missile | ObjectType.nuke;
   moneyAward?: number;
 };
@@ -433,6 +455,7 @@ type UnloadEvent = BaseGameEvent & {
 
 type GameEvent =
   | AttackEvent
+  | BoostEvent
   | ConstructEvent
   | EndTurnEvent
   | GameOverEvent
@@ -446,6 +469,7 @@ type GameInteractionMode =
   | "unitSelected"
   | "actionMenu"
   | "targetingAttack"
+  | "targetingBoost"
   | "targetingMissile"
   | "targetingNuke"
   | "targetingConstruct"
@@ -453,15 +477,17 @@ type GameInteractionMode =
   | "targetingSpawn"
   | "targetingUnload";
 
-type GameCellTargetType = "move" | "attack" | "construct" | "load" | "spawn" | "unload";
+type GameCellTargetType = "move" | "attack" | "boost" | "construct" | "load" | "spawn" | "unload";
 
 type GameMenuActionId =
   | "move"
   | "chooseAttack"
+  | "chooseBoost"
   | "chooseConstruct"
   | "chooseLoad"
   | "chooseUnload"
   | "confirmAttack"
+  | "confirmBoost"
   | "confirmMissileLaunch"
   | "confirmNukeLaunch"
   | "confirmConstruct"
@@ -491,13 +517,14 @@ type GameCellMenu = {
 
 type GameActionMenuState = {
   cellIndex: number;
-  kind: "origin" | "move" | "attack" | "missile" | "nuke" | "construct" | "constructSelection" | "load" | "spawn" | "unload";
+  kind: "origin" | "move" | "attack" | "boost" | "missile" | "nuke" | "construct" | "constructSelection" | "load" | "spawn" | "unload";
   options: GameMenuOption[];
   position: MenuPosition;
 };
 
 type GameInteractionState = {
   availableAttackTargets: number[];
+  availableBoostTargets: number[];
   availableConstructTargets: number[];
   availableLoadTargets: number[];
   availableMoveTargets: number[];
@@ -506,9 +533,10 @@ type GameInteractionState = {
   menu: GameActionMenuState | null;
   mode: GameInteractionMode;
   origin: Coords | null;
-  pendingAction: "attack" | "construct" | "load" | "missile" | "move" | "nuke" | "spawn" | "unload" | null;
+  pendingAction: "attack" | "boost" | "construct" | "load" | "missile" | "move" | "nuke" | "spawn" | "unload" | null;
   previewDestination: Coords | null;
   selectedAttackTarget: Coords | null;
+  selectedBoostTarget: Coords | null;
   selectedConstructBuilding: BuildingType | null;
   selectedConstructTarget: Coords | null;
   selectedLoadVehicle: Coords | null;

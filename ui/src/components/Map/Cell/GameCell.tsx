@@ -13,6 +13,7 @@ const getMenuPosition = (element: HTMLDivElement): MenuPosition => {
 
 const GameCell = ({
   column,
+  boosted = false,
   damage = 0,
   gameMenu,
   height = 40,
@@ -29,7 +30,7 @@ const GameCell = ({
   unit = "none" as ObjectType.none,
   width = 80,
 }: CellProps) => {
-  const mapItem = { column, damage, index, loadedUnit, moved, neighbors, row, team, terrain, unit };
+  const mapItem = { boosted, column, damage, index, loadedUnit, moved, neighbors, row, team, terrain, unit };
 
   const onCellClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!onGameCellClick) {
@@ -55,6 +56,7 @@ const GameCell = ({
     >
       <span>
         <Terrain
+          boosted={boosted}
           column={column}
           damage={damage}
           height={height}

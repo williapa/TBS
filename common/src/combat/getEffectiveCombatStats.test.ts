@@ -1,4 +1,5 @@
 declare const require: any;
+export {};
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
@@ -6,7 +7,8 @@ const assert = require("node:assert/strict");
 const getEffectiveCombatStats = require("./getEffectiveCombatStats").default;
 const calculateDamage = require("./calculateDamage").default;
 
-const createMapItem = (unit: string, damage = 0) => ({
+const createMapItem = (unit: string, damage = 0, boosted = false) => ({
+  boosted,
   row: 0,
   column: 0,
   damage,
@@ -41,6 +43,13 @@ test("studentAthlete keeps base stats against unrelated units", () => {
   );
 });
 
+test("boosted units get +10/+10 when no special combat bonus applies", () => {
+  assert.deepEqual(
+    getEffectiveCombatStats(createMapItem("soldier", 0, true), createMapItem("leader")),
+    [40, 25]
+  );
+});
+
 test("zuckerbird gets its capital combat bonus", () => {
   assert.deepEqual(
     getEffectiveCombatStats(createMapItem("zuckerbird"), createMapItem("capital")),
@@ -59,6 +68,20 @@ test("zuckerbird keeps base stats against unrelated units", () => {
   assert.deepEqual(
     getEffectiveCombatStats(createMapItem("zuckerbird"), createMapItem("leader")),
     [8, 8]
+  );
+});
+
+test("special combat bonus overrides boost", () => {
+  assert.deepEqual(
+    getEffectiveCombatStats(createMapItem("studentAthlete", 0, true), createMapItem("michaelJackson")),
+    [100, 100]
+  );
+});
+
+test("boost still applies to the opposing unit when only one unit has a matchup bonus", () => {
+  assert.deepEqual(
+    getEffectiveCombatStats(createMapItem("soldier", 0, true), createMapItem("studentAthlete")),
+    [40, 25]
   );
 });
 

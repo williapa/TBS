@@ -8,6 +8,7 @@ const isUnitDead = (dmg: number, unit: MapItem) => {
 
 const killUnit = (unit: MapItem) => {
   unit.damage = undefined;
+  unit.boosted = undefined;
   unit.loadedUnit = undefined;
   unit.unit = "none";
   unit.team = "gray";

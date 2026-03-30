@@ -3,6 +3,7 @@ import Bar from "../Health/Bar";
 import Unit from "../../../../components/Map/Unit/Unit";
 
 const Terrain = ({
+  boosted = false,
   damage = 0,
   row,
   column,
@@ -16,9 +17,10 @@ const Terrain = ({
   <div style={{ fontSize: `${height * .76}px` }} data-row={row} data-column={column} data-terrain={`${type}`}>
     {moved && <span style={{ fontSize: `${height * .38}px` }}> * </span>}
     <span style={{ display: "inline-block", position: "relative" }}>
-      <Unit type={unitType} />
+      <Unit boosted={boosted} type={unitType} />
       {loadedUnit && (
         <Unit
+          boosted={loadedUnit.boosted}
           type={loadedUnit.unit}
           scale={0.62}
           offsetX={-8}
