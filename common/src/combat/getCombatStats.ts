@@ -5,6 +5,8 @@ import {
   vehicleUnitOptions
 } from "../types";
 
+type CombatStats = [number, number];
+
 function isKeyOfObject<T extends object>(key: PropertyKey, obj: T): key is keyof T {
   return key in obj;
 }
@@ -12,7 +14,7 @@ function isKeyOfObject<T extends object>(key: PropertyKey, obj: T): key is keyof
 const isBuildingUnit = (unit: string): unit is BuildingUnitOption =>
   (buildingUnitOptions as readonly string[]).includes(unit);
 
-const getCombatStats = (item: MapItem) => {
+const getCombatStats = (item: MapItem): CombatStats => {
 
   const unit: string = item.unit;
 
@@ -23,7 +25,7 @@ const getCombatStats = (item: MapItem) => {
   if (vehicleUnitOptions.indexOf(unit) > -1) return [20, 60]; // todo: define unique values in unitMap for vehicles
 
   // [attack, defense]
-  const unitMap = {
+  const unitMap: Record<string, CombatStats> = {
     dragon: [90, 40],
     lion: [90, 25],
     bluesMusician: [10, 30], // special: boost people combat stats +10/+10 (1 boost max)

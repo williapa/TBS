@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "build": "npm run build -w @TBS/common && npm run build -w @TBS/server && npm run build -w @TBS/ui",
+    "common:test": "npm run test -w @TBS/common",
     "dev:server": "npm run start -w @TBS/server",
     "dev:ui": "npm run start -w @TBS/ui",
     "db:create": "npm run db:create -w @TBS/server",
