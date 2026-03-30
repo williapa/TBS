@@ -12,6 +12,7 @@ const spawnOptionsByBuilding: Partial<Record<BuildingUnitOption, SpawnOption[]>>
   capital: [
     { unit: "soldier", cost: 200, invalidTerrains: ["water"] },
     { unit: "leader", cost: 1000, invalidTerrains: ["water"] },
+    { unit: "constructionWorker", cost: 100, invalidTerrains: ["water"] },
   ],
   church: [
     { unit: "priest", cost: 100, invalidTerrains: ["water"] },
@@ -29,6 +30,7 @@ const spawnOptionsByBuilding: Partial<Record<BuildingUnitOption, SpawnOption[]>>
   ],
   house: [
     { unit: "constructionWorker", cost: 100, invalidTerrains: ["water"] },
+    { unit: "zookeeper", cost: 300, invalidTerrains: ["water"] }
   ],
   lab: [
     { unit: "scientist", cost: 300, invalidTerrains: ["water"] },

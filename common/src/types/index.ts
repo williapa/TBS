@@ -156,6 +156,7 @@ export const spawnableUnitOptions = [
   "sub",
   "truck",
   "worker",
+  "zookeeper",
   "zuckerbird",
 ] as const;
 
