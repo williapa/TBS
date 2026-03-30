@@ -1,5 +1,7 @@
 # Feature - special combat boost
 
+STATUS - COMPLETE (MERGED)
+
 This document describes a feature, granting a special action to specific unit types. This action will generally follow a pattern where this unit will be able to grant a "boost" to the combat stats of another unit, provided the target unit is adjacent and of a certain type.
 
 ## Summary

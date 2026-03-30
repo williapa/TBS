@@ -79,6 +79,8 @@ Status: "spawn" has been implemented, allowing all buildings to spawn units for 
 currently, buildings do nothing except act as a blocking/defense unit. However, in the future, buildings might be able to spawn new unit types, based on the type of building. An airport might be able to spawn pilots, or airplane vehicles. A zoo might be able to spawn animals. These definitions would need to be added to 'common'. 
 
 ### Objects
+
+Status: implemneted 
 Currently, objects simply occupy cells and cannot be attacked or consumed. But, for the "money bag" object, this should become an occupiable cell. When a unit steps on a cell with a money bag object, the object is consumed (aka, destroyed) and a certain amount of money is added for that player. Other objects might have similar effects. As an additional example, if a unit steps on a "missile" object, then this might create a special action where the player can launch the missile at an enemy and do damage (without typical retaliation combat damage). 
 
 ## Terrain

@@ -296,7 +296,7 @@ type SpawnableUnitType =
   | VehicleType.sub
   | VehicleType.truck;
 
-type gameActions = "attack" | "boost" | "construct" | "end" | "load" | "move" | "spawn" | "unload";
+type gameActions = "attack" | "boost" | "construct" | "end" | "heal" | "load" | "move" | "spawn" | "unload";
 
 type Attack = {
   action: "attack";
@@ -307,6 +307,13 @@ type Attack = {
 
 type Boost = {
   action: "boost";
+  start: Coords;
+  end: Coords;
+  target: Coords;
+};
+
+type Heal = {
+  action: "heal";
   start: Coords;
   end: Coords;
   target: Coords;
@@ -352,7 +359,7 @@ type Unload = {
   cell: Coords;
 };
 
-type GameAction = Attack | Boost | Construct | End | Load | Move | Spawn | Unload;
+type GameAction = Attack | Boost | Construct | End | Heal | Load | Move | Spawn | Unload;
 
 type BaseGameEvent = {
   id: string;
@@ -404,6 +411,18 @@ type ConstructEvent = BaseGameEvent & {
 
 type GameOverEvent = BaseGameEvent & {
   action: "gameOver";
+};
+
+type HealEvent = BaseGameEvent & {
+  action: "heal";
+  start: Coords;
+  end: Coords;
+  target: Coords;
+  unit: string;
+  healedUnit: string;
+  healedDamage: number;
+  consumedObject?: ObjectType.money | ObjectType.missile | ObjectType.nuke;
+  moneyAward?: number;
 };
 
 type LoadEvent = BaseGameEvent & {
@@ -459,6 +478,7 @@ type GameEvent =
   | ConstructEvent
   | EndTurnEvent
   | GameOverEvent
+  | HealEvent
   | LoadEvent
   | MoveEvent
   | SpawnEvent
@@ -470,6 +490,7 @@ type GameInteractionMode =
   | "actionMenu"
   | "targetingAttack"
   | "targetingBoost"
+  | "targetingHeal"
   | "targetingMissile"
   | "targetingNuke"
   | "targetingConstruct"
@@ -477,17 +498,19 @@ type GameInteractionMode =
   | "targetingSpawn"
   | "targetingUnload";
 
-type GameCellTargetType = "move" | "attack" | "boost" | "construct" | "load" | "spawn" | "unload";
+type GameCellTargetType = "move" | "attack" | "boost" | "construct" | "heal" | "load" | "spawn" | "unload";
 
 type GameMenuActionId =
   | "move"
   | "chooseAttack"
   | "chooseBoost"
   | "chooseConstruct"
+  | "chooseHeal"
   | "chooseLoad"
   | "chooseUnload"
   | "confirmAttack"
   | "confirmBoost"
+  | "confirmHeal"
   | "confirmMissileLaunch"
   | "confirmNukeLaunch"
   | "confirmConstruct"
@@ -517,7 +540,7 @@ type GameCellMenu = {
 
 type GameActionMenuState = {
   cellIndex: number;
-  kind: "origin" | "move" | "attack" | "boost" | "missile" | "nuke" | "construct" | "constructSelection" | "load" | "spawn" | "unload";
+  kind: "origin" | "move" | "attack" | "boost" | "construct" | "heal" | "missile" | "nuke" | "load" | "spawn" | "unload" | "constructSelection";
   options: GameMenuOption[];
   position: MenuPosition;
 };
@@ -526,6 +549,7 @@ type GameInteractionState = {
   availableAttackTargets: number[];
   availableBoostTargets: number[];
   availableConstructTargets: number[];
+  availableHealTargets: number[];
   availableLoadTargets: number[];
   availableMoveTargets: number[];
   availableSpawnTargets: number[];
@@ -533,12 +557,13 @@ type GameInteractionState = {
   menu: GameActionMenuState | null;
   mode: GameInteractionMode;
   origin: Coords | null;
-  pendingAction: "attack" | "boost" | "construct" | "load" | "missile" | "move" | "nuke" | "spawn" | "unload" | null;
+  pendingAction: "attack" | "boost" | "construct" | "heal" | "load" | "missile" | "move" | "nuke" | "spawn" | "unload" | null;
   previewDestination: Coords | null;
   selectedAttackTarget: Coords | null;
   selectedBoostTarget: Coords | null;
   selectedConstructBuilding: BuildingType | null;
   selectedConstructTarget: Coords | null;
+  selectedHealTarget: Coords | null;
   selectedLoadVehicle: Coords | null;
   selectedSpawnUnit: SpawnableUnitType | null;
   selectedUnit: MapItem | null;

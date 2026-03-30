@@ -8,6 +8,7 @@ import {
   buildAttackAction,
   buildBoostAction,
   buildConstructAction,
+  buildHealAction,
   buildLoadAction,
   buildMoveAction,
   buildSpawnAction,
@@ -87,6 +88,14 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
     }
 
     if (
+      interactionState.pendingAction === "heal" &&
+      interactionState.availableHealTargets.includes(mapItem.index)
+    ) {
+      dispatch({ type: "SELECT_HEAL_TARGET", cell: mapItem, position });
+      return;
+    }
+
+    if (
       interactionState.pendingAction === "load" &&
       interactionState.availableLoadTargets.includes(mapItem.index)
     ) {
@@ -159,6 +168,11 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
 
     if (action === "chooseBoost") {
       dispatch({ type: "CHOOSE_BOOST_MODE", map: mapData, perspective });
+      return;
+    }
+
+    if (action === "chooseHeal") {
+      dispatch({ type: "CHOOSE_HEAL_MODE", map: mapData, perspective });
       return;
     }
 
@@ -241,6 +255,19 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
       }
 
       sendMove(boostAction, user, pin);
+      dispatch({ type: "CANCEL_FLOW" });
+      return;
+    }
+
+    if (action === "confirmHeal") {
+      const healAction = buildHealAction(interactionState);
+
+      if (!healAction) {
+        dispatch({ type: "CANCEL_FLOW" });
+        return;
+      }
+
+      sendMove(healAction, user, pin);
       dispatch({ type: "CANCEL_FLOW" });
       return;
     }

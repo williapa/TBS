@@ -1,13 +1,16 @@
 import {
   attackUnit,
   canReceiveBoost,
+  canReceiveHeal,
   canUnitBoost,
+  canUnitHeal,
   canUnitCollectObjects,
   buildingUnitOptions,
   checkForDead,
   getConsumableObjectAtCell,
   getConstructionOptions,
   getConstructableCells,
+  getHealableCellIndexes,
   GameAction,
   GameEvent,
   getAllCellsWhichCanBeReached,
@@ -17,6 +20,7 @@ import {
   getSpawnOptions,
   getTeamForPlayer,
   getWinningTeam,
+  HEAL_AMOUNT,
   isTurnOver,
   MapItem,
   MISSILE_OBJECT_DAMAGE,
@@ -271,7 +275,7 @@ export const processGameAction = async (
     return {
       ok: false,
       error:
-        "not a valid action. valid actions are - 'move', 'end', 'attack', 'boost', 'spawn', 'construct', 'load', 'unload'.",
+        "not a valid action. valid actions are - 'move', 'end', 'attack', 'boost', 'heal', 'spawn', 'construct', 'load', 'unload'.",
     };
   }
 
@@ -528,6 +532,118 @@ export const processGameAction = async (
         ...(boostDestinationObject === "money"
           ? {
               consumedObject: boostDestinationObject,
+              moneyAward: MONEY_OBJECT_REWARD,
+            }
+          : {}),
+      },
+    ];
+  } else if (gameAction.action === "heal") {
+    const healingUnit = Map[gameAction.start.x]?.[gameAction.start.y];
+    const destination = Map[gameAction.end.x]?.[gameAction.end.y];
+    const healTarget = Map[gameAction.target.x]?.[gameAction.target.y];
+
+    if (!healingUnit || !destination || !healTarget) {
+      return { ok: false, error: "invalid heal coordinates" };
+    }
+
+    if (healingUnit.team !== activeTeam) {
+      return { ok: false, error: "that isn't your piece" };
+    }
+
+    if (healingUnit.moved) {
+      return { ok: false, error: "that piece has already acted" };
+    }
+
+    if (!canUnitHeal(healingUnit.unit)) {
+      return { ok: false, error: "that piece cannot heal other units" };
+    }
+
+    const healingUnitMoves = !sameCoords(gameAction.start, gameAction.end);
+
+    if (healingUnitMoves) {
+      if (
+        destination.unit !== "none" &&
+        !(
+          getConsumableObjectAtCell(destination) === "money" &&
+          canUnitCollectObjects(healingUnit.unit)
+        )
+      ) {
+        return { ok: false, error: "destination must be an empty space" };
+      }
+
+      const reachableCells = getAllCellsWhichCanBeReached(healingUnit.index, Map);
+
+      if (reachableCells.indexOf(destination.index) < 0) {
+        return { ok: false, error: "destination must be in range" };
+      }
+
+      Map = moveMapUnit(Map, gameAction.start, gameAction.end);
+    }
+
+    const activeHealingUnit = Map[gameAction.end.x]?.[gameAction.end.y];
+    const activeHealTarget = Map[gameAction.target.x]?.[gameAction.target.y];
+
+    if (!activeHealingUnit || !activeHealTarget) {
+      return { ok: false, error: "invalid heal coordinates" };
+    }
+
+    if (activeHealTarget.team !== activeTeam) {
+      return { ok: false, error: "heal target must be a friendly unit" };
+    }
+
+    if (activeHealTarget.unit === "none") {
+      return { ok: false, error: "heal target must contain a unit" };
+    }
+
+    if (!isAdjacent(activeHealingUnit, activeHealTarget)) {
+      return { ok: false, error: "heal target must be adjacent to the healing unit" };
+    }
+
+    if (!canReceiveHeal(activeHealingUnit.unit, activeHealTarget.unit)) {
+      return { ok: false, error: "that unit cannot heal the selected target" };
+    }
+
+    const validHealTargets = getHealableCellIndexes(Map, activeHealingUnit, activeTeam);
+
+    if (validHealTargets.indexOf(activeHealTarget.index) < 0) {
+      return { ok: false, error: "heal target must be a damaged friendly unit" };
+    }
+
+    const currentDamage = activeHealTarget.damage || 0;
+    const healedDamage = Math.min(HEAL_AMOUNT, currentDamage);
+    const remainingDamage = currentDamage - healedDamage;
+    const healDestinationObject = getConsumableObjectAtCell(destination);
+
+    Map[gameAction.end.x][gameAction.end.y] = {
+      ...activeHealingUnit,
+      moved: true,
+    };
+    Map[gameAction.target.x][gameAction.target.y] = {
+      ...activeHealTarget,
+      damage: remainingDamage > 0 ? remainingDamage : undefined,
+    };
+
+    if (healDestinationObject === "money") {
+      const moneyReward = applyMoneyReward(activeTeam);
+      creatorMoney += moneyReward.creatorMoneyDelta;
+      challengerMoney += moneyReward.challengerMoneyDelta;
+    }
+
+    gameEvents = [
+      {
+        id: `${gameId}#${Date.now().toString()}`,
+        sk: `game#${gameId}`,
+        action: "heal",
+        actor: email,
+        end: gameAction.end,
+        healedDamage,
+        healedUnit: activeHealTarget.unit,
+        start: gameAction.start,
+        target: gameAction.target,
+        unit: healingUnit.unit,
+        ...(healDestinationObject === "money"
+          ? {
+              consumedObject: healDestinationObject,
               moneyAward: MONEY_OBJECT_REWARD,
             }
           : {}),

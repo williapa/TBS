@@ -1,5 +1,7 @@
 # Feature - special heal action
 
+STATUS - COMPLETE (MERGED)
+
 This document describes a feature, allowing certain units to perform a special "heal" action targeting specific unit types.
 
 ## Summary

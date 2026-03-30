@@ -8,6 +8,7 @@ import {
   getConsumableObjectAtCell,
   getConstructionOptions,
   getConstructableCells,
+  getHealableCellIndexes,
   getSpawnableCells,
   getSpawnOptions,
   objectUnitOptions,
@@ -23,6 +24,7 @@ const emptyState = (): GameInteractionState => ({
   availableAttackTargets: [],
   availableBoostTargets: [],
   availableConstructTargets: [],
+  availableHealTargets: [],
   availableLoadTargets: [],
   availableMoveTargets: [],
   availableSpawnTargets: [],
@@ -36,6 +38,7 @@ const emptyState = (): GameInteractionState => ({
   selectedBoostTarget: null,
   selectedConstructBuilding: null,
   selectedConstructTarget: null,
+  selectedHealTarget: null,
   selectedLoadVehicle: null,
   selectedSpawnUnit: null,
   selectedUnit: null,
@@ -63,6 +66,7 @@ const getCurrentActorCell = (map: HexMap, state: GameInteractionState) => {
 const buildUnitMenuOptions = (
   attackTargets: number[],
   boostTargets: number[],
+  healTargets: number[],
   allowConstruction: boolean,
   allowLoad: boolean,
   allowUnload: boolean
@@ -87,6 +91,10 @@ const buildUnitMenuOptions = (
     options.push({ id: "chooseBoost", label: "Boost" });
   }
 
+  if (healTargets.length > 0) {
+    options.push({ id: "chooseHeal", label: "Heal" });
+  }
+
   if (hasAttackTargets(attackTargets)) {
     options.push({ id: "chooseAttack", label: "Attack" });
   }
@@ -103,6 +111,11 @@ const buildAttackMenuOptions = (): GameMenuOption[] => [
 
 const buildBoostMenuOptions = (): GameMenuOption[] => [
   { id: "confirmBoost", label: "Confirm boost" },
+  { id: "cancel", label: "Cancel" },
+];
+
+const buildHealMenuOptions = (): GameMenuOption[] => [
+  { id: "confirmHeal", label: "Confirm heal" },
   { id: "cancel", label: "Cancel" },
 ];
 
@@ -312,6 +325,20 @@ const getBoostableTargetIndexes = (
   return getBoostableCellIndexes(map, actorCell, perspective);
 };
 
+const getHealableTargetIndexes = (
+  map: HexMap,
+  actorCoords: Coords | null,
+  perspective: TeamType
+) => {
+  if (!actorCoords) {
+    return [];
+  }
+
+  const actorCell = getCellFromCoords(map, actorCoords);
+
+  return getHealableCellIndexes(map, actorCell, perspective);
+};
+
 export const getTargetedCellIndexes = (state: GameInteractionState) => {
   if (state.pendingAction === "attack") {
     return state.availableAttackTargets;
@@ -319,6 +346,10 @@ export const getTargetedCellIndexes = (state: GameInteractionState) => {
 
   if (state.pendingAction === "boost") {
     return state.availableBoostTargets;
+  }
+
+  if (state.pendingAction === "heal") {
+    return state.availableHealTargets;
   }
 
   if (state.pendingAction === "missile" || state.pendingAction === "nuke") {
@@ -351,6 +382,10 @@ export const getTargetType = (state: GameInteractionState): GameCellTargetType |
 
   if (state.pendingAction === "boost" && state.availableBoostTargets.length > 0) {
     return "boost";
+  }
+
+  if (state.pendingAction === "heal" && state.availableHealTargets.length > 0) {
+    return "heal";
   }
 
   if (
@@ -402,10 +437,12 @@ type InteractionReducerAction =
   | { type: "CHOOSE_MOVE_TARGET"; cell: MapItem; position: MenuPosition; map: HexMap; perspective: TeamType }
   | { type: "CHOOSE_ATTACK_MODE"; map: HexMap; perspective: TeamType }
   | { type: "CHOOSE_BOOST_MODE"; map: HexMap; perspective: TeamType }
+  | { type: "CHOOSE_HEAL_MODE"; map: HexMap; perspective: TeamType }
   | { type: "CHOOSE_CONSTRUCT_MODE"; availableFunds: number; map: HexMap; position: MenuPosition }
   | { type: "CHOOSE_CONSTRUCT_BUILDING"; building: BuildingType; map: HexMap }
   | { type: "CHOOSE_LOAD_MODE"; map: HexMap; perspective: TeamType }
   | { type: "SELECT_CONSTRUCT_TARGET"; cell: MapItem; position: MenuPosition }
+  | { type: "SELECT_HEAL_TARGET"; cell: MapItem; position: MenuPosition }
   | { type: "SELECT_LOAD_TARGET"; cell: MapItem; position: MenuPosition }
   | { type: "SELECT_ATTACK_TARGET"; cell: MapItem; position: MenuPosition }
   | { type: "SELECT_BOOST_TARGET"; cell: MapItem; position: MenuPosition }
@@ -430,6 +467,7 @@ export const gameInteractionReducer = (
           availableAttackTargets: [],
           availableBoostTargets: [],
           availableConstructTargets: [],
+          availableHealTargets: [],
           availableLoadTargets: [],
           availableMoveTargets: [],
           availableSpawnTargets: [],
@@ -448,6 +486,7 @@ export const gameInteractionReducer = (
           selectedBoostTarget: null,
           selectedConstructBuilding: null,
           selectedConstructTarget: null,
+          selectedHealTarget: null,
           selectedLoadVehicle: null,
           selectedSpawnUnit: null,
           selectedUnit: action.unit,
@@ -459,6 +498,7 @@ export const gameInteractionReducer = (
         availableAttackTargets: [],
         availableBoostTargets: [],
         availableConstructTargets: [],
+        availableHealTargets: [],
         availableLoadTargets: [],
         availableMoveTargets: getMoveTargets(action.unit, action.map),
         availableSpawnTargets: [],
@@ -472,6 +512,7 @@ export const gameInteractionReducer = (
         selectedBoostTarget: null,
         selectedConstructBuilding: null,
         selectedConstructTarget: null,
+        selectedHealTarget: null,
         selectedLoadVehicle: null,
         selectedSpawnUnit: null,
         selectedUnit: action.unit,
@@ -493,6 +534,7 @@ export const gameInteractionReducer = (
       );
       const actorCoords = getCurrentActorCoords(state);
       const boostTargets = getBoostableTargetIndexes(previewMap, actorCoords, action.perspective);
+      const healTargets = getHealableTargetIndexes(previewMap, actorCoords, action.perspective);
       const loadTargets = getLoadableVehicleIndexes(previewMap, actorCoords, action.perspective);
       const unloadTargets = getUnloadableCellIndexes(previewMap, actorCoords);
       const allowConstruction = isConstructionWorker(state.selectedUnit.unit);
@@ -502,6 +544,7 @@ export const gameInteractionReducer = (
         availableAttackTargets: attackTargets,
         availableBoostTargets: boostTargets,
         availableConstructTargets: [],
+        availableHealTargets: healTargets,
         availableLoadTargets: loadTargets,
         availableSpawnTargets: [],
         availableUnloadTargets: unloadTargets,
@@ -513,6 +556,7 @@ export const gameInteractionReducer = (
             : buildUnitMenuOptions(
                 attackTargets,
                 boostTargets,
+                healTargets,
                 allowConstruction,
                 loadTargets.length > 0,
                 unloadTargets.length > 0
@@ -525,6 +569,7 @@ export const gameInteractionReducer = (
         selectedBoostTarget: null,
         selectedConstructBuilding: null,
         selectedConstructTarget: null,
+        selectedHealTarget: null,
         selectedLoadVehicle: null,
         selectedSpawnUnit: null,
         selectedUnloadTarget: null,
@@ -540,6 +585,7 @@ export const gameInteractionReducer = (
         availableAttackTargets: [],
         availableBoostTargets: [],
         availableConstructTargets: [],
+        availableHealTargets: [],
         availableLoadTargets: [],
         availableMoveTargets: getMoveTargets(state.selectedUnit, action.map),
         availableSpawnTargets: [],
@@ -551,6 +597,7 @@ export const gameInteractionReducer = (
         selectedBoostTarget: null,
         selectedConstructBuilding: null,
         selectedConstructTarget: null,
+        selectedHealTarget: null,
         selectedLoadVehicle: null,
         selectedSpawnUnit: null,
         selectedUnloadTarget: null,
@@ -572,6 +619,7 @@ export const gameInteractionReducer = (
           availableAttackTargets: getProjectileTargetIndexes(action.map, action.perspective),
           availableBoostTargets: [],
           availableConstructTargets: [],
+          availableHealTargets: [],
           availableLoadTargets: [],
           availableMoveTargets: [],
           availableSpawnTargets: [],
@@ -584,6 +632,7 @@ export const gameInteractionReducer = (
           selectedBoostTarget: null,
           selectedConstructBuilding: null,
           selectedConstructTarget: null,
+          selectedHealTarget: null,
           selectedLoadVehicle: null,
           selectedSpawnUnit: null,
           selectedUnloadTarget: null,
@@ -603,6 +652,7 @@ export const gameInteractionReducer = (
         previewDestination
       );
       const boostTargets = getBoostableTargetIndexes(previewMap, previewDestination, action.perspective);
+      const healTargets = getHealableTargetIndexes(previewMap, previewDestination, action.perspective);
       const loadTargets = getLoadableVehicleIndexes(previewMap, previewDestination, action.perspective);
       const unloadTargets = getUnloadableCellIndexes(previewMap, previewDestination);
 
@@ -611,6 +661,7 @@ export const gameInteractionReducer = (
         availableAttackTargets: attackTargets,
         availableBoostTargets: boostTargets,
         availableConstructTargets: [],
+        availableHealTargets: healTargets,
         availableLoadTargets: loadTargets,
         availableSpawnTargets: [],
         availableUnloadTargets: unloadTargets,
@@ -620,6 +671,7 @@ export const gameInteractionReducer = (
           options: buildUnitMenuOptions(
             attackTargets,
             boostTargets,
+            healTargets,
             isConstructionWorker(state.selectedUnit.unit),
             loadTargets.length > 0,
             unloadTargets.length > 0
@@ -633,6 +685,7 @@ export const gameInteractionReducer = (
         selectedBoostTarget: null,
         selectedConstructBuilding: null,
         selectedConstructTarget: null,
+        selectedHealTarget: null,
         selectedLoadVehicle: null,
         selectedSpawnUnit: null,
         selectedUnloadTarget: null,
@@ -653,6 +706,7 @@ export const gameInteractionReducer = (
         ),
         availableBoostTargets: [],
         availableConstructTargets: [],
+        availableHealTargets: [],
         availableLoadTargets: [],
         availableSpawnTargets: [],
         availableUnloadTargets: [],
@@ -670,6 +724,7 @@ export const gameInteractionReducer = (
         availableAttackTargets: [],
         availableBoostTargets: getBoostableTargetIndexes(previewMap, currentCoords, action.perspective),
         availableConstructTargets: [],
+        availableHealTargets: [],
         availableLoadTargets: [],
         availableMoveTargets: [],
         availableSpawnTargets: [],
@@ -681,6 +736,34 @@ export const gameInteractionReducer = (
         selectedBoostTarget: null,
         selectedConstructBuilding: null,
         selectedConstructTarget: null,
+        selectedHealTarget: null,
+        selectedLoadVehicle: null,
+        selectedSpawnUnit: null,
+        selectedUnloadTarget: null,
+      };
+    }
+    case "CHOOSE_HEAL_MODE": {
+      const currentCoords = getCurrentActorCoords(state);
+      const previewMap = getPreviewMap(state, action.map);
+
+      return {
+        ...state,
+        availableAttackTargets: [],
+        availableBoostTargets: [],
+        availableConstructTargets: [],
+        availableHealTargets: getHealableTargetIndexes(previewMap, currentCoords, action.perspective),
+        availableLoadTargets: [],
+        availableMoveTargets: [],
+        availableSpawnTargets: [],
+        availableUnloadTargets: [],
+        menu: null,
+        mode: "targetingHeal",
+        pendingAction: "heal",
+        selectedAttackTarget: null,
+        selectedBoostTarget: null,
+        selectedConstructBuilding: null,
+        selectedConstructTarget: null,
+        selectedHealTarget: null,
         selectedLoadVehicle: null,
         selectedSpawnUnit: null,
         selectedUnloadTarget: null,
@@ -702,6 +785,7 @@ export const gameInteractionReducer = (
         availableAttackTargets: [],
         availableBoostTargets: [],
         availableConstructTargets: [],
+        availableHealTargets: [],
         availableLoadTargets: [],
         availableMoveTargets: [],
         availableSpawnTargets: [],
@@ -718,6 +802,7 @@ export const gameInteractionReducer = (
         selectedBoostTarget: null,
         selectedConstructBuilding: null,
         selectedConstructTarget: null,
+        selectedHealTarget: null,
         selectedLoadVehicle: null,
         selectedSpawnUnit: null,
         selectedUnloadTarget: null,
@@ -740,6 +825,7 @@ export const gameInteractionReducer = (
           currentCoords,
           action.building
         ),
+        availableHealTargets: [],
         availableLoadTargets: [],
         availableSpawnTargets: [],
         availableUnloadTargets: [],
@@ -750,6 +836,7 @@ export const gameInteractionReducer = (
         selectedBoostTarget: null,
         selectedConstructBuilding: action.building,
         selectedConstructTarget: null,
+        selectedHealTarget: null,
         selectedLoadVehicle: null,
         selectedSpawnUnit: null,
         selectedUnloadTarget: null,
@@ -764,6 +851,7 @@ export const gameInteractionReducer = (
         availableAttackTargets: [],
         availableBoostTargets: [],
         availableConstructTargets: [],
+        availableHealTargets: [],
         availableLoadTargets: getLoadableVehicleIndexes(previewMap, currentCoords, action.perspective),
         availableMoveTargets: [],
         availableSpawnTargets: [],
@@ -775,6 +863,7 @@ export const gameInteractionReducer = (
         selectedBoostTarget: null,
         selectedConstructBuilding: null,
         selectedConstructTarget: null,
+        selectedHealTarget: null,
         selectedLoadVehicle: null,
         selectedSpawnUnit: null,
         selectedUnloadTarget: null,
@@ -806,6 +895,20 @@ export const gameInteractionReducer = (
         mode: "actionMenu",
         pendingAction: "load",
         selectedLoadVehicle: { x: action.cell.row, y: action.cell.column },
+      };
+    }
+    case "SELECT_HEAL_TARGET": {
+      return {
+        ...state,
+        menu: {
+          cellIndex: action.cell.index,
+          kind: "heal",
+          options: buildHealMenuOptions(),
+          position: action.position,
+        },
+        mode: "actionMenu",
+        pendingAction: "heal",
+        selectedHealTarget: { x: action.cell.row, y: action.cell.column },
       };
     }
     case "SELECT_BOOST_TARGET": {
@@ -863,6 +966,7 @@ export const gameInteractionReducer = (
         availableBoostTargets: [],
         availableMoveTargets: [],
         availableConstructTargets: [],
+        availableHealTargets: [],
         availableLoadTargets: [],
         availableSpawnTargets: getSpawnableCells(action.map, state.origin, action.unit),
         availableUnloadTargets: [],
@@ -874,6 +978,7 @@ export const gameInteractionReducer = (
         selectedBoostTarget: null,
         selectedConstructBuilding: null,
         selectedConstructTarget: null,
+        selectedHealTarget: null,
         selectedLoadVehicle: null,
         selectedSpawnUnit: action.unit,
         selectedUnloadTarget: null,
@@ -902,6 +1007,7 @@ export const gameInteractionReducer = (
         availableAttackTargets: [],
         availableBoostTargets: [],
         availableConstructTargets: [],
+        availableHealTargets: [],
         availableLoadTargets: [],
         availableMoveTargets: [],
         availableSpawnTargets: [],
@@ -913,6 +1019,7 @@ export const gameInteractionReducer = (
         selectedBoostTarget: null,
         selectedConstructBuilding: null,
         selectedConstructTarget: null,
+        selectedHealTarget: null,
         selectedLoadVehicle: null,
         selectedSpawnUnit: null,
         selectedUnloadTarget: null,
@@ -980,6 +1087,19 @@ export const buildBoostAction = (state: GameInteractionState): GameAction | null
     end: state.previewDestination ?? state.origin,
     start: state.origin,
     target: state.selectedBoostTarget,
+  };
+};
+
+export const buildHealAction = (state: GameInteractionState): GameAction | null => {
+  if (!state.origin || !state.selectedHealTarget) {
+    return null;
+  }
+
+  return {
+    action: "heal",
+    end: state.previewDestination ?? state.origin,
+    start: state.origin,
+    target: state.selectedHealTarget,
   };
 };
 

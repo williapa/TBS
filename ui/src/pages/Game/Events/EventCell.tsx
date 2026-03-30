@@ -44,6 +44,12 @@ const EventCell = ({ event }: { event: GameEvent }) => {
         res += ` They collected $${event.moneyAward}.`;
       }
       break;
+    case "heal":
+      res = `${event.actor} moved ${prettyPrint(event.unit).toLowerCase()} from ${event.start.x},${event.start.y} to ${event.end.x},${event.end.y} and healed ${prettyPrint(event.healedUnit).toLowerCase()} at ${event.target.x},${event.target.y} for ${event.healedDamage} damage.`;
+      if (event.consumedObject === "money" && event.moneyAward) {
+        res += ` They collected $${event.moneyAward}.`;
+      }
+      break;
     case "endTurn":
       res = `${event.actor} ended turn. Next player gained ${event.income} income.`;
       break;

@@ -1,5 +1,7 @@
 # Feature - Special Combat Bonus
 
+STATUS - COMPLETE (MERGED)
+
 This document describes a feature - special combat bonuses for specific unit types. This feature will apply to 2 unit types - studentAthlete, and zuckerbird.
 
 ## Summary

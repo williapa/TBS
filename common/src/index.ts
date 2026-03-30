@@ -26,6 +26,7 @@ import {
 import getSpawnOptions from "./spawn/getSpawnOptions";
 import getSpawnableCells from "./spawn/getSpawnableCells";
 import { canReceiveBoost, canUnitBoost, getBoostableCellIndexes } from "./boost";
+import { canReceiveHeal, canUnitHeal, getHealableCellIndexes, HEAL_AMOUNT } from "./heal";
 import {
   buildingUnitOptions,
   BuildingUnitOption,
@@ -57,7 +58,9 @@ export {
   ConstructionOption,
   BuildingUnitOption,
   canReceiveBoost,
+  canReceiveHeal,
   canUnitBoost,
+  canUnitHeal,
   Coords,
   canUnitCollectObjects,
   getBoostableCellIndexes,
@@ -66,6 +69,8 @@ export {
   getConstructionOptions,
   getConsumableObjectAtCell,
   getConstructableCells,
+  getHealableCellIndexes,
+  HEAL_AMOUNT,
   getIncomeForTeam,
   isObjectUnit,
   getSpawnOptions,
