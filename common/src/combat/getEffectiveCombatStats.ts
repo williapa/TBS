@@ -23,7 +23,7 @@ const specialCombatRules: SpecialCombatRule[] = [
   {
     unit: "zuckerbird",
     matches: (opponent) => opponent.unit === "capital",
-    stats: [100, 8]
+    stats: [160, 8]
   },
   {
     unit: "zuckerbird",

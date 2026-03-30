@@ -53,7 +53,7 @@ test("boosted units get +10/+10 when no special combat bonus applies", () => {
 test("zuckerbird gets its capital combat bonus", () => {
   assert.deepEqual(
     getEffectiveCombatStats(createMapItem("zuckerbird"), createMapItem("capital")),
-    [100, 8]
+    [160, 8]
   );
 });
 
