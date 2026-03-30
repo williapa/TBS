@@ -16,6 +16,7 @@ const Game = (props: GameProps) => {
           activeTurn={creatorTurn}
           color="orange"
           email={props.creator}
+          income={view.creatorIncome}
           money={view.creatorMoney}
         />
         <GameMap
@@ -30,6 +31,7 @@ const Game = (props: GameProps) => {
           activeTurn={!view.isGameOver && !creatorTurn}
           color="purple"
           email={props.challenger}
+          income={view.challengerIncome}
           money={view.challengerMoney}
         />
       </div>

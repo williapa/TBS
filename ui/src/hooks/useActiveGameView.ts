@@ -1,3 +1,4 @@
+import { getIncomeForTeam } from "@TBS/common";
 import useUser from "./useUser";
 import { useGameSocket } from "./gameSocketContext";
 
@@ -16,9 +17,13 @@ const useActiveGameView = (game: GameProps): ActiveGameView => {
   const currentMap = hasSocketMap(map) ? map : game.mapData;
   const currentTurn = turn.length > 0 && turn !== "gameOver" ? turn : game.activeTurn;
   const isGameOver = Boolean(game.winner) || turn === "gameOver";
+  const creatorIncome = getIncomeForTeam(currentMap, ORANGE);
+  const challengerIncome = getIncomeForTeam(currentMap, PURPLE);
 
   return {
+    challengerIncome,
     challengerMoney: challengerMoney ?? game.challengerMoney,
+    creatorIncome,
     creatorMoney: creatorMoney ?? game.creatorMoney,
     currentMap,
     currentTurn,

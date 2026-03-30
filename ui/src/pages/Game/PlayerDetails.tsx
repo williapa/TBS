@@ -8,10 +8,11 @@ type PlayerDetailsMap = {
   activeTurn: boolean;
   color: "orange" | "purple";
   email: string;
+  income: number;
   money: number;
 };
 
-const PlayerDetails = ({ activeTurn, color, email, money }: PlayerDetailsMap) => {
+const PlayerDetails = ({ activeTurn, color, email, income, money }: PlayerDetailsMap) => {
   const [comment, setComment] = useState("");
   const { sendMove, turn } = useGameSocket();
   const { user, pin } = useUser();
@@ -52,6 +53,10 @@ const PlayerDetails = ({ activeTurn, color, email, money }: PlayerDetailsMap) =>
         <p>
           <b> Money: </b> 
           <span> {money} </span>
+        </p>
+        <p>
+          <b> Income/turn: </b>
+          <span> {income} </span>
         </p>
       </div>
     </div>

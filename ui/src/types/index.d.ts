@@ -580,7 +580,9 @@ type GameGridInteractionProps = {
 };
 
 type ActiveGameView = {
+  challengerIncome: number;
   challengerMoney: number;
+  creatorIncome: number;
   creatorMoney: number;
   currentMap: MapItem[][];
   currentTurn: string;
