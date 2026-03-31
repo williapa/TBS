@@ -253,7 +253,7 @@ export const processGameAction = async (
   if (!gameItem) return { ok: false, error: "no game found" };
   if (gameItem.winner) return { ok: false, error: "game already ended" };
   if (gameItem.activeTurn !== email)
-    return { ok: false, error: "not your turn idiot" };
+    return { ok: false, error: "It is not your turn." };
 
   // Validate user (pin check via DB)
   const userResult = await ddbDocClient.send(

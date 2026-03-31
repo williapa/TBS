@@ -1,6 +1,8 @@
 # TBS
 
-TBS is a turn-based strategy game for the browser. The working title is "MedalVersus", which is meant to be a play on "MetaVerse" - the defunct facebook VR endeavor. 
+![game Screenshot](./game-capture.png)
+
+TBS is a turn-based strategy game for the browser. The working title is "Medal Versus", which is meant to be a play on "MetaVerse" - the defunct facebook VR endeavor. 
 
 This project uses:
 
@@ -10,10 +12,9 @@ This project uses:
 
 to run the /ui workspace, and 
 
-- ec2
+- ec2 (todo)
 - node.js
 - dynamodb
-- api gateway
 
 to run the /server workspace. 
 
@@ -57,7 +58,7 @@ The most important thing to know is that the root package (/TBS) build command s
 7. Start the ui using `npm run dev:ui`. The react app runs on localhost:3000.
 8. At this point, all requirements for local development are running. Howeer, if you ever need to inspect the database contents, it is helpful to use the "dynamodb-admin" tool, which provides a GUI for dynamodb. Simply run `dynamodb-admin` and then navigate to localhost:8001 to inspect and manage your table and its records.
 
-# Ports Reference
+## Ports Reference
 - 3000 - UI
 - 8000 - dynamodb-local
 - 8001 - dynamodb-admin GUI
