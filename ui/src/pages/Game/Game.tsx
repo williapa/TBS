@@ -1,3 +1,4 @@
+import { useState } from "react";
 import EventsPanel from "./Events/EventsPanel";
 import "./Game.css"
 import GameMap from "./GameMap";
@@ -8,6 +9,7 @@ import useActiveGameView from "../../hooks/useActiveGameView";
 const Game = (props: GameProps) => {
   const view = useActiveGameView(props);
   const creatorTurn = !view.isGameOver && view.currentTurn === props.creator;
+  const [panelState, setPanelState] = useState<GamePanelState | null>(null);
 
   return (
     <>
@@ -25,6 +27,7 @@ const Game = (props: GameProps) => {
             view.perspectiveTeam === "orange" ? view.creatorMoney : view.challengerMoney
           }
           mapData={view.currentMap}
+          onPanelStateChange={setPanelState}
           perspective={view.perspectiveTeam}
         />
         <PlayerDetails
@@ -36,7 +39,7 @@ const Game = (props: GameProps) => {
         />
       </div>
       <div className="r2">
-        <GamePanel />
+        <GamePanel state={panelState} />
         <EventsPanel />
       </div>
     </>

@@ -1,0 +1,70 @@
+.game-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 12px;
+  width: 100%;
+}
+
+.game-panel__section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 10px;
+}
+
+.game-panel__title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.game-panel__grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+}
+
+.game-panel__item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.game-panel__label {
+  color: #5f6b7a;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.game-panel__value {
+  line-height: 1.35;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.game-panel__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.game-panel__action {
+  min-width: 0;
+}
+
+.game-panel__action summary {
+  cursor: pointer;
+  font-weight: 600;
+  list-style-position: inside;
+}
+
+.game-panel__action-description {
+  line-height: 1.35;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}

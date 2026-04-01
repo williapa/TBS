@@ -19,13 +19,21 @@ import {
   getTargetType,
   getTargetedCellIndexes,
 } from "./gameInteraction";
+import { buildGamePanelState } from "./gamePanelState";
 
 const sameCoords = (a: Coords | null, b: Coords) =>
   Boolean(a && a.x === b.x && a.y === b.y);
 
-const GameMap = ({ active = false, availableFunds, mapData, perspective }: ActiveMapProps) => {
+const GameMap = ({
+  active = false,
+  availableFunds,
+  mapData,
+  onPanelStateChange,
+  perspective,
+}: ActiveMapProps) => {
   const parentRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState<dim>({ width: 100, height: 100 });
+  const [lastInspectedCoords, setLastInspectedCoords] = useState<Coords | null>(null);
   const windowSize = useWindowDimensions();
   const { sendMove, setMap } = useGameSocket();
   const { user, pin } = useUser();
@@ -47,9 +55,25 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
 
   useEffect(() => {
     dispatch({ type: "RESET_AFTER_SERVER_EVENT" });
+    setLastInspectedCoords(null);
   }, [mapData]);
 
+  useEffect(() => {
+    const panelState = buildGamePanelState({
+      active,
+      interactionState,
+      lastInspectedCoords,
+      mapData,
+    });
+
+    onPanelStateChange?.(panelState);
+  }, [active, interactionState, lastInspectedCoords, mapData, onPanelStateChange]);
+
   const handleCellClick = (mapItem: MapItem, position: MenuPosition) => {
+    if (!active || !interactionState.selectedUnit) {
+      setLastInspectedCoords({ x: mapItem.row, y: mapItem.column });
+    }
+
     if (!active) {
       return;
     }
@@ -152,11 +176,17 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
       return;
     }
 
+    if (!interactionState.selectedUnit) {
+      return;
+    }
+
+    setLastInspectedCoords(null);
     dispatch({ type: "CANCEL_FLOW" });
   };
 
   const handleMenuAction = (action: GameMenuActionId) => {
     if (action === "cancel") {
+      setLastInspectedCoords(null);
       dispatch({ type: "CANCEL_FLOW" });
       return;
     }
@@ -223,12 +253,14 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
       const moveAction = buildMoveAction(interactionState);
 
       if (!moveAction || moveAction.action !== "move") {
+        setLastInspectedCoords(null);
         dispatch({ type: "CANCEL_FLOW" });
         return;
       }
 
       setMap(moveMapUnit(mapData, moveAction.start, moveAction.end));
       sendMove(moveAction, user, pin);
+      setLastInspectedCoords(null);
       dispatch({ type: "CANCEL_FLOW" });
       return;
     }
@@ -237,11 +269,13 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
       const attackAction = buildAttackAction(interactionState);
 
       if (!attackAction) {
+        setLastInspectedCoords(null);
         dispatch({ type: "CANCEL_FLOW" });
         return;
       }
 
       sendMove(attackAction, user, pin);
+      setLastInspectedCoords(null);
       dispatch({ type: "CANCEL_FLOW" });
       return;
     }
@@ -250,11 +284,13 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
       const boostAction = buildBoostAction(interactionState);
 
       if (!boostAction) {
+        setLastInspectedCoords(null);
         dispatch({ type: "CANCEL_FLOW" });
         return;
       }
 
       sendMove(boostAction, user, pin);
+      setLastInspectedCoords(null);
       dispatch({ type: "CANCEL_FLOW" });
       return;
     }
@@ -263,11 +299,13 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
       const healAction = buildHealAction(interactionState);
 
       if (!healAction) {
+        setLastInspectedCoords(null);
         dispatch({ type: "CANCEL_FLOW" });
         return;
       }
 
       sendMove(healAction, user, pin);
+      setLastInspectedCoords(null);
       dispatch({ type: "CANCEL_FLOW" });
       return;
     }
@@ -276,11 +314,13 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
       const moveAction = buildMoveAction(interactionState);
 
       if (!moveAction || moveAction.action !== "move" || !moveAction.objectTarget) {
+        setLastInspectedCoords(null);
         dispatch({ type: "CANCEL_FLOW" });
         return;
       }
 
       sendMove(moveAction, user, pin);
+      setLastInspectedCoords(null);
       dispatch({ type: "CANCEL_FLOW" });
       return;
     }
@@ -289,11 +329,13 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
       const loadAction = buildLoadAction(interactionState);
 
       if (!loadAction) {
+        setLastInspectedCoords(null);
         dispatch({ type: "CANCEL_FLOW" });
         return;
       }
 
       sendMove(loadAction, user, pin);
+      setLastInspectedCoords(null);
       dispatch({ type: "CANCEL_FLOW" });
       return;
     }
@@ -302,11 +344,13 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
       const constructAction = buildConstructAction(interactionState);
 
       if (!constructAction) {
+        setLastInspectedCoords(null);
         dispatch({ type: "CANCEL_FLOW" });
         return;
       }
 
       sendMove(constructAction, user, pin);
+      setLastInspectedCoords(null);
       dispatch({ type: "CANCEL_FLOW" });
       return;
     }
@@ -315,11 +359,13 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
       const spawnAction = buildSpawnAction(interactionState);
 
       if (!spawnAction) {
+        setLastInspectedCoords(null);
         dispatch({ type: "CANCEL_FLOW" });
         return;
       }
 
       sendMove(spawnAction, user, pin);
+      setLastInspectedCoords(null);
       dispatch({ type: "CANCEL_FLOW" });
       return;
     }
@@ -328,11 +374,13 @@ const GameMap = ({ active = false, availableFunds, mapData, perspective }: Activ
       const unloadAction = buildUnloadAction(interactionState);
 
       if (!unloadAction) {
+        setLastInspectedCoords(null);
         dispatch({ type: "CANCEL_FLOW" });
         return;
       }
 
       sendMove(unloadAction, user, pin);
+      setLastInspectedCoords(null);
       dispatch({ type: "CANCEL_FLOW" });
       return;
     }

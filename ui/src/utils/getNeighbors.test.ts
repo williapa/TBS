@@ -29,7 +29,7 @@ test('Base case - grid width of two and center cell (3) returns all neighbor ind
 ];
 
   for (const testCase of testCases) {
-    expect(getNeighbors(testCase.grid, testCase.cellIndex)).toEqual(testCase.expectedResult);
+    expect(getNeighbors(testCase.grid, testCase.cellIndex).sort((a,b) => a - b)).toEqual(testCase.expectedResult);
   }
 
 });

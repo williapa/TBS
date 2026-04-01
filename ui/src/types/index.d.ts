@@ -239,6 +239,7 @@ type ActiveMapProps = {
   active?: boolean;
   availableFunds: number;
   mapData: MapItem[][];
+  onPanelStateChange?: (state: GamePanelState | null) => void;
   perspective: TeamType.purple | TeamType.orange;
 };
 
@@ -568,6 +569,44 @@ type GameInteractionState = {
   selectedSpawnUnit: SpawnableUnitType | null;
   selectedUnit: MapItem | null;
   selectedUnloadTarget: Coords | null;
+};
+
+type GamePanelAction = {
+  id: string;
+  label: string;
+  description: string;
+};
+
+type GamePanelRow =
+  | {
+      actions: GamePanelAction[];
+      id: string;
+      label: string;
+      type: "actions";
+    }
+  | {
+      color?: TeamType;
+      id: string;
+      label: string;
+      type: "text";
+      value: string;
+    };
+
+type GamePanelOccupant = {
+  boosted?: boolean;
+  damage?: number;
+  moved?: boolean;
+  team?: TeamType;
+  unit: UnitTypes;
+};
+
+type GamePanelState = {
+  coords: Coords;
+  focus: "actor" | "cell";
+  occupant: GamePanelOccupant | null;
+  rows: GamePanelRow[];
+  terrain: TerrainType;
+  transportRows?: GamePanelRow[];
 };
 
 type GameGridInteractionProps = {

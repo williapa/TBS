@@ -1,5 +1,7 @@
 # Feature - Game Panel
 
+STATUS - COMPLETE (MERGED)
+
 This document describes data that should be displayed in the GamePanel.tsx component, whenever a player clicks a cell on the map. The GamePanel.tsx is a panel that is already integrated into the active game view, occupying the bottom left and bottom middle of the screen, to the left of the events panel. but currently, it only displays static text "Details" and is not dynamic.
 
 ## Flow
@@ -143,3 +145,10 @@ This plan resolves the main ambiguities as follows:
 - `Stats` means default stats plus boost effect, not opponent-dependent special combat bonuses.
 - Health is shown on a 0-100 scale derived from `damage`.
 - Buildings may show `Acted` only when `moved` is actually set by existing gameplay flows; otherwise the row is omitted.
+
+# Implementation Notes
+- ran into unexpected issues with nesting the cloudscape container in the panel section, which affected the column layout of the KeyValuePairs (# of columns became inconsistent & dependent on content width)
+- the solution was to simply write custom CSS to achieve a similar design - the main effect desired was columns of key value pairs
+- the "popover" component suggested to achieve a tooltip effect was replaced with an expander approach. 
+- changed the header "Transport" for vehicles carrying units, to be "Cargo" since this just seemed to make more sense.
+- changed the background of the panel to be black, matching the events table background

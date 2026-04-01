@@ -27,7 +27,17 @@ import getSpawnOptions from "./spawn/getSpawnOptions";
 import getSpawnableCells from "./spawn/getSpawnableCells";
 import { canReceiveBoost, canUnitBoost, getBoostableCellIndexes } from "./boost";
 import { canReceiveHeal, canUnitHeal, getHealableCellIndexes, HEAL_AMOUNT } from "./heal";
+import getCombatStats from "./combat/getCombatStats";
+import getEffectiveCombatStats from "./combat/getEffectiveCombatStats";
+import getDefaultUnitEnergy from "./movement/getDefaultUnitEnergy";
+import getTerrainUnitMovementCost from "./movement/getTerrainUnitMovementCost";
 import {
+  getActionDetailsForUnit,
+  getActionDetailsText,
+  getActionsForUnit,
+} from "./rules/getDetailsForUnit";
+import {
+  animalUnitOptions,
   buildingUnitOptions,
   BuildingUnitOption,
   ConstructionOption,
@@ -42,6 +52,7 @@ import {
   SpawnOption,
   SpawnableUnitOption,
   supportedActions,
+  TerrainOptions,
   TerrainOption,
   teamOptions,
   TeamOption,
@@ -51,6 +62,7 @@ import {
 } from "./types";
 
 export {
+  animalUnitOptions,
   attackUnit,
   checkForDead,
   checkMapHasCapitals,
@@ -62,16 +74,23 @@ export {
   canUnitBoost,
   canUnitHeal,
   Coords,
+  getActionDetailsForUnit,
+  getActionDetailsText,
+  getActionsForUnit,
   canUnitCollectObjects,
   getBoostableCellIndexes,
   getAllCellsWhichCanBeReached,
   getAttackableCells,
+  getCombatStats,
   getConstructionOptions,
+  getDefaultUnitEnergy,
+  getEffectiveCombatStats,
   getConsumableObjectAtCell,
   getConstructableCells,
   getHealableCellIndexes,
   HEAL_AMOUNT,
   getIncomeForTeam,
+  getTerrainUnitMovementCost,
   isObjectUnit,
   getSpawnOptions,
   getSpawnableCells,
@@ -89,6 +108,7 @@ export {
   ObjectUnitOption,
   SpawnOption,
   SpawnableUnitOption,
+  TerrainOptions,
   TerrainOption,
   buildingUnitOptions,
   moveableOptions,

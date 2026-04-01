@@ -7,9 +7,10 @@ import {
   vehicleUnitOptions,
   ObjectUnitOption
 } from "../types";
-import { canUnitBoost } from "../boost";
-import { canUnitHeal } from "../heal";
+import { boostTargetGroups, canUnitBoost } from "../boost";
+import { canUnitHeal, healTargetGroups } from "../heal";
 import { MISSILE_OBJECT_DAMAGE, NUKE_OBJECT_SPLASH_DAMAGE, NUKE_OBJECT_TARGET_DAMAGE } from "../objects";
+import getSpawnOptions from "../spawn/getSpawnOptions";
 
 const defaultActionsByGroup = {
   animal: ["move", "attack"],
@@ -37,6 +38,60 @@ export const detailsTextByAction = {
   zuckerbird: `Zuckerbirds receive a powerful combat bonus against enemy capitals, toppling unfriendly governments. It also receives a significant defense bonus against dragons.`,
 };
 
+const boostTargetTextByUnit = {
+  bluesMusician: "people",
+  scientist: "buildings",
+  zookeeper: "animals",
+} as const;
+
+const healTargetTextByUnit = {
+  ambulance: "people",
+  doctor: "people",
+  engineer: "buildings",
+  pilot: "flying units",
+  worker: "ground vehicles",
+} as const;
+
+const buildBoostTargetText = (targetGroup: string) =>
+  `adjacent allied ${targetGroup} that are not already boosted`;
+
+const buildHealTargetText = (targetGroup: string) =>
+  `adjacent allied damaged ${targetGroup}`;
+
+const getTargetTextForAction = (unit: string, action: string) => {
+  if (action === "boost" && unit in boostTargetGroups) {
+    return buildBoostTargetText(boostTargetTextByUnit[unit as keyof typeof boostTargetTextByUnit]);
+  }
+
+  if (action === "heal" && unit in healTargetGroups) {
+    return buildHealTargetText(healTargetTextByUnit[unit as keyof typeof healTargetTextByUnit]);
+  }
+
+  return null;
+};
+
+export const getActionDetailsText = (action: string, unit?: string) => {
+  const baseText = detailsTextByAction[action as keyof typeof detailsTextByAction] ?? "";
+
+  if (!unit) {
+    return baseText;
+  }
+
+  const targetText = getTargetTextForAction(unit, action);
+
+  if (!targetText) {
+    return baseText;
+  }
+
+  return `${baseText} Valid targets: ${targetText}.`;
+};
+
+export const getActionDetailsForUnit = (unit: string) =>
+  getActionsForUnit(unit).reduce<Record<string, string>>((detailsByAction, action) => {
+    detailsByAction[action] = getActionDetailsText(action, unit);
+    return detailsByAction;
+  }, {});
+
 export const getActionsForUnit = (unit: string): string[] => {
 
   const allowedActions = [];
@@ -47,7 +102,9 @@ export const getActionsForUnit = (unit: string): string[] => {
 
   } else if (buildingUnitOptions.includes(unit as BuildingUnitOption)) {
 
-    allowedActions.push(...defaultActionsByGroup["building"]);
+    if (getSpawnOptions(unit as BuildingUnitOption, Number.MAX_SAFE_INTEGER).length > 0) {
+      allowedActions.push(...defaultActionsByGroup["building"]);
+    }
 
   } else if (objectUnitOptions.includes(unit as ObjectUnitOption)) {
 
