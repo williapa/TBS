@@ -8,7 +8,7 @@ import {
 
 export const HEAL_AMOUNT = 10;
 
-const healTargetGroups = {
+export const healTargetGroups = {
   ambulance: peopleUnitOptions as readonly string[],
   doctor: peopleUnitOptions as readonly string[],
   engineer: buildingUnitOptions as readonly string[],

@@ -22,3 +22,4 @@ export const canUnitCollectObjects = (unit: string) =>
 export const getConsumableObjectAtCell = (cell?: MapItem) =>
   cell && isObjectUnit(cell.unit) ? cell.unit : null;
 
+

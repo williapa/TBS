@@ -5,7 +5,7 @@ import {
   peopleUnitOptions,
 } from "../types";
 
-const boostTargetGroups = {
+export const boostTargetGroups = {
   bluesMusician: peopleUnitOptions as readonly string[],
   scientist: buildingUnitOptions as readonly string[],
   zookeeper: animalUnitOptions as readonly string[],
