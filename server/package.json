@@ -9,6 +9,7 @@
     "lint": "eslint . --ext .ts",
     "format": "prettier --write",
     "db:create": "node dist/data/createTable.js",
+    "db:reset-test-game": "node dist/data/createOrUpdateTestGame.js",
     "db:delete": "node dist/data/deleteTable.js",
     "db:clear-games": "node dist/data/deleteGames.js"
   },
