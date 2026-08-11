@@ -1,8 +1,16 @@
+.game-view {
+  height: calc(100vh - 44px);
+  min-height: 480px;
+  overflow: hidden;
+  position: relative;
+}
+
 .r1 {
   display: flex;
   flex-direction: row;
   height: 80%;
 }
+
 .r2 {
   display: flex;
   flex-direction: row;
@@ -13,45 +21,169 @@
   outline: 1px solid white;
   outline-offset: -1px;
 }
+
 .r2 .panel {
   outline: 1px solid #ccc;
   outline-offset: -1px;
 }
+
 .panel {
   display: flex;
 }
+
 .game.panel {
   background: black;
   height: 100%;
-  overflow-y: scroll;
+  overflow-y: auto;
   width: 60%;
 }
+
 .game.special-panel {
-  width: 60%;
+  background: black;
   height: 100%;
-  outline: 1px solid rgb(122, 126, 130); /* #8b0000; */
+  outline: 1px solid rgb(122, 126, 130);
   outline-offset: -1px;
-  z-index: 9999;
+  overflow: hidden;
+  width: 60%;
+  z-index: 1;
 }
+
 .event.panel {
-  width: 40%;
-  height: 100%;
-  overflow-y: scroll;
   display: flex;
   flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  width: 40%;
 }
+
 .player.panel {
-  width: 20%;
+  display: flex;
+  flex-direction: column;
   height: 100%;
   text-align: center;
-  display: flex;
-  flex-direction: column;
+  width: 20%;
 }
+
+.player.panel--active {
+  outline: 4px solid white;
+  outline-offset: -4px;
+  /*z-index: 2;*/
+}
+
+.player__identity {
+  color: white;
+  min-height: 0;
+  padding: 8px;
+}
+
+.player__identity--orange {
+  background: orange;
+  color: #181818;
+}
+
+.player__identity--purple {
+  background: purple;
+}
+
+.player__name {
+  font-weight: 700;
+  margin: 0 0 4px;
+  overflow-wrap: anywhere;
+}
+
+.player__avatar {
+  height: min(22vh, 170px);
+  max-width: 100%;
+}
+
+.player__presence {
+  font-size: 0.8rem;
+  margin: 3px 0 0;
+}
+
+.player__actions {
+  display: flex;
+  justify-content: center;
+  margin: 8px 5px 0;
+}
+
+.player__actions .button {
+  cursor: pointer;
+  min-height: 34px;
+  width: 100%;
+}
+
+.player__stats {
+  margin-top: auto;
+  padding: 8px 4px;
+}
+
+.player__stats p,
 .panel p {
   margin-left: auto;
   margin-right: auto;
 }
-.map.panel {
-  width: 60%;
-  height: 100%;
+
+.game-view__status {
+  background: rgba(0, 0, 0, 0.78);
+  border: 1px solid #ccc;
+  font-size: 0.9rem;
+  left: 50%;
+  margin: 0;
+  padding: 5px 12px;
+  position: absolute;
+  top: 5px;
+  transform: translateX(-50%);
+  z-index: 3;
+}
+
+.game-view__role {
+  background: rgba(0, 0, 0, 0.78);
+  bottom: 20%;
+  font-size: 0.8rem;
+  left: 50%;
+  margin: 0 0 5px;
+  padding: 3px 8px;
+  position: absolute;
+  transform: translateX(-50%);
+  z-index: 3;
+}
+
+.game-view__metadata {
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.game-view__error {
+  background: #8b0000;
+  left: 50%;
+  margin: 0;
+  padding: 8px 12px;
+  position: absolute;
+  top: 42px;
+  transform: translateX(-50%);
+  z-index: 4;
+}
+
+@media (max-width: 720px) {
+  .player.panel {
+    width: 24%;
+  }
+
+  .game.special-panel {
+    width: 52%;
+  }
+
+  .player__avatar {
+    height: min(18vh, 110px);
+  }
+
+  .player__stats {
+    font-size: 0.75rem;
+  }
 }

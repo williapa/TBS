@@ -1,6 +1,6 @@
-import { MapItem, buildingUnitOptions} from "../types";
+import { BuildingUnitOption, MapItem, UnitOption, buildingUnitOptions} from "../types";
 
-const buildingIncomeMap = {
+const buildingIncomeMap: Record<BuildingUnitOption, number> = {
   airport: 100,
   bank: 1000,
   capital: 200,
@@ -14,11 +14,14 @@ const buildingIncomeMap = {
   zoo: 100
 };
 
+const isBuildingUnit = (unitType: UnitOption): unitType is BuildingUnitOption =>
+  (buildingUnitOptions as readonly UnitOption[]).includes(unitType);
+
 const getUnitIncome = (item: MapItem): number => {
   
   const unitType = item.unit;
 
-  if (buildingUnitOptions.indexOf(unitType) === -1) return 0;
+  if (!isBuildingUnit(unitType)) return 0;
 
   return buildingIncomeMap[unitType];
 

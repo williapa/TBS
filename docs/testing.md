@@ -1,18 +1,36 @@
-
 # Testing
 
-In order to most effectively used token allotments, the vast majority of testing is manual. The approach for agent tasks is to give specific and focused work plans, then validate via manual code review and testing.
+Run commands from the repository root.
 
-## Current Test Setup
+## Fast suites
 
-The current test setup is that there are not nearly enough tests. The UI workspace has its own test installation of jest and its own sparing unit tests. This was started as a toy project and tests were added for some core game mechanics like the hexagonal grid, and some base react functions, but aside from that, there are not many unit tests. In the future, there may be an additional e2e test workspace that contains integration tests for the server functions and UI tests with a tool like playwright, but the primary focus right now is to implement more core features of a turn-based game.
+- `npm run common:test`: shared contracts, parsers, rules, and deterministic reducer.
+- `npm run ui:test`: provider/gateway contracts, reconciliation, map repository/import/export, routes, and interactions. Live Supabase tests are skipped unless explicitly enabled.
+- `npm run build`: TypeScript compilation and production bundles.
 
-## How To Run Tests
-There are some tests covering action rules, and are contained in the /common workspace. There is a command in the root project, "commmon:test", which runs these tests.
+## Local Supabase
 
-the /ui project defines a test command through react scripts, the command is "test", and can be triggered from the root of the project with "ui:test". this is the primary area in which tests can currently be executed, though as mentioned before, there are not many.
+Start the local stack and configure the public values in the UI package's `.env.local` file, then run:
 
-## Future tests
-If adding unit tests for code in /common or /server workspaces, it is recommended to add an installation of jest as a dev dependency of the root project, and to define the tests in the same directory as the file under test with the added extension, like *.test.ts oor *.test.tsx. It would then be necessary to define a test command at the root level of the project, ideally to run all tests from all workspaces, but at least the tests in /common and /server, as a "test" script in the package.json.
+```sh
+npm run supabase:reset
+npm run supabase:test
+npm run supabase:lint
+```
 
-For e2e tests, it would be advisable to add any relevant dev-dependencies for such tests, like playwright.js, to the root package.json. Those test definitions/code, however, should go into a new workspace and directory, such as "e2e". For now, this is probably out of scope.
+To run the Supabase gateway contract directly through Jest:
+
+```sh
+RUN_SUPABASE_INTEGRATION=true \
+REACT_APP_SUPABASE_URL=http://127.0.0.1:54321 \
+REACT_APP_SUPABASE_PUBLISHABLE_KEY=<local-publishable-key> \
+CI=true npm test -w @TBS/ui -- --runTestsByPath src/multiplayer/supabase/SupabaseGameSessionGateway.test.ts
+```
+
+Never use a service-role key in browser or gateway tests.
+
+## Distributed browser acceptance
+
+Install the pinned browser once with `npx playwright install chromium`, keep local Supabase running, then run `npm run test:e2e`.
+
+The one-worker suite uses isolated anonymous browser contexts and covers creator/challenger/spectator share-link play, Presence, completion, all nine action families, tab closure and durable restore, a same-member stale-tab conflict, and exact action-ID retry. Failures retain trace, video, screenshots, an HTML report, and client console/page errors under ignored `test-results/` paths.

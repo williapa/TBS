@@ -86,14 +86,14 @@ test("boost still applies to the opposing unit when only one unit has a matchup 
 });
 
 test("calculateDamage uses matchup-aware stats for reversed combat roles", () => {
-  const originalRandom = Math.random;
+  assert.equal(calculateDamage(createMapItem("studentAthlete"), createMapItem("truck")), 0);
+  assert.equal(calculateDamage(createMapItem("truck"), createMapItem("studentAthlete")), 20);
+});
 
-  Math.random = () => 0.9;
+test("calculateDamage is deterministic for identical combat inputs", () => {
+  const attacker = createMapItem("soldier", 25, true);
+  const defender = createMapItem("leader", 40);
+  const results = Array.from({ length: 20 }, () => calculateDamage(attacker, defender));
 
-  try {
-    assert.equal(calculateDamage(createMapItem("studentAthlete"), createMapItem("truck")), 0);
-    assert.equal(calculateDamage(createMapItem("truck"), createMapItem("studentAthlete")), 21);
-  } finally {
-    Math.random = originalRandom;
-  }
+  assert.deepEqual(results, Array(20).fill(9));
 });

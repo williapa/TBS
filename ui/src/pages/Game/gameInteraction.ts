@@ -1,6 +1,5 @@
 import {
   GameAction,
-  MapItem,
   canUnitCollectObjects,
   getBoostableCellIndexes,
   getAllCellsWhichCanBeReached,
@@ -47,7 +46,7 @@ const emptyState = (): GameInteractionState => ({
 
 const hasAttackTargets = (targets: number[]) => targets.length > 0;
 
-const isConstructionWorker = (unit: UnitTypes) => unit === "constructionWorker";
+const isConstructionWorker = (unit: string) => unit === "constructionWorker";
 
 const getCurrentActorCoords = (state: GameInteractionState) =>
   state.previewDestination ?? state.origin;
@@ -149,7 +148,7 @@ const buildUnloadConfirmMenuOptions = (): GameMenuOption[] => [
   { id: "cancel", label: "Cancel" },
 ];
 
-const buildSpawnMenuOptions = (buildingType: UnitTypes, availableFunds: number): GameMenuOption[] => {
+const buildSpawnMenuOptions = (buildingType: string, availableFunds: number): GameMenuOption[] => {
   const affordableUnits = new Set(
     getSpawnOptions(buildingType, availableFunds).map(({ unit }) => unit)
   );
@@ -235,7 +234,7 @@ const getConstructableMap = (state: GameInteractionState, map: HexMap) => {
     map.map((row) => row.map((item) => ({ ...item }))),
     state.origin,
     state.previewDestination
-  );
+  ) as unknown as HexMap;
 };
 
 const getPreviewMap = (state: GameInteractionState, map: HexMap) => {
@@ -247,7 +246,7 @@ const getPreviewMap = (state: GameInteractionState, map: HexMap) => {
     map.map((row) => row.map((item) => ({ ...item }))),
     state.origin,
     state.previewDestination
-  );
+  ) as unknown as HexMap;
 };
 
 const getProjectileTargetIndexes = (map: HexMap, perspective: TeamType) =>

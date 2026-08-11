@@ -2,6 +2,11 @@ import { Coords, MapItem } from "../types"
 import moveMapUnit from "../movement/moveMapUnit";
 import calculateDamage from "./calculateDamage";
 
+export type AttackUnitResult = [
+  mapData: MapItem[][],
+  damage: [damageToDefender: number, counterattackDamage: number]
+];
+
 const isUnitDead = (dmg: number, unit: MapItem) => {
   return (unit.damage || 0) + dmg >= 100;
 };
@@ -41,7 +46,7 @@ const attack = (attacker: MapItem, defender: MapItem): [MapItem, number] => {
 
 };
 
-const attackUnit = (mapData: MapItem[][], attacker: Coords, destination: Coords, defender: Coords) => {
+const attackUnit = (mapData: MapItem[][], attacker: Coords, destination: Coords, defender: Coords): AttackUnitResult => {
 
 
   const defenderMapItem = mapData[defender.x][defender.y];
@@ -52,7 +57,7 @@ const attackUnit = (mapData: MapItem[][], attacker: Coords, destination: Coords,
 
   attackerMapItem.moved = true;
 
-  let attackResult;
+  let attackResult: [MapItem, number] | undefined;
 
   const defenderResult = attack(attackerMapItem, defenderMapItem);
 

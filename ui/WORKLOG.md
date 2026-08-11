@@ -1,5 +1,7 @@
 # Medal Versus - Worklog
 
+> Historical record: this 2023 worklog describes retired client/server implementation work. It is preserved for project history and is not a source of current architecture or operating instructions. See `../docs/architecture.md` and `../docs/testing.md` for the supported system.
+
 ---
 ## Friday, March 3, 2023
 ---
@@ -234,7 +236,6 @@ spent 20K for that 328i all white bmw
 yeah I'm williams i talk the #2
 but u knuckle head if u think i wouldn't bounce back & kick u like a rubber boot
 in my true religion suit
-
 
 
 

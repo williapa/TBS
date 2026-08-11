@@ -7,7 +7,7 @@ const hex = (n: number) => 2 * n - 1;
 
 type HexGridProps = {
   activeTeam?: TeamType;
-  callback?: (x: number, y: number, mapItem: MapItem, action?: gameActions) => void;
+  callback?: (x: number, y: number, mapItem: MapItem) => void;
   dimensions: dim;
   editing?: boolean;
   gameInteraction?: GameGridInteractionProps;

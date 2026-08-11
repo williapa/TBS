@@ -1,5 +1,9 @@
 # Game Domain
 
+Game state is represented by the versioned `GameState` contract in `@TBS/common`. Postgres stores the gameplay payload (`map` and team money) separately from canonical session metadata such as lifecycle, revision, active team, winner, seats, and invite hash. Every accepted action produces the next immutable state plus ordered domain events through the deterministic `applyGameAction` reducer.
+
+Two durable player seats exist: the creator is orange and the challenger is purple, with purple taking the first turn. Additional members are spectators. Spectators share canonical snapshots, action history, revision notifications, and Presence, but cannot submit actions. Realtime is only a wake-up signal; missed notices are reconciled from bounded action history or the canonical database snapshot.
+
 ## Core Concepts
 
 # Map
@@ -21,7 +25,7 @@ units are player owned game entities, such as animals, vehicles, buildings, obje
 
 ## Animals
 
-Animals can move and attack. As for all movement, the terrain of each cell being moved through impacts the total range of movement - this is calculated in the common function which returns cells which can be moved to. Similarly, the common code defines the attributes that determine combat damage, although all combat introduces an element of randomization to introduce a level of unpredictability.
+Animals can move and attack. As for all movement, the terrain of each cell being moved through impacts the total range of movement - this is calculated in the common function which returns cells which can be moved to. The shared combat rules define deterministic damage from unit attributes and current health.
 
 ## People
 
@@ -47,7 +51,7 @@ During a player's turn, any unit which can move can move one time. A unit which 
 At the end of a turn, the 
 
 # Combat
-When a unit attacks another unit, the attacking unit does damage based on each unit's combat stats (attack and defense) defined for each unit, their current health, and an element of randomization. If the attacking unit does not destroy the defending unit, and the defneding unit also has the ability to "attack", then it deals damage back to the attacker, based on the same formula. This formula subtracts computed damage from the target unit's health. Since attack damage takes health as an input, and the attacker deals damage first, it is likely that the defender will end up doing less damage back to the attacker.  
+When a unit attacks another unit, damage is deterministic. Effective attack and defense stats include the existing matchup and boost modifiers. Attacker vitality is `(100 - attacker damage) / 100`, and defender vitality is `(100 - defender damage) / 100`. The exact formula is `max(0, floor(effective attack × attacker vitality) - ceil(effective defense × defender vitality))`. If the first strike does not destroy the defender, the defender counterattacks with the same formula using the post-strike board state. Because the attacker deals damage first, a damaged defender may inflict less counterattack damage.
 
 # Win Conditions
 

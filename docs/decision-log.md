@@ -1,5 +1,7 @@
 # Decision Log
 
+> Historical record: the decisions below describe the retired AWS/Express architecture. The supported architecture is documented in `docs/architecture.md`; the superseding Supabase migration decision is recorded in `docs/features/supabase-realtime-migration.md`.
+
 ## How To Use This File
 
 When important decisions relevant to the development game are made, it is helpful to make a record of the thought process or key points in this file.

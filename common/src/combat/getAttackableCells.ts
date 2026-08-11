@@ -4,7 +4,7 @@ import canBeAttacked from "./canBeAttacked";
 
 const getAttackableCells = (team: "orange" | "purple" | "gray", cellsInMovementRange: number[], map: MapItem[][]) => {
 
-  const uniqueAttackableCells = [];
+  const uniqueAttackableCells: number[] = [];
 
   if (team === "gray") return uniqueAttackableCells;
   

@@ -1,5 +1,6 @@
 import {
   MapItem,
+  ObjectUnitOption,
   objectUnitOptions,
   peopleUnitOptions,
   vehicleUnitOptions,
@@ -10,10 +11,10 @@ export const MISSILE_OBJECT_DAMAGE = 30;
 export const NUKE_OBJECT_TARGET_DAMAGE = 50;
 export const NUKE_OBJECT_SPLASH_DAMAGE = 25;
 
-const consumableObjectUnits = objectUnitOptions.filter((unit) => unit !== "none");
+const consumableObjectUnits: readonly ObjectUnitOption[] = ["missile", "money", "nuke"];
 
-export const isObjectUnit = (unit: string): unit is (typeof consumableObjectUnits)[number] =>
-  consumableObjectUnits.includes(unit as (typeof consumableObjectUnits)[number]);
+export const isObjectUnit = (unit: string): unit is ObjectUnitOption =>
+  consumableObjectUnits.includes(unit as ObjectUnitOption);
 
 export const canUnitCollectObjects = (unit: string) =>
   peopleUnitOptions.includes(unit as (typeof peopleUnitOptions)[number]) ||
@@ -21,5 +22,4 @@ export const canUnitCollectObjects = (unit: string) =>
 
 export const getConsumableObjectAtCell = (cell?: MapItem) =>
   cell && isObjectUnit(cell.unit) ? cell.unit : null;
-
 

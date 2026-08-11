@@ -1,0 +1,5 @@
+-- Initial local Supabase scaffold.
+--
+-- This migration is intentionally empty. The durable game schema begins in
+-- the next migration packet so this checkpoint only establishes a repeatable
+-- local migration workflow.

@@ -1,4 +1,3 @@
-import AsyncSelect from "../AsyncSelect/AsyncSelect";
 import units from "../../components/Map/Unit/units";
 import prettyPrint from "../../utils/prettyPrint";
 
@@ -7,7 +6,7 @@ const checkStyle = {
   marginTop: "12px"
 };
 
-const Input = ({ change = (x: any) => (null), initial, name, options, type, url = "" }: InputProps) => {
+const Input = ({ initial, name, options, type }: InputProps) => {
 
   let optionGroups: any[] = [];
   options?.forEach((option) => {
@@ -18,8 +17,6 @@ const Input = ({ change = (x: any) => (null), initial, name, options, type, url 
   if (optionGroups.length < 1) optionGroups = [options];
 
   switch (type) {
-    case "asyncSelect":
-      return <AsyncSelect change={change} name={name} url={url} />;
     case "check":
       return <input style={checkStyle} key={name} type="checkbox" defaultValue={initial} name={name} />;
     case "number":

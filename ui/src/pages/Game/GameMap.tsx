@@ -1,9 +1,7 @@
 import { useEffect, useReducer, useRef, useState } from "react";
-import { moveMapUnit } from "@TBS/common";
+import { GameAction } from "@TBS/common";
 import HexGrid from "../../components/HexGrid/HexGrid";
 import useWindowDimensions from "../../hooks/useWindowDimensions";
-import useUser from "../../hooks/useUser";
-import { useGameSocket } from "../../hooks/gameSocketContext";
 import {
   buildAttackAction,
   buildBoostAction,
@@ -28,6 +26,7 @@ const GameMap = ({
   active = false,
   availableFunds,
   mapData,
+  onAction,
   onPanelStateChange,
   perspective,
 }: ActiveMapProps) => {
@@ -35,8 +34,6 @@ const GameMap = ({
   const [dimensions, setDimensions] = useState<dim>({ width: 100, height: 100 });
   const [lastInspectedCoords, setLastInspectedCoords] = useState<Coords | null>(null);
   const windowSize = useWindowDimensions();
-  const { sendMove, setMap } = useGameSocket();
-  const { user, pin } = useUser();
   const [interactionState, dispatch] = useReducer(
     gameInteractionReducer,
     undefined,
@@ -258,8 +255,7 @@ const GameMap = ({
         return;
       }
 
-      setMap(moveMapUnit(mapData, moveAction.start, moveAction.end));
-      sendMove(moveAction, user, pin);
+      onAction?.(moveAction as GameAction);
       setLastInspectedCoords(null);
       dispatch({ type: "CANCEL_FLOW" });
       return;
@@ -274,7 +270,7 @@ const GameMap = ({
         return;
       }
 
-      sendMove(attackAction, user, pin);
+      onAction?.(attackAction);
       setLastInspectedCoords(null);
       dispatch({ type: "CANCEL_FLOW" });
       return;
@@ -289,7 +285,7 @@ const GameMap = ({
         return;
       }
 
-      sendMove(boostAction, user, pin);
+      onAction?.(boostAction);
       setLastInspectedCoords(null);
       dispatch({ type: "CANCEL_FLOW" });
       return;
@@ -304,7 +300,7 @@ const GameMap = ({
         return;
       }
 
-      sendMove(healAction, user, pin);
+      onAction?.(healAction);
       setLastInspectedCoords(null);
       dispatch({ type: "CANCEL_FLOW" });
       return;
@@ -319,7 +315,7 @@ const GameMap = ({
         return;
       }
 
-      sendMove(moveAction, user, pin);
+      onAction?.(moveAction as GameAction);
       setLastInspectedCoords(null);
       dispatch({ type: "CANCEL_FLOW" });
       return;
@@ -334,7 +330,7 @@ const GameMap = ({
         return;
       }
 
-      sendMove(loadAction, user, pin);
+      onAction?.(loadAction);
       setLastInspectedCoords(null);
       dispatch({ type: "CANCEL_FLOW" });
       return;
@@ -349,7 +345,7 @@ const GameMap = ({
         return;
       }
 
-      sendMove(constructAction, user, pin);
+      onAction?.(constructAction);
       setLastInspectedCoords(null);
       dispatch({ type: "CANCEL_FLOW" });
       return;
@@ -364,7 +360,7 @@ const GameMap = ({
         return;
       }
 
-      sendMove(spawnAction, user, pin);
+      onAction?.(spawnAction);
       setLastInspectedCoords(null);
       dispatch({ type: "CANCEL_FLOW" });
       return;
@@ -379,7 +375,7 @@ const GameMap = ({
         return;
       }
 
-      sendMove(unloadAction, user, pin);
+      onAction?.(unloadAction);
       setLastInspectedCoords(null);
       dispatch({ type: "CANCEL_FLOW" });
       return;

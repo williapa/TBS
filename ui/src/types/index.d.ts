@@ -24,12 +24,6 @@ interface CellProps extends RowCol {
 
 type ModeType = "editor" | "game";
 
-interface Route {
-  to: string;
-  text: string;
-  component: JSX.Element;
-}
-
 type SelectTypes = typeof MirrorType |
   typeof TerrainType | 
   typeof TeamType | 
@@ -41,36 +35,20 @@ type SelectTypes = typeof MirrorType |
   string[];
 
 interface FieldProps {
-  change?: (x: any) => void;
   initial?: any;
   name: string;
   options?: SelectTypes | OptionGroups;
   type: InputType;
-  url?: string;
-}
-
-type FormProps = {
-  className?: string;
-  inputs: FieldProps[];
-  initialValues?: Record<string, unknown>;
-  name?: string;
-  top?: string;
-  left?: string;
-  save: (object: any) => void;
-  cancel: () => void;
 }
 
 interface InputProps {
-  change?: (x: any) => void;
   initial?: any;
   name: string;
   options?: Option[]
   type: InputType;
-  url?: string;
 }
 
 enum InputType {
-  asyncSelect = "asyncSelect",
   check = "check",
   number = "number",
   select = "select",
@@ -221,32 +199,14 @@ enum MirrorType {
 type OptionGroups = OptionGroup[];
 type OptionGroup = [string, SelectTypes];
 
-type GameProps = {
-  activeTurn: string;
-  challengerMoney: number;
-  mapData: MapItem[][];
-  creator: string;
-  creatorMoney: number;
-  challenger: string;
-  map: string;
-  name: string;
-  open_timestamp: string;
-  winCondition?: string;
-  winner?: string;
-};
-
 type ActiveMapProps = {
   active?: boolean;
   availableFunds: number;
   mapData: MapItem[][];
+  onAction?: (action: import("@TBS/common").GameAction) => void;
   onPanelStateChange?: (state: GamePanelState | null) => void;
   perspective: TeamType.purple | TeamType.orange;
 };
-
-type mapType = {
-  mapData: any;
-  mapName: string;
-}
 
 type dim = {
   width: number;
@@ -296,194 +256,6 @@ type SpawnableUnitType =
   | VehicleType.helicopter
   | VehicleType.sub
   | VehicleType.truck;
-
-type gameActions = "attack" | "boost" | "construct" | "end" | "heal" | "load" | "move" | "spawn" | "unload";
-
-type Attack = {
-  action: "attack";
-  attacker: Coords;
-  end: Coords;
-  defender: Coords;
-};
-
-type Boost = {
-  action: "boost";
-  start: Coords;
-  end: Coords;
-  target: Coords;
-};
-
-type Heal = {
-  action: "heal";
-  start: Coords;
-  end: Coords;
-  target: Coords;
-};
-
-type End = {
-  action: "end"
-};
-
-type Construct = {
-  action: "construct";
-  worker: Coords;
-  end: Coords;
-  cell: Coords;
-  building: BuildingType;
-};
-
-type Load = {
-  action: "load";
-  start: Coords;
-  end: Coords;
-  vehicle: Coords;
-};
-
-type Move = {
-  action: "move";
-  start: Coords;
-  end: Coords;
-  objectTarget?: Coords;
-};
-
-type Spawn = {
-  action: "spawn";
-  building: Coords;
-  end: Coords;
-  unit: SpawnableUnitType;
-};
-
-type Unload = {
-  action: "unload";
-  start: Coords;
-  end: Coords;
-  cell: Coords;
-};
-
-type GameAction = Attack | Boost | Construct | End | Heal | Load | Move | Spawn | Unload;
-
-type BaseGameEvent = {
-  id: string;
-  sk: string;
-  actor: string;
-};
-
-type AttackEvent = BaseGameEvent & {
-  action: "attack";
-  defender: Coords;
-  start: Coords;
-  end: Coords;
-  unit: string;
-  defendingUnit: string;
-  attackDamage: number;
-  defenseDamage: number;
-  deaths: unknown[];
-  consumedObject?: ObjectType.money | ObjectType.missile | ObjectType.nuke;
-  moneyAward?: number;
-};
-
-type BoostEvent = BaseGameEvent & {
-  action: "boost";
-  start: Coords;
-  end: Coords;
-  target: Coords;
-  unit: string;
-  boostedUnit: string;
-  consumedObject?: ObjectType.money | ObjectType.missile | ObjectType.nuke;
-  moneyAward?: number;
-};
-
-type EndTurnEvent = BaseGameEvent & {
-  action: "endTurn";
-  income: number;
-  creatorMoney: number;
-  challengerMoney: number;
-};
-
-type ConstructEvent = BaseGameEvent & {
-  action: "construct";
-  building: BuildingType;
-  cell: Coords;
-  cost: number;
-  worker: Coords;
-  consumedObject?: ObjectType.money | ObjectType.missile | ObjectType.nuke;
-  moneyAward?: number;
-};
-
-type GameOverEvent = BaseGameEvent & {
-  action: "gameOver";
-};
-
-type HealEvent = BaseGameEvent & {
-  action: "heal";
-  start: Coords;
-  end: Coords;
-  target: Coords;
-  unit: string;
-  healedUnit: string;
-  healedDamage: number;
-  consumedObject?: ObjectType.money | ObjectType.missile | ObjectType.nuke;
-  moneyAward?: number;
-};
-
-type LoadEvent = BaseGameEvent & {
-  action: "load";
-  start: Coords;
-  end: Coords;
-  vehicle: Coords;
-  unit: string;
-  vehicleUnit: string;
-  consumedObject?: ObjectType.money | ObjectType.missile | ObjectType.nuke;
-  moneyAward?: number;
-};
-
-type MoveEvent = BaseGameEvent & {
-  action: "move";
-  start: Coords;
-  end: Coords;
-  unit: string;
-  consumedObject?: ObjectType.money | ObjectType.missile | ObjectType.nuke;
-  moneyAward?: number;
-  objectTarget?: Coords;
-  objectPreventedByPriest?: boolean;
-  objectDamage?: {
-    cell: Coords;
-    damage: number;
-    unit: string;
-    killed: boolean;
-  }[];
-};
-
-type SpawnEvent = BaseGameEvent & {
-  action: "spawn";
-  building: Coords;
-  cost: number;
-  end: Coords;
-  unit: SpawnableUnitType;
-};
-
-type UnloadEvent = BaseGameEvent & {
-  action: "unload";
-  start: Coords;
-  end: Coords;
-  cell: Coords;
-  unit: string;
-  vehicleUnit: string;
-  consumedObject?: ObjectType.money | ObjectType.missile | ObjectType.nuke;
-  moneyAward?: number;
-};
-
-type GameEvent =
-  | AttackEvent
-  | BoostEvent
-  | ConstructEvent
-  | EndTurnEvent
-  | GameOverEvent
-  | HealEvent
-  | LoadEvent
-  | MoveEvent
-  | SpawnEvent
-  | UnloadEvent;
 
 type GameInteractionMode =
   | "idle"
@@ -617,27 +389,3 @@ type GameGridInteractionProps = {
   targetedCellIndexes: number[];
   targetType: GameCellTargetType | null;
 };
-
-type ActiveGameView = {
-  challengerIncome: number;
-  challengerMoney: number;
-  creatorIncome: number;
-  creatorMoney: number;
-  currentMap: MapItem[][];
-  currentTurn: string;
-  isCreatorPerspective: boolean;
-  isGameOver: boolean;
-  isLocalPlayersTurn: boolean;
-  opponentTeam: TeamType.orange | TeamType.purple;
-  perspectiveTeam: TeamType.orange | TeamType.purple;
-};
-
-type updateGameParams = {
-  email: string;
-  pin: string;
-  gameAction: GameAction;
-};
-
-type Events = {
-  Items: GameEvent[]
-}

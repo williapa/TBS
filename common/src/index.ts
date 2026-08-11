@@ -1,4 +1,3 @@
-import validateUser from "./validation/validateUser";
 import moveMapUnit from "./movement/moveMapUnit";
 import isTurnOver from "./rules/isTurnOver";
 import getAllCellsWhichCanBeReached from "./movement/getAllCellsWhichCanBeReached";
@@ -38,6 +37,7 @@ import {
 } from "./rules/getDetailsForUnit";
 import {
   animalUnitOptions,
+  AnimalUnitOption,
   buildingUnitOptions,
   BuildingUnitOption,
   ConstructionOption,
@@ -45,6 +45,7 @@ import {
   MapItem,
   objectUnitOptions,
   ObjectUnitOption,
+  PeopleUnitOption,
   peopleUnitOptions,
   Coords,
   GameEvent,
@@ -56,6 +57,9 @@ import {
   TerrainOption,
   teamOptions,
   TeamOption,
+  TeamColor,
+  UnitOption,
+  VehicleUnitOption,
   vehicleUnitOptions,
   winConditions,
   WinCondition,
@@ -63,6 +67,7 @@ import {
 
 export {
   animalUnitOptions,
+  AnimalUnitOption,
   attackUnit,
   checkForDead,
   checkMapHasCapitals,
@@ -106,6 +111,7 @@ export {
   NUKE_OBJECT_SPLASH_DAMAGE,
   NUKE_OBJECT_TARGET_DAMAGE,
   ObjectUnitOption,
+  PeopleUnitOption,
   SpawnOption,
   SpawnableUnitOption,
   TerrainOptions,
@@ -119,8 +125,15 @@ export {
   supportedActions,
   teamOptions,
   TeamOption,
-  validateUser,
+  TeamColor,
+  UnitOption,
   vehicleUnitOptions,
+  VehicleUnitOption,
   winConditions,
   WinCondition
 };
+
+export * from "./contracts/types";
+export * from "./contracts/parsers";
+export * from "./contracts/fixtures";
+export { default as applyGameAction } from "./engine/applyGameAction";

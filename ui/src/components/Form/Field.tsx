@@ -29,12 +29,12 @@ const buildOptions = (options: SelectTypes | OptionGroups) => {
   return [];
 };
 
-const Field = ({ change, initial, name, options = [], type, url = "" }: FieldProps) => (
+const Field = ({ initial, name, options = [], type }: FieldProps) => (
   <div className="form-row">
     <label htmlFor={name}>
       {name}
     </label>
-    <Input change={change} initial={initial} name={name} options={buildOptions(options)} type={type} url={url} />
+    <Input initial={initial} name={name} options={buildOptions(options)} type={type} />
   </div>
 );
 

@@ -3,21 +3,24 @@
   "private": true,
   "workspaces": [
     "common",
-    "server",
     "ui"
   ],
   "scripts": {
-    "build": "npm run build -w @TBS/common && npm run build -w @TBS/server && npm run build -w @TBS/ui",
+    "build": "npm run build -w @TBS/common && npm run build -w @TBS/ui",
     "common:test": "npm run test -w @TBS/common",
-    "dev:server": "npm run start -w @TBS/server",
     "dev:ui": "npm run start -w @TBS/ui",
-    "db:create": "npm run db:create -w @TBS/server",
-    "db:reset-test-game": "npm run db:reset-test-game -w @TBS/server",
-    "db:delete": "npm run db:delete -w @TBS/server",
-    "db:clear-games": "npm run db:clear-games -w @TBS/server",
-    "ui:test": "npm run test -w @TBS/ui"
+    "ui:test": "npm run test -w @TBS/ui",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status",
+    "supabase:reset": "supabase db reset --local",
+    "supabase:migration:new": "supabase migration new",
+    "supabase:test": "supabase test db",
+    "supabase:lint": "supabase db lint --local --level warning",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
-    "dynamodb-admin": "^5.3.3"
+    "@playwright/test": "^1.62.1",
+    "supabase": "2.111.0"
   }
 }

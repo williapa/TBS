@@ -7,17 +7,17 @@ export interface MapItem {
   loadedUnit?: LoadedUnit;
   moved?: boolean;
   neighbors?: number[];
-  terrain: any;
-  unit: any;
-  team: any;
+  terrain: TerrainOption;
+  unit: UnitOption;
+  team: TeamColor;
 }
 
 export type LoadedUnit = {
   damage?: number;
   boosted?: boolean;
   moved?: boolean;
-  team: any;
-  unit: any;
+  team: TeamColor;
+  unit: UnitOption;
 };
 
 export type Coords = {
@@ -27,6 +27,7 @@ export type Coords = {
 
 export const teamOptions = ["orange", "purple"] as const;
 export type TeamOption = (typeof teamOptions)[number];
+export type TeamColor = TeamOption | "gray";
 
 export const winConditions = {
   CAPITAL_OR_ELIMINATION: "capital-or-combat-elimination",
@@ -35,12 +36,13 @@ export const winConditions = {
 
 export type WinCondition = (typeof winConditions)[keyof typeof winConditions];
 
-export const animalUnitOptions = [
+export const animalUnitOptions: readonly string[] = [
   "dragon",
   "lion"
 ];
+export type AnimalUnitOption = "dragon" | "lion";
 
-export const buildingUnitOptions = [
+export const buildingUnitOptions: readonly string[] = [
   "airport",
   "bank",
   "capital",
@@ -52,19 +54,30 @@ export const buildingUnitOptions = [
   "office",
   "port",
   "zoo"
- ] as const;
+ ];
 
-export type BuildingUnitOption = (typeof buildingUnitOptions)[number];
+export type BuildingUnitOption =
+  | "airport"
+  | "bank"
+  | "capital"
+  | "church"
+  | "college"
+  | "factory"
+  | "house"
+  | "lab"
+  | "office"
+  | "port"
+  | "zoo";
 
-export const objectUnitOptions = [
+export const objectUnitOptions: readonly string[] = [
   "missile",
   "money",
   "none",
   "nuke",
-] as const;
-export type ObjectUnitOption = Exclude<(typeof objectUnitOptions)[number], "none">;
+] ;
+export type ObjectUnitOption = "missile" | "money" | "nuke";
 
-export const peopleUnitOptions = [
+export const peopleUnitOptions: readonly string[] = [
   "bluesMusician",
   "constructionWorker",
   "doctor",
@@ -80,8 +93,23 @@ export const peopleUnitOptions = [
   "zookeeper",
   "zuckerbird",
 ];
+export type PeopleUnitOption =
+  | "bluesMusician"
+  | "constructionWorker"
+  | "doctor"
+  | "engineer"
+  | "leader"
+  | "michaelJackson"
+  | "pilot"
+  | "priest"
+  | "scientist"
+  | "soldier"
+  | "studentAthlete"
+  | "worker"
+  | "zookeeper"
+  | "zuckerbird";
 
-export const TerrainOptions = [
+export const TerrainOptions: readonly string[] = [
   "beach", // brown
   "forest", // green
   "mountain", // black
@@ -89,11 +117,11 @@ export const TerrainOptions = [
   "plains", // white
   "desert", // yellow
   "water", // blue
- ] as const;
+ ];
 
-export type TerrainOption = (typeof TerrainOptions)[number];
+export type TerrainOption = "beach" | "forest" | "mountain" | "road" | "plains" | "desert" | "water";
 
-export const vehicleUnitOptions = [
+export const vehicleUnitOptions: readonly string[] = [
   "airplane",
   "ambulance",
   "bigTruck",
@@ -101,6 +129,21 @@ export const vehicleUnitOptions = [
   "sub",
   "truck"
 ];
+export type VehicleUnitOption =
+  | "airplane"
+  | "ambulance"
+  | "bigTruck"
+  | "helicopter"
+  | "sub"
+  | "truck";
+
+export type UnitOption =
+  | AnimalUnitOption
+  | BuildingUnitOption
+  | ObjectUnitOption
+  | "none"
+  | PeopleUnitOption
+  | VehicleUnitOption;
 
 export const groundVehicleOptions = [
   vehicleUnitOptions[1],
@@ -362,4 +405,3 @@ export type UnloadEvent = BaseGameEvent & {
   consumedObject?: ObjectUnitOption;
   moneyAward?: number;
 };
-

@@ -1,12 +1,15 @@
 {
   "name": "@TBS/common",
   "version": "1.0.0",
-  "description": "common js for the turn based strategy game TBS ui and server",
+  "description": "Shared contracts and deterministic engine for the TBS web client and Supabase backend",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "test": "npm run build && node --test",
+    "test": "npm run build && node --test dist/*/*.test.js",
     "build": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "4.9.5"
   },
   "exports": {
     ".": {

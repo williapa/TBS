@@ -25,7 +25,11 @@ const getPreviewMap = (interactionState: GameInteractionState, map: HexMap) => {
     return map;
   }
 
-  return moveMapUnit(cloneMap(map), interactionState.origin, interactionState.previewDestination);
+  return moveMapUnit(
+    cloneMap(map),
+    interactionState.origin,
+    interactionState.previewDestination
+  ) as unknown as HexMap;
 };
 
 const getCurrentActorCoords = (interactionState: GameInteractionState) =>

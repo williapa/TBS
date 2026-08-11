@@ -1,8 +1,10 @@
+import { MapItem as CommonMapItem } from "@TBS/common";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { generateHexagonalCellGrid } from "../../utils/buildHexagon";
 import HexGrid from "../../components/HexGrid/HexGrid";
 import useWindowDimensions from "../../hooks/useWindowDimensions";
+import { useMapRepository } from "../../maps";
 
 type MapProps = {
   defaultTerrain?: TerrainType;
@@ -10,14 +12,17 @@ type MapProps = {
   mode?: ModeType;
   name?: string;
   submitted?: boolean;
+  mapId?: string;
+  initialMap?: CommonMapItem[][];
 }
 
-const Map = ({ mode = "editor", name, dimension = 16, defaultTerrain = "forest" as TerrainType.forest }: MapProps) => {
+const Map = ({ mode = "editor", name, dimension = 16, defaultTerrain = "forest" as TerrainType.forest, mapId, initialMap }: MapProps) => {
   const navigate = useNavigate();
+  const mapRepository = useMapRepository();
   const { height, width } = useWindowDimensions();
 
 
-  const initialGridData: HexMap = generateHexagonalCellGrid(dimension, {
+  const initialGridData: HexMap = initialMap ? initialMap as unknown as HexMap : generateHexagonalCellGrid(dimension, {
     team: "gray" as TeamType.gray,
     terrain: defaultTerrain,
     unit: "none" as UnitTypes
@@ -25,28 +30,22 @@ const Map = ({ mode = "editor", name, dimension = 16, defaultTerrain = "forest" 
 
   const [mapData, setMapData] = useState(initialGridData);
   const [editing, setEditing] = useState(false);
+  const [saveError, setSaveError] = useState<string>();
+  const [saving, setSaving] = useState(false);
 
-  const create = () => {
-    fetch("http://localhost:8420/createMap", {
-      method: "post",
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        map: mapData,
-        name,
-      }),
-    }).then((response) => { 
-      if (response.ok) {
-        return response.json();
-      }
-      throw new Error("it no ok.");
-    })
-    .then((data) => {
-      console.log(data);
-      navigate("/lobby");
-    }).catch((e) => {
-      alert("Submitted map is not valid - must contain at least one movable combat unit for each team.");
-      console.error(e.message);
-    });
+  const create = async () => {
+    setSaving(true);
+    setSaveError(undefined);
+    try {
+      const input = { name: name ?? "", map: mapData as unknown as CommonMapItem[][] };
+      if (mapId) await mapRepository.update(mapId, input);
+      else await mapRepository.save(input);
+      navigate("/maps");
+    } catch (value) {
+      setSaveError(value instanceof Error ? value.message : "The map could not be saved");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const updateCell = (x: number, y: number, mapItem: MapItem) => {
@@ -69,10 +68,11 @@ const Map = ({ mode = "editor", name, dimension = 16, defaultTerrain = "forest" 
         }}
       > 
         <p> Maps must contain at least one movable combat unit per team. </p>
-        <button onClick={create} style={{ maxWidth: "200px", marginLeft: "8px" }}> 
-          Create map "{name}"
+        <button disabled={saving} onClick={create} style={{ maxWidth: "200px", marginLeft: "8px" }}>
+          {saving ? "Saving…" : `${mapId ? "Save" : "Create"} map "${name}"`}
         </button>
       </div>
+      {saveError && <p role="alert">{saveError}</p>}
       <HexGrid
         callback={updateCell}
         dimensions={{ width: .6 * width, height: height - 110 }}
