@@ -5,6 +5,14 @@ export type RendererHexCoord = BoardCellViewModel["coordinate"];
 
 export const HEX_WORLD_SIZE = 1;
 
+// Three's cylinder and ring geometries measure their start angles from
+// different axes. These values give both meshes the pointy-top orientation
+// used by the 2D renderer and by the axial projection below.
+export const HEX_WORLD_ORIENTATION = {
+  cylinderThetaStart: 0,
+  ringThetaStart: -Math.PI / 2,
+} as const;
+
 export const projectHexToWorld = (
   { q, r }: RendererHexCoord,
   size = HEX_WORLD_SIZE,

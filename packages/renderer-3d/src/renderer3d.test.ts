@@ -3,7 +3,7 @@ import type { BoardCellViewModel, BoardEntityViewModel, BoardViewModel, MoveEnti
 
 import { entityWorldPosition } from "./animation/entityMotion.js";
 import { getProceduralModel } from "./assets/modelManifest.js";
-import { projectHexToWorld } from "./board/projection.js";
+import { HEX_WORLD_ORIENTATION, projectHexToWorld } from "./board/projection.js";
 import { cellForTerrainInstance, createTerrainBatches } from "./board/terrainBatches.js";
 import { initialCameraState, updateCameraState } from "./camera/cameraState.js";
 
@@ -25,6 +25,25 @@ const board = {
 describe("renderer-3d projection", () => {
   it("projects axial coordinates into a stable flat hex world", () => {
     expect(projectHexToWorld({ q: 2, r: -1 })).toEqual({ x: Math.sqrt(3) * 1.5, y: 0, z: -1.5 });
+  });
+
+  it("orients terrain and overlays so adjacent cells meet along flat edges", () => {
+    const terrainCorners = Array.from({ length: 6 }, (_, index) => {
+      const angle = HEX_WORLD_ORIENTATION.cylinderThetaStart + (index * Math.PI / 3);
+      return { x: Math.sin(angle), z: Math.cos(angle) };
+    });
+    const overlayCorners = Array.from({ length: 6 }, (_, index) => {
+      const angle = HEX_WORLD_ORIENTATION.ringThetaStart + (index * Math.PI / 3);
+      return { x: Math.cos(angle), z: -Math.sin(angle) };
+    });
+    const qNeighbor = projectHexToWorld({ q: 1, r: 0 });
+    const terrainMaximumX = Math.max(...terrainCorners.map(({ x }) => x));
+
+    expect(qNeighbor.x).toBeCloseTo(terrainMaximumX * 2);
+    overlayCorners.forEach((corner, index) => {
+      expect(corner.x).toBeCloseTo(terrainCorners[index]?.x ?? Number.NaN);
+      expect(corner.z).toBeCloseTo(terrainCorners[index]?.z ?? Number.NaN);
+    });
   });
 
   it("batches terrain while retaining a deterministic instance-to-cell lookup", () => {

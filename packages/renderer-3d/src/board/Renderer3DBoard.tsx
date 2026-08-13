@@ -13,7 +13,7 @@ import type {
 import { entityWorldPosition } from "../animation/entityMotion.js";
 import { getProceduralModel } from "../assets/modelManifest.js";
 import { initialCameraState, type CameraIntent, type StrategyCameraState, updateCameraState } from "../camera/cameraState.js";
-import { projectHexToWorld } from "./projection.js";
+import { HEX_WORLD_ORIENTATION, projectHexToWorld } from "./projection.js";
 import { cellForTerrainInstance, createTerrainBatches, type TerrainBatch } from "./terrainBatches.js";
 
 export type Renderer3DBoardProps = Readonly<{
@@ -75,7 +75,7 @@ const TerrainInstances = ({ batch, onIntent }: Readonly<{ batch: TerrainBatch; o
   };
   return (
     <instancedMesh args={[undefined, undefined, batch.instances.length]} onClick={selectCell} ref={mesh}>
-      <cylinderGeometry args={[0.96, 0.96, 0.24, 6, 1, false, Math.PI / 6]} />
+      <cylinderGeometry args={[0.96, 0.96, 0.24, 6, 1, false, HEX_WORLD_ORIENTATION.cylinderThetaStart]} />
       <meshStandardMaterial color={terrainColors[batch.assetId] ?? "#727d8a"} roughness={0.84} />
     </instancedMesh>
   );
@@ -176,7 +176,7 @@ const BoardScene = ({ board, camera, onIntent, reducedMotion }: Readonly<{
           const position = projectHexToWorld(cell.coordinate);
           return (
             <mesh key={cell.id} position={[position.x, 0.04, position.z]} rotation={[-Math.PI / 2, 0, 0]}>
-              <ringGeometry args={[0.7, 0.91, 6]} />
+              <ringGeometry args={[0.7, 0.91, 6, 1, HEX_WORLD_ORIENTATION.ringThetaStart]} />
               <meshBasicMaterial color={cell.target ? targetColors[cell.target] : "#ffffff"} depthWrite={false} />
             </mesh>
           );
