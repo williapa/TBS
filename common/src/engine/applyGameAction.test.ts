@@ -1,9 +1,15 @@
-declare const require: (module: string) => any;
-const assert = require("node:assert/strict");
-const test = require("node:test");
+import * as assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { test } from "node:test";
 
 import { createActiveGameSnapshot } from "../contracts/fixtures";
-import applyGameAction from "./applyGameAction";
+import applyGameAction from "./applyGameActionCompatibility";
+import {
+  createV1ReplayState,
+  V1_REPLAY_EVENTS,
+  V1_REPLAY_SHA256,
+  V1_REPLAY_STEPS,
+} from "./v1ReplayFixture";
 
 const movementState = (destinationUnit: "none" | "money" | "soldier" = "none") => {
   const state = createActiveGameSnapshot().state;
@@ -61,6 +67,15 @@ const deepFreeze = <T>(value: T): T => {
     for (const nested of Object.values(value as Record<string, unknown>)) {
       deepFreeze(nested);
     }
+  }
+  return value;
+};
+
+const canonicalize = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map(canonicalize);
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    return Object.fromEntries(Object.keys(record).sort().map((key) => [key, canonicalize(record[key])]));
   }
   return value;
 };
@@ -575,25 +590,12 @@ test("capital victory uses the configured win condition", () => {
   }
 });
 
-test("ordered multi-action replay is deterministic and serializes identically", () => {
-  const createReplayState = () => {
-    const state = projectileState("missile");
-    state.map[0][1] = { ...state.map[0][1], unit: "none" };
-    state.map[2][1] = { ...state.map[2][1], unit: "soldier", team: "purple" };
-    return state;
-  };
-  const actions: { actor: "orange" | "purple"; action: Parameters<typeof applyGameAction>[2] }[] = [
-    { actor: "purple", action: { action: "move", start: { x: 0, y: 0 }, end: { x: 0, y: 1 } } },
-    { actor: "purple", action: { action: "end" } },
-    { actor: "orange", action: { action: "move", start: { x: 1, y: 0 }, end: { x: 2, y: 0 } } },
-    { actor: "orange", action: { action: "end" } },
-    { actor: "purple", action: { action: "attack", attacker: { x: 0, y: 1 }, end: { x: 0, y: 1 }, defender: { x: 1, y: 1 } } },
-  ];
+test("the v1 characterization replay preserves ordered events and its canonical checksum", () => {
   const replay = () => {
-    let state = createReplayState();
+    let state = createV1ReplayState();
     deepFreeze(state);
-    const eventLog: unknown[] = [];
-    for (const step of actions) {
+    const eventLog: typeof V1_REPLAY_EVENTS[number][] = [];
+    for (const step of V1_REPLAY_STEPS) {
       const result = applyGameAction(state, step.actor, step.action);
       assert.equal(result.ok, true);
       if (!result.ok) throw new Error("replay action rejected");
@@ -601,9 +603,10 @@ test("ordered multi-action replay is deterministic and serializes identically", 
       eventLog.push(...result.events);
       deepFreeze(state);
     }
-    return JSON.stringify({ state, eventLog });
+    assert.deepEqual(eventLog, V1_REPLAY_EVENTS);
+    const canonical = JSON.stringify(canonicalize({ state, eventLog }));
+    return createHash("sha256").update(canonical).digest("hex");
   };
 
-  const expected = replay();
-  for (let index = 0; index < 10; index += 1) assert.equal(replay(), expected);
+  for (let index = 0; index < 10; index += 1) assert.equal(replay(), V1_REPLAY_SHA256);
 });

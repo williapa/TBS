@@ -1,7 +1,7 @@
-import {
+import type {
   MapItem,
-  ObjectUnitOption,
-  objectUnitOptions,
+  ObjectUnitOption} from "../types";
+import {
   peopleUnitOptions,
   vehicleUnitOptions,
 } from "../types";
@@ -22,4 +22,3 @@ export const canUnitCollectObjects = (unit: string) =>
 
 export const getConsumableObjectAtCell = (cell?: MapItem) =>
   cell && isObjectUnit(cell.unit) ? cell.unit : null;
-

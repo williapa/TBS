@@ -1,5 +1,5 @@
 import getUnitIncome from "../income/getUnitIncome";
-import { MapItem, TeamOption } from "../types";
+import type { MapItem, TeamOption } from "../types";
 
 export const getIncomeForTeam = (map: MapItem[][], team: TeamOption): number => 
   map.reduce(

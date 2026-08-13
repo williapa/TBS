@@ -1,4 +1,4 @@
-import {
+import type {
   BuildingUnitOption,
   ConstructionOption,
 } from "../types";

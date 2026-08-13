@@ -1,19 +1,17 @@
 import ReactDOM from 'react-dom/client';
+import '@cloudscape-design/global-styles/index.css';
 import './index.css';
 import App from './App';
-import reportWebVitals from './reportWebVitals';
-import { SupabaseIdentityGate } from './multiplayer/supabase';
+import { createBrowserApplication } from './composition/createBrowserApplication';
+import { IdentityGate } from './multiplayer';
+
+const application = createBrowserApplication();
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
 root.render(
-  <SupabaseIdentityGate>
-    <App />
-  </SupabaseIdentityGate>
+  <IdentityGate identityProvider={application.identity}>
+    <App gateway={application.gameClient} />
+  </IdentityGate>
 );
-
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();

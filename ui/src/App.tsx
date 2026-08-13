@@ -1,21 +1,21 @@
-import { useEffect, useMemo } from "react";
+import type { GameClient } from "@TBS/application";
+import { useEffect } from "react";
 import { BrowserRouter } from "react-router-dom";
 import "./App.css";
-import { GameSessionGateway, GameSessionGatewayContext, GameSessionProvider } from "./multiplayer";
-import { SupabaseGameSessionGateway } from "./multiplayer/supabase";
+import { browserEnvironment } from "./env";
+import { GameSessionGatewayContext, GameSessionProvider } from "./multiplayer";
 import { SessionFlowRoutes } from "./pages/Session/SessionFlowRoutes";
 
-const App = () => {
-  const gateway = useMemo(() => new SupabaseGameSessionGateway(), []);
+const App = ({ gateway }: { gateway: GameClient }) => {
   useEffect(() => {
-    if (process.env.REACT_APP_SESSION_E2E !== "true") return;
-    const target = window as unknown as { __TBS_E2E_GATEWAY__?: GameSessionGateway };
+    if (!browserEnvironment.sessionE2E) return;
+    const target = window as unknown as { __TBS_E2E_GATEWAY__?: GameClient };
     target.__TBS_E2E_GATEWAY__ = gateway;
     return () => { delete target.__TBS_E2E_GATEWAY__; };
   }, [gateway]);
 
   return (
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
       <GameSessionGatewayContext.Provider value={gateway}>
         <GameSessionProvider>
           <SessionFlowRoutes />

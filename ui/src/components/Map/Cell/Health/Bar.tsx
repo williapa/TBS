@@ -1,5 +1,6 @@
 import { unitOptions } from "../../../../components/Map/Unit/unitOptions";
 import checkEnumValue from "../../../../utils/checkEnumValue";
+import type { TeamType } from "../../../../types";
 
 interface BarProps {
   damage?: number;
@@ -8,7 +9,7 @@ interface BarProps {
   height: number;
 }
 
-const Bar = ({ damage = 0, unit, height, team = "gray" as TeamType.gray }: BarProps) => {
+const Bar = ({ damage = 0, unit, height, team = "gray" }: BarProps) => {
 
   const width = ((100 - damage) / 100) * 100;
 

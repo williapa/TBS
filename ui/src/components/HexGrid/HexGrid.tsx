@@ -2,22 +2,31 @@ import { getSpawnOptions, moveableOptions } from "@TBS/common";
 import Cell from "../../components/Map/Cell/Cell";
 import { terrainColors } from "../../components/Map/Cell/Terrain/terrainColors";
 import replaceOpacity from "../../utils/replaceOpacity";
+import type {
+  Dimensions,
+  EditableCell,
+  GameGridInteractionProps,
+  HexMap,
+  MapItem,
+  ModeType,
+  TeamType,
+} from "../../types";
 
 const hex = (n: number) => 2 * n - 1;
 
 type HexGridProps = {
   activeTeam?: TeamType;
-  callback?: (x: number, y: number, mapItem: MapItem) => void;
-  dimensions: dim;
+  callback?: (x: number, y: number, mapItem: EditableCell) => void;
+  dimensions: Dimensions;
   editing?: boolean;
   gameInteraction?: GameGridInteractionProps;
   mapData: HexMap;
   mode?: ModeType;
-  setEdit?: (args: any) => void;
+  setEdit?: (editing: boolean) => void;
 }
 
 const HexGrid = ({
-  activeTeam = "gray" as TeamType.gray,
+  activeTeam = "gray",
   callback,
   dimensions,
   editing = false,

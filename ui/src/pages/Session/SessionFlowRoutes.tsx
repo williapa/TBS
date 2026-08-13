@@ -1,7 +1,7 @@
 import { Link, Navigate, Route, Routes } from "react-router-dom";
-import { MapRepository, MapRepositoryProvider } from "../../maps";
+import type { MapRepository} from "../../maps";
+import { MapRepositoryProvider } from "../../maps";
 import MapEditorPage from "../MapEditor/MapEditorPage";
-import { MapsPage } from "../Maps/MapsPage";
 import { InviteJoinPage } from "./InviteJoinPage";
 import { SessionHomePage } from "./SessionHomePage";
 
@@ -10,12 +10,12 @@ export const SessionFlowRoutes = ({ mapRepository }: { mapRepository?: MapReposi
     <nav aria-label="Primary">
       <ul>
         <li><Link to="/">Start game</Link></li>
-        <li><Link to="/maps">Maps</Link></li>
+        <li><Link to="/maps/new">Create map</Link></li>
       </ul>
     </nav>
     <Routes>
       <Route path="/" element={<SessionHomePage />} />
-      <Route path="/maps" element={<MapsPage />} />
+      <Route path="/maps" element={<Navigate replace to="/maps/new" />} />
       <Route path="/maps/new" element={<MapEditorPage />} />
       <Route path="/maps/:mapId/edit" element={<MapEditorPage />} />
       <Route path="/game/:inviteToken" element={<InviteJoinPage />} />

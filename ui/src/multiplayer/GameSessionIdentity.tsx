@@ -1,20 +1,10 @@
 import { createContext, useContext } from "react";
+import { GameSessionIdentityError } from "@TBS/application";
+import type { GameSessionIdentity, IdentityPort } from "@TBS/application";
 
-export type GameSessionIdentity = { userId: string };
-
-export interface GameSessionIdentityProvider {
-  getIdentity(): Promise<GameSessionIdentity>;
-}
-
-export class GameSessionIdentityError extends Error {
-  readonly code = "auth-unavailable" as const;
-  readonly retryable = true;
-
-  constructor(message: string) {
-    super(message);
-    this.name = "GameSessionIdentityError";
-  }
-}
+export { GameSessionIdentityError };
+export type { GameSessionIdentity };
+export type GameSessionIdentityProvider = IdentityPort;
 
 export const GameSessionIdentityContext = createContext<GameSessionIdentity | null>(null);
 

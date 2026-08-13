@@ -1,10 +1,11 @@
-import { MapItem as CommonMapItem } from "@TBS/common";
+import type { MapItem as CommonMapItem } from "@TBS/common";
+import { createHexMap, updateMapCell } from "@TBS/game-setup";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { generateHexagonalCellGrid } from "../../utils/buildHexagon";
 import HexGrid from "../../components/HexGrid/HexGrid";
 import useWindowDimensions from "../../hooks/useWindowDimensions";
 import { useMapRepository } from "../../maps";
+import type { EditableCell, HexMap, ModeType, TerrainType } from "../../types";
 
 type MapProps = {
   defaultTerrain?: TerrainType;
@@ -16,17 +17,13 @@ type MapProps = {
   initialMap?: CommonMapItem[][];
 }
 
-const Map = ({ mode = "editor", name, dimension = 16, defaultTerrain = "forest" as TerrainType.forest, mapId, initialMap }: MapProps) => {
+const Map = ({ mode = "editor", name, dimension = 16, defaultTerrain = "forest", mapId, initialMap }: MapProps) => {
   const navigate = useNavigate();
   const mapRepository = useMapRepository();
   const { height, width } = useWindowDimensions();
 
 
-  const initialGridData: HexMap = initialMap ? initialMap as unknown as HexMap : generateHexagonalCellGrid(dimension, {
-    team: "gray" as TeamType.gray,
-    terrain: defaultTerrain,
-    unit: "none" as UnitTypes
-  });
+  const initialGridData: HexMap = initialMap ?? createHexMap(dimension, defaultTerrain);
 
   const [mapData, setMapData] = useState(initialGridData);
   const [editing, setEditing] = useState(false);
@@ -37,10 +34,10 @@ const Map = ({ mode = "editor", name, dimension = 16, defaultTerrain = "forest" 
     setSaving(true);
     setSaveError(undefined);
     try {
-      const input = { name: name ?? "", map: mapData as unknown as CommonMapItem[][] };
+      const input = { name: name ?? "", map: mapData };
       if (mapId) await mapRepository.update(mapId, input);
       else await mapRepository.save(input);
-      navigate("/maps");
+      navigate("/");
     } catch (value) {
       setSaveError(value instanceof Error ? value.message : "The map could not be saved");
     } finally {
@@ -48,14 +45,8 @@ const Map = ({ mode = "editor", name, dimension = 16, defaultTerrain = "forest" 
     }
   };
 
-  const updateCell = (x: number, y: number, mapItem: MapItem) => {
-    const oldItem = mapData[x][y];
-    const newMapData = [...mapData];
-    newMapData[x][y] = {
-      ...oldItem,
-      ...mapItem
-    };
-    setMapData(newMapData);
+  const updateCell = (x: number, y: number, mapItem: EditableCell) => {
+    setMapData((current) => updateMapCell(current, x, y, mapItem));
   };
 
   return (

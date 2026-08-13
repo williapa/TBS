@@ -4,33 +4,46 @@ Run commands from the repository root.
 
 ## Fast suites
 
-- `npm run common:test`: shared contracts, parsers, rules, and deterministic reducer.
-- `npm run ui:test`: provider/gateway contracts, reconciliation, map repository/import/export, routes, and interactions. Live Supabase tests are skipped unless explicitly enabled.
-- `npm run build`: TypeScript compilation and production bundles.
+- `pnpm common:test`: v1 compatibility contracts, parsers, and deterministic reducer.
+- `pnpm test`: all Nx unit and shared adapter-contract projects.
+- `pnpm --filter @TBS/application test`: session lifecycle and revision reconciliation.
+- `pnpm --filter @TBS/game-setup test`: map documents, limits, topology, playable placement, axial-backed generation, editor immutability, presets, and initial objective/state derivation.
+- `pnpm --filter @TBS/presentation test`: renderer-neutral board projection, stable/legacy entity identity, semantic overlays and accessibility descriptions, movement-cue derivation, adjacent revision ordering, queue limits, replay-gap settling, and reduced motion.
+- `pnpm --filter @TBS/renderer-2d test`: SVG projection, accessible semantic cell/entity controls, legal-target overlays, team and health indicators, and movement animation markup.
+- `pnpm --filter @TBS/renderer-3d test`: axial world projection, instanced-terrain lookup, bounded camera transitions, procedural asset fallbacks, and deterministic movement interpolation/reduced-motion settling.
+- `pnpm --filter @TBS/adapter-memory test`: shared provider-neutral contracts against the deterministic adapter.
+- `pnpm --filter @TBS/adapter-supabase test`: provider mapping, identity, realtime lifecycle, and shared contracts. Live Supabase cases are skipped unless explicitly enabled.
+- `pnpm ui:test`: React bindings, map repository/import/export, routes, and interactions.
+- `pnpm build`: strict TypeScript checks and production bundles.
+- `pnpm lint`: zero-warning static analysis.
+- `pnpm architecture:check`: dependency-boundary enforcement.
+- `pnpm edge:build`: deterministic trusted-action bundle generation for the Edge runtime.
+- `pnpm performance:check`: maximum-size board batching p95, instanced terrain count, lazy 3D splitting, and production gzip budgets.
+- `pnpm portability:check`: shared read, write, and all-nine-action-family contracts against the provider-independent in-memory adapter; CI runs this as a named alternate-provider rehearsal.
 
 ## Local Supabase
 
-Start the local stack and configure the public values in the UI package's `.env.local` file, then run:
+Start the local stack, run `pnpm edge:serve` in a second terminal, and configure the public values in the UI package's `.env.local` file, then run:
 
 ```sh
-npm run supabase:reset
-npm run supabase:test
-npm run supabase:lint
+pnpm supabase:reset
+pnpm supabase:test
+pnpm supabase:lint
 ```
 
-To run the Supabase gateway contract directly through Jest:
+To run the Supabase adapter contracts against the local stack:
 
 ```sh
 RUN_SUPABASE_INTEGRATION=true \
-REACT_APP_SUPABASE_URL=http://127.0.0.1:54321 \
-REACT_APP_SUPABASE_PUBLISHABLE_KEY=<local-publishable-key> \
-CI=true npm test -w @TBS/ui -- --runTestsByPath src/multiplayer/supabase/SupabaseGameSessionGateway.test.ts
+SUPABASE_URL=http://127.0.0.1:54321 \
+SUPABASE_PUBLISHABLE_KEY=<local-publishable-key> \
+pnpm --filter @TBS/adapter-supabase test
 ```
 
 Never use a service-role key in browser or gateway tests.
 
 ## Distributed browser acceptance
 
-Install the pinned browser once with `npx playwright install chromium`, keep local Supabase running, then run `npm run test:e2e`.
+Install the pinned browser once with `pnpm exec playwright install chromium`, keep both local Supabase and `pnpm edge:serve` running, then run `pnpm test:e2e`. Its lifecycle pre-step rebuilds all workspace and Edge artifacts before Playwright starts, preventing ignored package output from becoming stale.
 
-The one-worker suite uses isolated anonymous browser contexts and covers creator/challenger/spectator share-link play, Presence, completion, all nine action families, tab closure and durable restore, a same-member stale-tab conflict, and exact action-ID retry. Failures retain trace, video, screenshots, an HTML report, and client console/page errors under ignored `test-results/` paths.
+The one-worker suite uses isolated anonymous browser contexts and covers creator/challenger/spectator share-link play through the trusted action authority, a complete match controlled through the 3D renderer's semantic and keyboard inputs, Presence, completion, all nine action families, tab closure and durable restore, a same-member stale-tab conflict, and exact action-ID retry. Failures retain trace, video, screenshots, an HTML report, and client console/page errors under ignored `test-results/` paths.

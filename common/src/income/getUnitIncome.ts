@@ -1,4 +1,5 @@
-import { BuildingUnitOption, MapItem, UnitOption, buildingUnitOptions} from "../types";
+import type { BuildingUnitOption, MapItem, UnitOption} from "../types";
+import { buildingUnitOptions} from "../types";
 
 const buildingIncomeMap: Record<BuildingUnitOption, number> = {
   airport: 100,

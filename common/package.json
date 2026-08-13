@@ -5,11 +5,18 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "test": "npm run build && node --test dist/*/*.test.js",
-    "build": "tsc -p tsconfig.json"
+    "test": "pnpm build && node --test dist/*/*.test.js",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@TBS/game-core": "workspace:*",
+    "@TBS/game-rules": "workspace:*",
+    "@TBS/protocol": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "4.9.5"
+    "@types/node": "26.2.0",
+    "typescript": "6.0.3"
   },
   "exports": {
     ".": {
@@ -21,5 +28,8 @@
     "dist"
   ],
   "author": "Paul Williams",
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "nx": {
+    "tags": ["layer:domain", "type:library"]
+  }
 }

@@ -1,5 +1,6 @@
-import { MapItem } from "../types";
-import { CURRENT_GAME_SCHEMA_VERSION, GameSnapshot } from "./types";
+import type { MapItem } from "../types";
+import type { GameSnapshot } from "./types";
+import { CURRENT_GAME_SCHEMA_VERSION } from "./types";
 
 const fixtureMap = (): MapItem[][] => [[
   { row: 0, column: 0, index: 0, neighbors: [1], terrain: "plains", unit: "soldier", team: "orange" },

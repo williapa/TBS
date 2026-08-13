@@ -1,4 +1,5 @@
-import { MapItem, vehicleUnitOptions } from "../types";
+import type { MapItem} from "../types";
+import { vehicleUnitOptions } from "../types";
 import getCombatStats from "./getCombatStats";
 
 type CombatStats = [number, number];

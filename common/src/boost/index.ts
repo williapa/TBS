@@ -1,7 +1,8 @@
+import type {
+  MapItem} from "../types";
 import {
   animalUnitOptions,
   buildingUnitOptions,
-  MapItem,
   peopleUnitOptions,
 } from "../types";
 

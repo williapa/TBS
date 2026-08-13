@@ -15,8 +15,8 @@ describe("GamePanel", () => {
           coords: { x: 0, y: 0 },
           focus: "cell",
           occupant: {
-            team: "orange" as TeamType.orange,
-            unit: "soldier" as UnitTypes,
+            team: "orange",
+            unit: "soldier",
           },
           rows: [
             { id: "occupant-type", label: "Occupant Type", type: "text", value: "Soldier (person)" },
@@ -30,7 +30,7 @@ describe("GamePanel", () => {
               type: "actions",
             },
           ],
-          terrain: "plains" as TerrainType.plains,
+          terrain: "plains",
           transportRows: [
             { id: "type", label: "Type", type: "text", value: "Carrying Doctor (person)" },
           ],

@@ -1,4 +1,5 @@
-import { MapItem, teamOptions, TeamOption, WinCondition, winConditions } from "../types";
+import type { MapItem, TeamOption, WinCondition} from "../types";
+import { teamOptions, winConditions } from "../types";
 import checkMapHasCapitals from "../map/checkMapHasCapitals";
 import checkMapHasMovableCombatUnits from "../map/checkMapHasMovableCombatUnits";
 

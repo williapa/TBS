@@ -1,4 +1,5 @@
-import { MapItem, teamOptions, TeamOption } from "../types";
+import type { MapItem, TeamOption } from "../types";
+import { teamOptions } from "../types";
 
 const checkMapHasCapitals = (map: MapItem[][]): TeamOption[] => {
   if (!Array.isArray(map)) {

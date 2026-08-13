@@ -1,17 +1,17 @@
 import { createActiveGameSnapshot, CURRENT_GAME_PROTOCOL_VERSION } from "@TBS/common";
+import type { GameClient } from "@TBS/application";
+import { InMemoryGameSessionGateway, InMemoryGameSessionStore } from "@TBS/adapter-memory";
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { ReactNode } from "react";
-import { GameSessionGateway } from "./GameSessionGateway";
+import type { ReactNode } from "react";
 import { GameSessionGatewayContext } from "./GameSessionGatewayContext";
 import { GameSessionProvider, useGameSession } from "./GameSessionProvider";
-import { InMemoryGameSessionGateway, InMemoryGameSessionStore } from "./InMemoryGameSessionGateway";
 
 const input = () => {
   const state = createActiveGameSnapshot().state;
   return { displayName: "Orange", initialPayload: { map: state.map, money: state.money }, winCondition: "combat-elimination" as const };
 };
 
-const wrapperFor = (gateway: GameSessionGateway) => ({ children }: { children: ReactNode }) => (
+const wrapperFor = (gateway: GameClient) => ({ children }: { children: ReactNode }) => (
   <GameSessionGatewayContext.Provider value={gateway}>
     <GameSessionProvider>{children}</GameSessionProvider>
   </GameSessionGatewayContext.Provider>

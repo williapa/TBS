@@ -1,8 +1,18 @@
+import {
+  getSpawnableUnitTypeIds,
+  getUnitsByCategory,
+  standardActionTypes,
+  standardUnits,
+} from "@TBS/game-rules";
+import type { EntityId } from "@TBS/game-core";
+import type { StandardAction, UnitDefinition } from "@TBS/game-rules";
+
 export interface MapItem {
   row: number;
   column: number;
   damage?: number;
   boosted?: boolean;
+  entityId?: EntityId;
   index: number;
   loadedUnit?: LoadedUnit;
   moved?: boolean;
@@ -15,6 +25,7 @@ export interface MapItem {
 export type LoadedUnit = {
   damage?: number;
   boosted?: boolean;
+  entityId?: EntityId;
   moved?: boolean;
   team: TeamColor;
   unit: UnitOption;
@@ -36,25 +47,7 @@ export const winConditions = {
 
 export type WinCondition = (typeof winConditions)[keyof typeof winConditions];
 
-export const animalUnitOptions: readonly string[] = [
-  "dragon",
-  "lion"
-];
 export type AnimalUnitOption = "dragon" | "lion";
-
-export const buildingUnitOptions: readonly string[] = [
-  "airport",
-  "bank",
-  "capital",
-  "church",
-  "college",
-  "factory",
-  "house",
-  "lab",
-  "office",
-  "port",
-  "zoo"
- ];
 
 export type BuildingUnitOption =
   | "airport"
@@ -69,30 +62,8 @@ export type BuildingUnitOption =
   | "port"
   | "zoo";
 
-export const objectUnitOptions: readonly string[] = [
-  "missile",
-  "money",
-  "none",
-  "nuke",
-] ;
 export type ObjectUnitOption = "missile" | "money" | "nuke";
 
-export const peopleUnitOptions: readonly string[] = [
-  "bluesMusician",
-  "constructionWorker",
-  "doctor",
-  "engineer",
-  "leader",
-  "michaelJackson",
-  "pilot",
-  "priest",
-  "scientist",
-  "soldier",
-  "studentAthlete",
-  "worker",
-  "zookeeper",
-  "zuckerbird",
-];
 export type PeopleUnitOption =
   | "bluesMusician"
   | "constructionWorker"
@@ -109,7 +80,7 @@ export type PeopleUnitOption =
   | "zookeeper"
   | "zuckerbird";
 
-export const TerrainOptions: readonly string[] = [
+export const TerrainOptions = [
   "beach", // brown
   "forest", // green
   "mountain", // black
@@ -117,18 +88,10 @@ export const TerrainOptions: readonly string[] = [
   "plains", // white
   "desert", // yellow
   "water", // blue
- ];
+ ] as const satisfies readonly TerrainOption[];
 
 export type TerrainOption = "beach" | "forest" | "mountain" | "road" | "plains" | "desert" | "water";
 
-export const vehicleUnitOptions: readonly string[] = [
-  "airplane",
-  "ambulance",
-  "bigTruck",
-  "helicopter",
-  "sub",
-  "truck"
-];
 export type VehicleUnitOption =
   | "airplane"
   | "ambulance"
@@ -145,11 +108,21 @@ export type UnitOption =
   | PeopleUnitOption
   | VehicleUnitOption;
 
-export const groundVehicleOptions = [
-  vehicleUnitOptions[1],
-  vehicleUnitOptions[2],
-  vehicleUnitOptions[5]
-];
+const unitIdsByCategory = (category: Parameters<typeof getUnitsByCategory>[0]): readonly string[] =>
+  getUnitsByCategory(category).map(({ id }) => String(id));
+
+const unitIdsWith = (predicate: (definition: UnitDefinition) => boolean): readonly string[] =>
+  [...standardUnits.values()].filter(predicate).map(({ id }) => String(id));
+
+export const animalUnitOptions = unitIdsByCategory("animal");
+export const buildingUnitOptions = unitIdsByCategory("building");
+export const objectUnitOptions = [...unitIdsByCategory("object"), "none"].sort();
+export const peopleUnitOptions = unitIdsByCategory("person");
+export const vehicleUnitOptions = unitIdsByCategory("vehicle");
+
+export const groundVehicleOptions = unitIdsWith(
+  ({ tags }) => tags.includes("ground") && tags.includes("vehicle"),
+);
 
 export const unitOptions = [
   ["animals", animalUnitOptions],
@@ -159,51 +132,36 @@ export const unitOptions = [
   ["vehicles", vehicleUnitOptions],
 ];
 
-export const moveableOptions = [
-  ...animalUnitOptions,
-  ...peopleUnitOptions,
-  ...vehicleUnitOptions
-];
+export const moveableOptions = unitIdsWith(({ capabilities }) => capabilities.includes("move"));
+export const attackableOptions = unitIdsWith(({ capabilities }) => capabilities.includes("attack"));
+export const flyingOptions = unitIdsWith(({ tags }) => tags.includes("flying"));
 
-export const attackableOptions = [
-  ...animalUnitOptions,
-  ...buildingUnitOptions,
-  ...peopleUnitOptions,
-  ...vehicleUnitOptions
-];
+export type SpawnableUnitOption =
+  | "airplane"
+  | "ambulance"
+  | "bigTruck"
+  | "bluesMusician"
+  | "constructionWorker"
+  | "doctor"
+  | "dragon"
+  | "engineer"
+  | "helicopter"
+  | "leader"
+  | "lion"
+  | "michaelJackson"
+  | "pilot"
+  | "priest"
+  | "scientist"
+  | "soldier"
+  | "studentAthlete"
+  | "sub"
+  | "truck"
+  | "worker"
+  | "zookeeper"
+  | "zuckerbird";
 
-export const flyingOptions = [
-  animalUnitOptions[0],
-  vehicleUnitOptions[0],
-  vehicleUnitOptions[3],
-];
-
-export const spawnableUnitOptions = [
-  "airplane",
-  "ambulance",
-  "bigTruck",
-  "bluesMusician",
-  "constructionWorker",
-  "doctor",
-  "dragon",
-  "engineer",
-  "helicopter",
-  "leader",
-  "lion",
-  "michaelJackson",
-  "pilot",
-  "priest",
-  "scientist",
-  "soldier",
-  "studentAthlete",
-  "sub",
-  "truck",
-  "worker",
-  "zookeeper",
-  "zuckerbird",
-] as const;
-
-export type SpawnableUnitOption = (typeof spawnableUnitOptions)[number];
+export const spawnableUnitOptions: readonly SpawnableUnitOption[] =
+  getSpawnableUnitTypeIds().map(String).sort() as SpawnableUnitOption[];
 
 export type SpawnOption = {
   unit: SpawnableUnitOption;
@@ -217,9 +175,14 @@ export type ConstructionOption = {
   invalidTerrains: TerrainOption[];
 };
 
-export const supportedActions = ["attack", "boost", "construct", "end", "heal", "load", "move", "spawn", "unload"] as const;
+export type gameActions = GameAction["action"];
 
-export type gameActions = (typeof supportedActions)[number];
+const toLegacyActionType = (type: StandardAction["type"]): gameActions =>
+  type === "end-turn" ? "end" : type;
+
+export const supportedActions: readonly gameActions[] = standardActionTypes
+  .map(toLegacyActionType)
+  .sort();
 
 export type GameAction = Attack | Boost | Construct | End | Heal | Load | Move | Spawn | Unload;
 export type GameEvent =

@@ -1,4 +1,4 @@
-import { Coords, MapItem } from "../types"
+import type { Coords, MapItem } from "../types"
 
 const moveMapUnit = (mapData: MapItem[][], start: Coords, end: Coords) => {
   if (start.x === end.x && start.y === end.y) {
@@ -7,6 +7,7 @@ const moveMapUnit = (mapData: MapItem[][], start: Coords, end: Coords) => {
   const newItem = { ...mapData[end.x][end.y] };
   const oldItem = { ...mapData[start.x][start.y] };
   newItem.boosted = oldItem.boosted;
+  newItem.entityId = oldItem.entityId;
   newItem.team = oldItem.team;
   newItem.unit = oldItem.unit;
   newItem.loadedUnit = oldItem.loadedUnit;
@@ -14,6 +15,7 @@ const moveMapUnit = (mapData: MapItem[][], start: Coords, end: Coords) => {
   newItem.damage = oldItem.damage;
   oldItem.loadedUnit = undefined;
   oldItem.boosted = undefined;
+  oldItem.entityId = undefined;
   oldItem.team = "gray";
   oldItem.unit = "none";
   oldItem.damage = undefined;

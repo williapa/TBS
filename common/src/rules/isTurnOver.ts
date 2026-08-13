@@ -1,8 +1,9 @@
 import getSpawnOptions from "../spawn/getSpawnOptions";
-import {
+import type {
   MapItem,
+  gameActions} from "../types";
+import {
   moveableOptions,
-  gameActions,
   buildingUnitOptions,
 } from "../types";
 

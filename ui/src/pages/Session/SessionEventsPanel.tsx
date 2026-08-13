@@ -1,10 +1,10 @@
-import { AppliedAction } from "@TBS/common";
+import type { AppliedAction } from "@TBS/common";
 import "./SessionEventsPanel.css";
 import { formatDomainEvent } from "./formatDomainEvent";
 
 const MAX_DISPLAYED_EVENTS = 100;
 
-export const SessionEventsPanel = ({ actions }: { actions: AppliedAction[] }) => {
+export const SessionEventsPanel = ({ actions }: { actions: readonly AppliedAction[] }) => {
   const events = actions
     .flatMap((action) => action.events.map((event, index) => ({ action, event, index })))
     .slice(-MAX_DISPLAYED_EVENTS);

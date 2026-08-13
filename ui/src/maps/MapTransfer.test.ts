@@ -1,8 +1,10 @@
-import { createActiveGameSnapshot, MapItem } from "@TBS/common";
+import type { MapItem } from "@TBS/common";
+import { createActiveGameSnapshot } from "@TBS/common";
+import { MAX_MAP_COLUMNS, MAX_MAP_ROWS, MAX_SERIALIZED_MAP_BYTES } from "@TBS/game-setup";
 import { LocalStorageMapRepository } from "./LocalStorageMapRepository";
 import { exportMap, importMap } from "./MapTransfer";
-import { CURRENT_MAP_SCHEMA_VERSION, SavedMap } from "./MapRepository";
-import { MAX_MAP_COLUMNS, MAX_MAP_ROWS, MAX_SERIALIZED_MAP_BYTES } from "./MapValidation";
+import type { SavedMap } from "./MapRepository";
+import { CURRENT_MAP_SCHEMA_VERSION } from "./MapRepository";
 
 const map = (): MapItem[][] => JSON.parse(JSON.stringify(createActiveGameSnapshot().state.map)) as MapItem[][];
 

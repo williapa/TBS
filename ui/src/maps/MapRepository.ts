@@ -1,6 +1,9 @@
-import { MapItem } from "@TBS/common";
+import type { MapItem } from "@TBS/common";
+import type { SaveMapInput } from "@TBS/game-setup";
+import { CURRENT_MAP_SCHEMA_VERSION } from "@TBS/game-setup";
 
-export const CURRENT_MAP_SCHEMA_VERSION = 1 as const;
+export { CURRENT_MAP_SCHEMA_VERSION };
+export type { SaveMapInput };
 
 export type SavedMap = {
   schemaVersion: typeof CURRENT_MAP_SCHEMA_VERSION;
@@ -9,8 +12,6 @@ export type SavedMap = {
   map: MapItem[][];
   readOnly: boolean;
 };
-
-export type SaveMapInput = { name: string; map: MapItem[][] };
 
 export interface MapRepository {
   list(): Promise<SavedMap[]>;

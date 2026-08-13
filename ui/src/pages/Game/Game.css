@@ -32,20 +32,74 @@
 }
 
 .game.panel {
-  background: black;
+  color: white;
+  background: rgba(32, 33, 35, 0.92);
   height: 100%;
   overflow-y: auto;
   width: 60%;
 }
 
 .game.special-panel {
-  background: black;
+  background: rgba(32, 33, 35, 0.92);
   height: 100%;
   outline: 1px solid rgb(122, 126, 130);
   outline-offset: -1px;
   overflow: hidden;
   width: 60%;
   z-index: 1;
+}
+
+.game-renderer-toggle {
+  background: rgba(12, 18, 28, 0.88);
+  border-radius: 0 0 8px 8px;
+  display: flex;
+  gap: 4px;
+  left: 50%;
+  padding: 5px;
+  position: absolute;
+  top: 38px;
+  transform: translateX(-50%);
+  z-index: 5;
+}
+
+.game-renderer-toggle button[aria-pressed="true"] {
+  outline: 2px solid white;
+  outline-offset: -2px;
+}
+
+.game-board-keyboard-controls {
+  background: rgba(12, 18, 28, 0.94);
+  bottom: 8px;
+  display: none; /*flex;*/
+  flex-wrap: wrap;
+  gap: 5px;
+  left: 8px;
+  max-width: min(70%, 620px);
+  padding: 7px;
+  position: absolute;
+  z-index: 4;
+}
+
+.game-board-keyboard-controls p {
+  font-size: 0.75rem;
+  margin: 0;
+  width: 100%;
+}
+
+.game-renderer-error,
+.game-renderer-loading {
+  margin: auto;
+  padding: 64px 16px 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game.special-panel *,
+  .game.special-panel *::before,
+  .game.special-panel *::after {
+    animation-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
 }
 
 .event.panel {
@@ -62,6 +116,8 @@
   height: 100%;
   text-align: center;
   width: 20%;
+  background-color: rgba(32, 33, 35, 0.92);
+  color: white;
 }
 
 .player.panel--active {
@@ -104,7 +160,7 @@
 .player__actions {
   display: flex;
   justify-content: center;
-  margin: 8px 5px 0;
+  margin: 0px 4px;
 }
 
 .player__actions .button {
@@ -126,6 +182,7 @@
 
 .game-view__status {
   background: rgba(0, 0, 0, 0.78);
+  color: white;
   border: 1px solid #ccc;
   font-size: 0.9rem;
   left: 50%;
@@ -133,18 +190,6 @@
   padding: 5px 12px;
   position: absolute;
   top: 5px;
-  transform: translateX(-50%);
-  z-index: 3;
-}
-
-.game-view__role {
-  background: rgba(0, 0, 0, 0.78);
-  bottom: 20%;
-  font-size: 0.8rem;
-  left: 50%;
-  margin: 0 0 5px;
-  padding: 3px 8px;
-  position: absolute;
   transform: translateX(-50%);
   z-index: 3;
 }

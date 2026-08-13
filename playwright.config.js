@@ -17,18 +17,16 @@ module.exports = defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: "npm run start -w @TBS/ui",
+    command: "pnpm --filter @TBS/ui start --host 127.0.0.1 --port 4173",
     url: "http://127.0.0.1:4173",
     reuseExistingServer: false,
     timeout: 120_000,
     env: {
       BROWSER: "none",
       CI: "false",
-      HOST: "127.0.0.1",
-      PORT: "4173",
-      REACT_APP_SESSION_E2E: "true",
-      REACT_APP_SUPABASE_URL: "http://127.0.0.1:54321",
-      REACT_APP_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH",
+      VITE_SESSION_E2E: "true",
+      VITE_SUPABASE_URL: "http://127.0.0.1:54321",
+      VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH",
     },
   },
 });

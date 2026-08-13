@@ -1,5 +1,6 @@
 import { buildGamePanelState } from "./gamePanelState";
-import { createInitialGameInteractionState } from "./gameInteraction";
+import { createInitialGameInteractionState } from "@TBS/presentation";
+import type { MapItem, TerrainType, UnitTypes } from "../../types";
 
 const createCell = (
   index: number,
@@ -10,7 +11,7 @@ const createCell = (
   column: index,
   index,
   row: 0,
-  team: "orange" as TeamType.orange,
+  team: "orange",
   terrain,
   unit,
   ...overrides,
@@ -18,7 +19,7 @@ const createCell = (
 
 describe("buildGamePanelState", () => {
   test("returns clicked empty-cell details for passive inspection", () => {
-    const emptyCell = createCell(0, "none" as UnitTypes, "forest" as TerrainType.forest);
+    const emptyCell = createCell(0, "none", "forest");
 
     const state = buildGamePanelState({
       active: false,
@@ -36,11 +37,11 @@ describe("buildGamePanelState", () => {
   });
 
   test("keeps focus on the selected actor instead of the clicked target", () => {
-    const actor = createCell(0, "soldier" as UnitTypes, "plains" as TerrainType.plains);
-    const target = createCell(1, "lion" as UnitTypes, "desert" as TerrainType.desert, {
+    const actor = createCell(0, "soldier", "plains");
+    const target = createCell(1, "lion", "desert", {
       column: 1,
       index: 1,
-      team: "purple" as TeamType.purple,
+      team: "purple",
     });
 
     const interactionState = {
@@ -69,10 +70,10 @@ describe("buildGamePanelState", () => {
   });
 
   test("updates actor coordinates and terrain during move preview", () => {
-    const actor = createCell(0, "soldier" as UnitTypes, "plains" as TerrainType.plains, {
+    const actor = createCell(0, "soldier", "plains", {
       neighbors: [1],
     });
-    const destination = createCell(1, "none" as UnitTypes, "beach" as TerrainType.beach, {
+    const destination = createCell(1, "none", "beach", {
       column: 1,
       index: 1,
       neighbors: [0],
@@ -103,13 +104,13 @@ describe("buildGamePanelState", () => {
   });
 
   test("builds the reduced transport section for loaded vehicles", () => {
-    const truck = createCell(0, "truck" as UnitTypes, "road" as TerrainType.road, {
+    const truck = createCell(0, "truck", "road", {
       loadedUnit: {
         boosted: true,
         damage: 20,
         moved: true,
-        team: "orange" as TeamType.orange,
-        unit: "doctor" as UnitTypes,
+        team: "orange",
+        unit: "doctor",
       },
     });
 
@@ -160,7 +161,7 @@ describe("buildGamePanelState", () => {
       active: true,
       interactionState: createInitialGameInteractionState(),
       lastInspectedCoords: null,
-      mapData: [[createCell(0, "none" as UnitTypes, "plains" as TerrainType.plains)]],
+      mapData: [[createCell(0, "none", "plains")]],
     });
 
     expect(state).toBeNull();

@@ -1,4 +1,5 @@
-import { getIncomeForTeam, GameAction } from "@TBS/common";
+import type { GameAction } from "@TBS/common";
+import { getIncomeForTeam } from "@TBS/common";
 import { useState } from "react";
 import "../Game/Game.css";
 import GameMap from "../Game/GameMap";
@@ -7,13 +8,13 @@ import { createActionEnvelope } from "../../multiplayer/createActionEnvelope";
 import { useGameSession } from "../../multiplayer/GameSessionProvider";
 import { SessionEventsPanel } from "./SessionEventsPanel";
 import { SessionPlayerPanel } from "./SessionPlayerPanel";
+import type { GamePanelState } from "../../types";
 
 export const SessionGamePage = () => {
   const { actions, error, presence, role, snapshot, submitAction, submitState } = useGameSession();
   const [panelState, setPanelState] = useState<GamePanelState | null>(null);
   if (!snapshot || !role) return null;
   const { players, spectatorCount, state } = snapshot;
-  const roleLabel = role === "spectator" ? "Watching — Spectator mode" : `Playing as ${role}`;
   const perspective = role === "orange" || role === "purple" ? role : "orange";
   const canAct = state.status === "active" && role === state.activeTeam && submitState === "idle";
   const onlineMembers = new Set(presence.map((entry) => entry.memberId));
@@ -28,11 +29,13 @@ export const SessionGamePage = () => {
   const send = (action: GameAction) => {
     void submitAction(createActionEnvelope(state.revision, action));
   };
+  const latestEvents = actions.at(-1)?.revision === state.revision
+    ? actions.at(-1)?.events ?? []
+    : [];
 
   return (
     <main className="game-view" aria-labelledby="game-state-title">
       <h1 className="game-view__status" id="game-state-title">{statusLabel}</h1>
-      <p className="game-view__role">{roleLabel}</p>
       <dl className="game-view__metadata">
         <dt>Orange</dt><dd>{players.orange?.displayName ?? "Open seat"} {players.orange && (onlineMembers.has(players.orange.memberId) ? "(online)" : "(offline)")}</dd>
         <dt>Purple</dt><dd>{players.purple?.displayName ?? "Open seat"} {players.purple && (onlineMembers.has(players.purple.memberId) ? "(online)" : "(offline)")}</dd>
@@ -58,11 +61,11 @@ export const SessionGamePage = () => {
         />
         <GameMap
           active={canAct}
-          availableFunds={state.money[perspective]}
-          mapData={state.map as unknown as MapItem[][]}
+          events={latestEvents}
           onAction={send}
           onPanelStateChange={setPanelState}
-          perspective={perspective as TeamType.orange | TeamType.purple}
+          perspective={perspective}
+          state={state}
         />
         <SessionPlayerPanel
           activeTurn={state.status === "active" && state.activeTeam === "purple"}

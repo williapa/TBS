@@ -136,4 +136,5 @@ export {
 export * from "./contracts/types";
 export * from "./contracts/parsers";
 export * from "./contracts/fixtures";
-export { default as applyGameAction } from "./engine/applyGameAction";
+export { default as applyGameAction } from "./engine/applyGameActionCompatibility";
+export { applyLegacyGameAction } from "./engine/applyGameAction";

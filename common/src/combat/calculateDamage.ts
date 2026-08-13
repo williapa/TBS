@@ -1,4 +1,4 @@
-import { MapItem } from "../types";
+import type { MapItem } from "../types";
 import getEffectiveCombatStats from "./getEffectiveCombatStats";
 
 const getVitality = (unit: MapItem) => (100 - (unit.damage || 0)) / 100;

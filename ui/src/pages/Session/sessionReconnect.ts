@@ -1,4 +1,4 @@
-import { JoinIntent } from "../../multiplayer/GameSessionGateway";
+import type { JoinIntent } from "@TBS/application";
 
 type ReconnectDetails = { displayName: string; intent: JoinIntent };
 

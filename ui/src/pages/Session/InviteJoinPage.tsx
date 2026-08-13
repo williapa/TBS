@@ -1,6 +1,7 @@
-import { FormEvent, useEffect, useRef, useState } from "react";
+import type { FormEvent} from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-import { JoinIntent } from "../../multiplayer/GameSessionGateway";
+import type { JoinIntent } from "@TBS/application";
 import { useGameSession } from "../../multiplayer/GameSessionProvider";
 import { SessionGamePage } from "./SessionGamePage";
 import { loadReconnectDetails, saveReconnectDetails } from "./sessionReconnect";

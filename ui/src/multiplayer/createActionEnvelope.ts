@@ -1,4 +1,5 @@
-import { ActionEnvelope, CURRENT_GAME_PROTOCOL_VERSION, GameAction } from "@TBS/common";
+import type { ActionEnvelope, GameAction } from "@TBS/common";
+import { CURRENT_GAME_PROTOCOL_VERSION } from "@TBS/common";
 
 const fallbackUuid = () => "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (character) => {
   const random = Math.floor(Math.random() * 16);
@@ -9,7 +10,7 @@ const fallbackUuid = () => "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/
 export const createActionEnvelope = (
   expectedRevision: number,
   action: GameAction,
-  actionId = globalThis.crypto?.randomUUID?.() ?? fallbackUuid()
+  actionId: string = globalThis.crypto?.randomUUID?.() ?? fallbackUuid()
 ): ActionEnvelope => ({
   protocolVersion: CURRENT_GAME_PROTOCOL_VERSION,
   actionId,

@@ -1,6 +1,6 @@
 html body {
-  background-color:rgba(32,33,35, .92); /* #252423; #13232f; */
-  color: #eee;
+  /* background-color:rgba(32,33,35, .92); /* #252423; #13232f; */
+  /* color: #eee; */
 }
 
 nav {
@@ -59,4 +59,22 @@ fieldset legend {
 
 .whitelabel label {
   color: white;
+}
+
+.cloudscape-form-page {
+  box-sizing: border-box;
+  margin: 0 auto;
+  max-width: 960px;
+  padding-bottom: 48px;
+  width: calc(100% - 48px);
+}
+
+.cloudscape-form-page h1 {
+  text-align: left;
+}
+
+@media (max-width: 600px) {
+  .cloudscape-form-page {
+    width: calc(100% - 24px);
+  }
 }

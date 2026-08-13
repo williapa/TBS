@@ -1,11 +1,13 @@
+import type {
+  BuildingUnitOption,
+  ObjectUnitOption
+} from "../types";
 import { 
   animalUnitOptions,
   buildingUnitOptions,
-  BuildingUnitOption,
   objectUnitOptions,
   peopleUnitOptions,
-  vehicleUnitOptions,
-  ObjectUnitOption
+  vehicleUnitOptions
 } from "../types";
 import { boostTargetGroups, canUnitBoost } from "../boost";
 import { canUnitHeal, healTargetGroups } from "../heal";

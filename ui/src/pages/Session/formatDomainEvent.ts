@@ -1,4 +1,4 @@
-import { DomainEvent, TeamOption } from "@TBS/common";
+import type { DomainEvent, TeamOption } from "@TBS/common";
 import prettyPrint from "../../utils/prettyPrint";
 
 const teamName = (team: TeamOption) => prettyPrint(team);

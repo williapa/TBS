@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
-import units from "./units";
+import { getEmojiForUnit } from "@TBS/renderer-2d";
+import type { UnitTypes } from "../../../types";
 
 type UnitProps = {
   boosted?: boolean;
@@ -22,7 +23,7 @@ const Unit = ({ boosted = false, type, offsetX = 0, offsetY = -4, scale = 1 }: U
   <span role="img" 
     style={style}
   >
-    {units[type].symbol}
+    {getEmojiForUnit(type)}
   </span>
   );
 };

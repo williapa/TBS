@@ -1,4 +1,4 @@
-import { MapItem } from "../types";
+import type { MapItem } from "../types";
 import getRowAndColumn from "../map/getRowAndColumn";
 import canBeAttacked from "./canBeAttacked";
 

@@ -1,402 +1,135 @@
-import { useEffect, useReducer, useRef, useState } from "react";
-import { GameAction } from "@TBS/common";
-import HexGrid from "../../components/HexGrid/HexGrid";
-import useWindowDimensions from "../../hooks/useWindowDimensions";
 import {
-  buildAttackAction,
-  buildBoostAction,
-  buildConstructAction,
-  buildHealAction,
-  buildLoadAction,
-  buildMoveAction,
-  buildSpawnAction,
-  buildUnloadAction,
+  advanceGameInteraction,
+  createBoardInteractionView,
   createInitialGameInteractionState,
-  gameInteractionReducer,
-  getSelectableUnit,
-  getTargetType,
-  getTargetedCellIndexes,
-} from "./gameInteraction";
-import { buildGamePanelState } from "./gamePanelState";
+  presentBoard,
+  type BoardIntent,
+} from "@TBS/presentation";
+import { Renderer2DBoard } from "@TBS/renderer-2d";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 
-const sameCoords = (a: Coords | null, b: Coords) =>
-  Boolean(a && a.x === b.x && a.y === b.y);
+import ActionForm from "../../components/Map/Cell/Action/ActionForm";
+import type { ActiveMapProps, Coords, MenuPosition } from "../../types";
+import { AccessibleBoardNavigator } from "./AccessibleBoardNavigator";
+import { buildGamePanelState } from "./gamePanelState";
+import { RendererErrorBoundary } from "./RendererErrorBoundary";
+import { readRendererPreference, writeRendererPreference } from "./rendererPreference";
+import { useReducedMotion } from "./useReducedMotion";
+
+const Renderer3DBoard = lazy(async () => {
+  const module = await import("@TBS/renderer-3d");
+  return { default: module.Renderer3DBoard };
+});
+
+const menuPositionFor = (element: HTMLDivElement | null): MenuPosition => {
+  const bounds = element?.getBoundingClientRect();
+  return {
+    left: (bounds?.left ?? 0) + window.scrollX + 16,
+    top: (bounds?.top ?? 0) + window.scrollY + 48,
+  };
+};
 
 const GameMap = ({
   active = false,
-  availableFunds,
-  mapData,
+  events = [],
   onAction,
   onPanelStateChange,
   perspective,
+  state,
 }: ActiveMapProps) => {
   const parentRef = useRef<HTMLDivElement>(null);
-  const [dimensions, setDimensions] = useState<dim>({ width: 100, height: 100 });
+  const previousRevision = useRef(state.revision);
+  const latestEvents = useRef(events);
+  const [animationEvents, setAnimationEvents] = useState<NonNullable<ActiveMapProps["events"]>>([]);
   const [lastInspectedCoords, setLastInspectedCoords] = useState<Coords | null>(null);
-  const windowSize = useWindowDimensions();
-  const [interactionState, dispatch] = useReducer(
-    gameInteractionReducer,
-    undefined,
-    createInitialGameInteractionState
-  );
+  const [interactionState, setInteractionState] = useState(createInitialGameInteractionState);
+  const [renderer, setRenderer] = useState(readRendererPreference);
+  const [rendererError, setRendererError] = useState(false);
+  const reducedMotion = useReducedMotion();
+  latestEvents.current = events;
 
   useEffect(() => {
-    const parent = parentRef.current;
-    if (parent) {
-      setDimensions({
-        width: parent.clientWidth,
-        height: parent.clientHeight
-      });
-    }
-  }, [parentRef, windowSize]);
-
-  useEffect(() => {
-    dispatch({ type: "RESET_AFTER_SERVER_EVENT" });
+    const adjacent = previousRevision.current + 1 === state.revision;
+    previousRevision.current = state.revision;
+    setAnimationEvents(adjacent ? latestEvents.current : []);
+    setInteractionState(createInitialGameInteractionState());
     setLastInspectedCoords(null);
-  }, [mapData]);
+  }, [state.revision]);
 
   useEffect(() => {
-    const panelState = buildGamePanelState({
+    if (reducedMotion) setAnimationEvents([]);
+  }, [reducedMotion]);
+
+  useEffect(() => writeRendererPreference(renderer), [renderer]);
+
+  useEffect(() => {
+    onPanelStateChange?.(buildGamePanelState({
       active,
       interactionState,
       lastInspectedCoords,
-      mapData,
-    });
+      mapData: state.map,
+    }));
+  }, [active, interactionState, lastInspectedCoords, onPanelStateChange, state.map]);
 
-    onPanelStateChange?.(panelState);
-  }, [active, interactionState, lastInspectedCoords, mapData, onPanelStateChange]);
-
-  const handleCellClick = (mapItem: MapItem, position: MenuPosition) => {
-    if (!active || !interactionState.selectedUnit) {
-      setLastInspectedCoords({ x: mapItem.row, y: mapItem.column });
-    }
-
-    if (!active) {
-      return;
-    }
-
-    if (
-      interactionState.pendingAction === "attack" &&
-      interactionState.availableAttackTargets.includes(mapItem.index)
-    ) {
-      dispatch({ type: "SELECT_ATTACK_TARGET", cell: mapItem, position });
-      return;
-    }
-
-    if (
-      (interactionState.pendingAction === "missile" ||
-        interactionState.pendingAction === "nuke") &&
-      interactionState.availableAttackTargets.includes(mapItem.index)
-    ) {
-      dispatch({ type: "SELECT_OBJECT_TARGET", cell: mapItem, position });
-      return;
-    }
-
-    if (
-      interactionState.pendingAction === "construct" &&
-      interactionState.availableConstructTargets.includes(mapItem.index)
-    ) {
-      dispatch({ type: "SELECT_CONSTRUCT_TARGET", cell: mapItem, position });
-      return;
-    }
-
-    if (
-      interactionState.pendingAction === "boost" &&
-      interactionState.availableBoostTargets.includes(mapItem.index)
-    ) {
-      dispatch({ type: "SELECT_BOOST_TARGET", cell: mapItem, position });
-      return;
-    }
-
-    if (
-      interactionState.pendingAction === "heal" &&
-      interactionState.availableHealTargets.includes(mapItem.index)
-    ) {
-      dispatch({ type: "SELECT_HEAL_TARGET", cell: mapItem, position });
-      return;
-    }
-
-    if (
-      interactionState.pendingAction === "load" &&
-      interactionState.availableLoadTargets.includes(mapItem.index)
-    ) {
-      dispatch({ type: "SELECT_LOAD_TARGET", cell: mapItem, position });
-      return;
-    }
-
-    if (
-      interactionState.pendingAction === "spawn" &&
-      interactionState.availableSpawnTargets.includes(mapItem.index)
-    ) {
-      dispatch({ type: "SELECT_SPAWN_TARGET", cell: mapItem, position });
-      return;
-    }
-
-    if (
-      interactionState.pendingAction === "unload" &&
-      interactionState.availableUnloadTargets.includes(mapItem.index)
-    ) {
-      dispatch({ type: "SELECT_UNLOAD_TARGET", cell: mapItem, position });
-      return;
-    }
-
-    if (getSelectableUnit(mapItem, perspective)) {
-      if (sameCoords(interactionState.origin, { x: mapItem.row, y: mapItem.column })) {
-        dispatch({
-          type: "OPEN_ORIGIN_MENU",
-          availableFunds,
-          map: mapData,
-          perspective,
-          position,
-        });
-        return;
-      }
-
-      dispatch({
-        type: "SELECT_ACTOR",
-        availableFunds,
-        map: mapData,
-        position,
-        unit: mapItem,
-      });
-      return;
-    }
-
-    if (interactionState.availableMoveTargets.includes(mapItem.index)) {
-      dispatch({
-        type: "CHOOSE_MOVE_TARGET",
-        cell: mapItem,
-        map: mapData,
-        perspective,
-        position,
-      });
-      return;
-    }
-
-    if (!interactionState.selectedUnit) {
-      return;
-    }
-
-    setLastInspectedCoords(null);
-    dispatch({ type: "CANCEL_FLOW" });
+  const context = {
+    active,
+    availableFunds: state.money[perspective],
+    map: state.map,
+    menuPosition: menuPositionFor(parentRef.current),
+    perspective,
   };
+  const board = presentBoard({
+    state,
+    events: animationEvents,
+    interaction: createBoardInteractionView(
+      interactionState,
+      context,
+      lastInspectedCoords,
+    ),
+  });
 
-  const handleMenuAction = (action: GameMenuActionId) => {
-    if (action === "cancel") {
-      setLastInspectedCoords(null);
-      dispatch({ type: "CANCEL_FLOW" });
-      return;
-    }
-
-    if (action === "chooseAttack") {
-      dispatch({ type: "CHOOSE_ATTACK_MODE", map: mapData, perspective });
-      return;
-    }
-
-    if (action === "chooseBoost") {
-      dispatch({ type: "CHOOSE_BOOST_MODE", map: mapData, perspective });
-      return;
-    }
-
-    if (action === "chooseHeal") {
-      dispatch({ type: "CHOOSE_HEAL_MODE", map: mapData, perspective });
-      return;
-    }
-
-    if (action === "chooseConstruct") {
-      dispatch({
-        type: "CHOOSE_CONSTRUCT_MODE",
-        availableFunds,
-        map: mapData,
-        position: interactionState.menu?.position ?? { left: 0, top: 0 },
-      });
-      return;
-    }
-
-    if (action === "chooseLoad") {
-      dispatch({ type: "CHOOSE_LOAD_MODE", map: mapData, perspective });
-      return;
-    }
-
-    if (action === "chooseUnload") {
-      dispatch({ type: "CHOOSE_UNLOAD_MODE", map: mapData });
-      return;
-    }
-
-    if (action.startsWith("construct:")) {
-      dispatch({
-        type: "CHOOSE_CONSTRUCT_BUILDING",
-        building: action.replace("construct:", "") as BuildingType,
-        map: mapData,
-      });
-      return;
-    }
-
-    if (action.startsWith("spawn:")) {
-      dispatch({
-        type: "CHOOSE_SPAWN_UNIT",
-        map: mapData,
-        unit: action.replace("spawn:", "") as SpawnableUnitType,
-      });
-      return;
-    }
-
-    if (action === "move") {
-      if (!interactionState.previewDestination) {
-        dispatch({ type: "CHOOSE_MOVE_MODE", map: mapData });
-        return;
-      }
-
-      const moveAction = buildMoveAction(interactionState);
-
-      if (!moveAction || moveAction.action !== "move") {
-        setLastInspectedCoords(null);
-        dispatch({ type: "CANCEL_FLOW" });
-        return;
-      }
-
-      onAction?.(moveAction as GameAction);
-      setLastInspectedCoords(null);
-      dispatch({ type: "CANCEL_FLOW" });
-      return;
-    }
-
-    if (action === "confirmAttack") {
-      const attackAction = buildAttackAction(interactionState);
-
-      if (!attackAction) {
-        setLastInspectedCoords(null);
-        dispatch({ type: "CANCEL_FLOW" });
-        return;
-      }
-
-      onAction?.(attackAction);
-      setLastInspectedCoords(null);
-      dispatch({ type: "CANCEL_FLOW" });
-      return;
-    }
-
-    if (action === "confirmBoost") {
-      const boostAction = buildBoostAction(interactionState);
-
-      if (!boostAction) {
-        setLastInspectedCoords(null);
-        dispatch({ type: "CANCEL_FLOW" });
-        return;
-      }
-
-      onAction?.(boostAction);
-      setLastInspectedCoords(null);
-      dispatch({ type: "CANCEL_FLOW" });
-      return;
-    }
-
-    if (action === "confirmHeal") {
-      const healAction = buildHealAction(interactionState);
-
-      if (!healAction) {
-        setLastInspectedCoords(null);
-        dispatch({ type: "CANCEL_FLOW" });
-        return;
-      }
-
-      onAction?.(healAction);
-      setLastInspectedCoords(null);
-      dispatch({ type: "CANCEL_FLOW" });
-      return;
-    }
-
-    if (action === "confirmMissileLaunch" || action === "confirmNukeLaunch") {
-      const moveAction = buildMoveAction(interactionState);
-
-      if (!moveAction || moveAction.action !== "move" || !moveAction.objectTarget) {
-        setLastInspectedCoords(null);
-        dispatch({ type: "CANCEL_FLOW" });
-        return;
-      }
-
-      onAction?.(moveAction as GameAction);
-      setLastInspectedCoords(null);
-      dispatch({ type: "CANCEL_FLOW" });
-      return;
-    }
-
-    if (action === "confirmLoad") {
-      const loadAction = buildLoadAction(interactionState);
-
-      if (!loadAction) {
-        setLastInspectedCoords(null);
-        dispatch({ type: "CANCEL_FLOW" });
-        return;
-      }
-
-      onAction?.(loadAction);
-      setLastInspectedCoords(null);
-      dispatch({ type: "CANCEL_FLOW" });
-      return;
-    }
-
-    if (action === "confirmConstruct") {
-      const constructAction = buildConstructAction(interactionState);
-
-      if (!constructAction) {
-        setLastInspectedCoords(null);
-        dispatch({ type: "CANCEL_FLOW" });
-        return;
-      }
-
-      onAction?.(constructAction);
-      setLastInspectedCoords(null);
-      dispatch({ type: "CANCEL_FLOW" });
-      return;
-    }
-
-    if (action === "confirmSpawn") {
-      const spawnAction = buildSpawnAction(interactionState);
-
-      if (!spawnAction) {
-        setLastInspectedCoords(null);
-        dispatch({ type: "CANCEL_FLOW" });
-        return;
-      }
-
-      onAction?.(spawnAction);
-      setLastInspectedCoords(null);
-      dispatch({ type: "CANCEL_FLOW" });
-      return;
-    }
-
-    if (action === "confirmUnload") {
-      const unloadAction = buildUnloadAction(interactionState);
-
-      if (!unloadAction) {
-        setLastInspectedCoords(null);
-        dispatch({ type: "CANCEL_FLOW" });
-        return;
-      }
-
-      onAction?.(unloadAction);
-      setLastInspectedCoords(null);
-      dispatch({ type: "CANCEL_FLOW" });
-      return;
-    }
+  const handleIntent = (intent: BoardIntent) => {
+    const result = advanceGameInteraction(interactionState, intent, {
+      ...context,
+      menuPosition: menuPositionFor(parentRef.current),
+    });
+    setInteractionState(result.state);
+    if ("inspectedCell" in result) setLastInspectedCoords(result.inspectedCell ?? null);
+    if (result.command) onAction?.(result.command);
+  };
+  const selectRenderer = (nextRenderer: "2d" | "3d") => {
+    setAnimationEvents([]);
+    setRendererError(false);
+    setRenderer(nextRenderer);
   };
 
   return (
     <div className="game special-panel" ref={parentRef}>
-      <HexGrid
-        activeTeam={active ? perspective : ("gray" as TeamType.gray)}
-        dimensions={dimensions}
-        gameInteraction={{
-          interactive: active,
-          menu: interactionState.menu,
-          onCellClick: handleCellClick,
-          onMenuAction: handleMenuAction,
-          targetedCellIndexes: getTargetedCellIndexes(interactionState),
-          targetType: getTargetType(interactionState),
-        }}
-        mapData={mapData}
-      />
+      <div aria-label="Board view" className="game-renderer-toggle" role="group">
+        <button aria-pressed={renderer === "2d"} onClick={() => selectRenderer("2d")} type="button">Use 2D board</button>
+        <button aria-pressed={renderer === "3d"} onClick={() => selectRenderer("3d")} type="button">Use 3D board</button>
+      </div>
+      {renderer === "2d" ? (
+        <Renderer2DBoard board={board} onIntent={handleIntent} reducedMotion={reducedMotion} />
+      ) : (
+        <RendererErrorBoundary
+          fallback={<p className="game-renderer-error" role="alert">The 3D board is unavailable. The 2D board remains available.</p>}
+          onError={() => setRendererError(true)}
+        >
+          <Suspense fallback={<p className="game-renderer-loading" role="status">Loading 3D board…</p>}>
+            <Renderer3DBoard board={board} onIntent={handleIntent} reducedMotion={reducedMotion} />
+          </Suspense>
+        </RendererErrorBoundary>
+      )}
+      {renderer === "3d" && !rendererError && <AccessibleBoardNavigator board={board} onIntent={handleIntent} />}
+      {interactionState.menu && (
+        <ActionForm
+          left={interactionState.menu.position.left}
+          onAction={(actionType) => handleIntent({ type: "choose-action", actionType })}
+          options={interactionState.menu.options}
+          top={interactionState.menu.position.top}
+        />
+      )}
     </div>
   );
 };

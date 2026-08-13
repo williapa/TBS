@@ -1,7 +1,8 @@
-import {
+import type {
   BuildingUnitOption,
+  MapItem} from "../types";
+import {
   buildingUnitOptions,
-  MapItem,
   vehicleUnitOptions
 } from "../types";
 

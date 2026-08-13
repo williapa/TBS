@@ -1,6 +1,7 @@
 import type React from "react";
 import ActionForm from "./Action/ActionForm";
 import Terrain from "./Terrain/Terrain";
+import type { CellProps, MenuPosition } from "../../../types";
 
 const getMenuPosition = (element: HTMLDivElement): MenuPosition => {
   const { top, left } = element.getBoundingClientRect();
@@ -25,9 +26,9 @@ const GameCell = ({
   onGameCellClick,
   row,
   targetType,
-  team = "gray" as TeamType.gray,
+  team = "gray",
   terrain,
-  unit = "none" as ObjectType.none,
+  unit = "none",
   width = 80,
 }: CellProps) => {
   const mapItem = { boosted, column, damage, index, loadedUnit, moved, neighbors, row, team, terrain, unit };

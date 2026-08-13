@@ -5,26 +5,31 @@ Supabase runs locally in Docker and does not require a hosted project for develo
 ## Start and configure
 
 1. Start Docker Desktop or another Docker-compatible runtime.
-2. Run `npm install` at the repository root.
-3. Run `npm run supabase:start`. The first start downloads the local service images and applies every file in `supabase/migrations`.
-4. Run `npm run supabase:status` and copy the API URL and publishable key into a local `.env` file in the UI package.
+2. Run `pnpm install` at the repository root.
+3. Run `pnpm supabase:start`. The first start downloads the local service images and applies every file in `supabase/migrations`.
+4. Run `pnpm supabase:status` and copy the API URL and publishable key into a local `.env` file in the UI package.
+5. In a second terminal, run `pnpm edge:serve`. This builds the shared trusted-action runtime and serves the authenticated `submit-action` function with JWT verification enabled.
 
 The browser may use the publishable key. Never copy or commit the service-role key printed by the local stack. Environment files are ignored; only example templates are tracked.
 
 ## Daily commands
 
-- `npm run supabase:start` starts the local stack and applies pending migrations.
-- `npm run supabase:stop` stops it while preserving local Docker data.
-- `npm run supabase:status` prints local endpoints and development credentials.
-- `npm run supabase:reset` recreates the local database, reapplies all migrations in filename order, and then runs `supabase/seed.sql`. This destroys local Supabase database data only.
-- `npm run supabase:test` runs the committed pgTAP database tests.
-- `npm run supabase:lint` checks the local schema for SQL errors and warnings.
+- `pnpm supabase:start` starts the local stack and applies pending migrations.
+- `pnpm supabase:stop` stops it while preserving local Docker data.
+- `pnpm supabase:status` prints local endpoints and development credentials.
+- `pnpm supabase:reset` recreates the local database, reapplies all migrations in filename order, and then runs `supabase/seed.sql`. This destroys local Supabase database data only.
+- `pnpm supabase:test` runs the committed pgTAP database tests.
+- `pnpm supabase:lint` checks the local schema for SQL errors and warnings.
+- `pnpm edge:build` creates the ignored, deployable trusted-action runtime bundle from the shared application and rules packages.
+- `pnpm edge:serve` rebuilds that bundle and serves local Edge Functions until stopped.
 
 ## Create a migration
 
-Run `npm run supabase:migration:new -- descriptive_name`, edit the generated SQL file, and verify the complete history with `npm run supabase:reset`, `npm run supabase:test`, and `npm run supabase:lint`. Commit `supabase/config.toml`, migrations, tests, and the seed file with the code that depends on them.
+Run `pnpm supabase:migration:new descriptive_name`, edit the generated SQL file, and verify the complete history with `pnpm supabase:reset`, `pnpm supabase:test`, and `pnpm supabase:lint`. Commit `supabase/config.toml`, migrations, tests, and the seed file with the code that depends on them.
 
 These commands affect only the local project. Linking to or deploying a hosted Supabase project is intentionally outside this setup.
+
+The generated bundle under `supabase/functions/submit-action/generated/` is deliberately not committed. Production builds and deployments must run `pnpm edge:build` first. The function accepts only `{ gameId, envelope }`; service/secret keys remain in the Edge environment and must never be exposed to the browser.
 
 ## Free-tier safeguards and monitoring
 

@@ -1,4 +1,4 @@
-import { DomainEvent } from "@TBS/common";
+import type { DomainEvent } from "@TBS/common";
 import { formatDomainEvent } from "./formatDomainEvent";
 
 describe("formatDomainEvent", () => {

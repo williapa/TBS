@@ -1,5 +1,6 @@
 import HexGrid from "../../components/HexGrid/HexGrid";
 import useWindowDimensions from "../../hooks/useWindowDimensions";
+import type { MapItem } from "../../types";
 
 const PADDING_LEFT = 30;
 const HEIGHT_OFFSET = 270;

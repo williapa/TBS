@@ -1,6 +1,7 @@
 import EditorCell from "./EditorCell";
 import GameCell from "./GameCell";
 import "./Cell.css";
+import type { CellProps } from "../../../types";
 
 const Cell = (props: CellProps) => {
   switch(props.mode) {

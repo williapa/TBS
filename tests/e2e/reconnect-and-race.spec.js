@@ -18,7 +18,7 @@ test("closed player tabs restore from durable state without clearing browser sto
     await creator.getByLabel("Display name").fill("Durable creator");
     await creator.getByRole("button", { name: "Create game" }).click();
     const invitePath = new URL(await creator.getByLabel("Share link").inputValue()).pathname;
-    await creator.getByRole("link", { name: "Open game" }).click();
+    await creator.getByRole("button", { name: "Open game" }).click();
     await expect(creator.getByRole("heading", { name: "Waiting for an opponent" })).toBeVisible();
 
     await challenger.goto(invitePath);

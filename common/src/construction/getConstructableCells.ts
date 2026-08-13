@@ -1,5 +1,5 @@
 import getConstructionOptions from "./getConstructionOptions";
-import {
+import type {
   BuildingUnitOption,
   Coords,
   MapItem,

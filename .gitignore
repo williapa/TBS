@@ -32,6 +32,7 @@ pnpm-debug.log*
 # Dependencies
 # ======================================
 node_modules/
+.pnpm-store/
 
 # ======================================
 # Build artifacts
@@ -48,11 +49,10 @@ temp/
 
 # ======================================
 # Package manager
-# Using npm workspaces, so commit root package-lock.json
-# Ignore lockfiles for package managers you are not using
+# Using pnpm workspaces, so commit only the root pnpm lockfile
 # ======================================
 yarn.lock
-pnpm-lock.yaml
+package-lock.json
 
 # ======================================
 # Frontend caches / tooling
@@ -60,6 +60,7 @@ pnpm-lock.yaml
 .eslintcache
 .stylelintcache
 .cache/
+.nx/
 .parcel-cache/
 
 # ======================================
@@ -67,6 +68,7 @@ pnpm-lock.yaml
 # ======================================
 junit.xml
 test-results/
+supabase/functions/*/generated/
 playwright-report/
 
 # ======================================

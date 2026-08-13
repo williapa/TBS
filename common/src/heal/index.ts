@@ -1,8 +1,9 @@
+import type {
+  MapItem} from "../types";
 import {
   buildingUnitOptions,
   flyingOptions,
   groundVehicleOptions,
-  MapItem,
   peopleUnitOptions,
 } from "../types";
 

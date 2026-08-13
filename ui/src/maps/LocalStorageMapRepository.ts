@@ -1,12 +1,16 @@
-import { createActiveGameSnapshot } from "@TBS/common";
+import {
+  assertSerializedMapSize,
+  createDefaultBattlefield,
+  validateSaveMapInput,
+} from "@TBS/game-setup";
+import type {
+  MapRepository,
+  SavedMap,
+  SaveMapInput} from "./MapRepository";
 import {
   CURRENT_MAP_SCHEMA_VERSION,
-  MapRepository,
-  MapRepositoryError,
-  SavedMap,
-  SaveMapInput,
+  MapRepositoryError
 } from "./MapRepository";
-import { assertSerializedMapSize, validateSaveMapInput } from "./MapValidation";
 
 type StoredRepository = { repositoryVersion: 1; maps: Omit<SavedMap, "readOnly">[] };
 
@@ -14,8 +18,8 @@ const STORAGE_KEY = "TBS.maps.v1";
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
 const defaultMap = (): SavedMap => {
-  const map = createActiveGameSnapshot().state.map;
-  return { schemaVersion: CURRENT_MAP_SCHEMA_VERSION, id: "default-battlefield", name: "Default battlefield", map, readOnly: true };
+  const preset = createDefaultBattlefield();
+  return { ...preset, id: "default-battlefield", readOnly: true };
 };
 
 const invalid = (message: string): never => { throw new MapRepositoryError("invalid-map", message); };

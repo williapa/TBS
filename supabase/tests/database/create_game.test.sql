@@ -1,6 +1,6 @@
 begin;
 
-select plan(18);
+select plan(20);
 
 insert into auth.users (id, aud, role)
 values ('00000000-0000-0000-0000-000000000019', 'authenticated', 'authenticated');
@@ -47,6 +47,23 @@ select is(
   (select gs.revision from public.game_states gs join created_game_result r on r.game_id = gs.game_id),
   0,
   'initial gameplay state is stored at revision zero'
+);
+
+select is(
+  (select pg_catalog.concat_ws(':', s.protocol_version, s.ruleset_version, s.content_version)
+   from public.game_sessions s join created_game_result r on r.game_id = s.id),
+  '1:standard@1:standard@1',
+  'new games pin protocol, ruleset, and content versions'
+);
+
+select is(
+  (select gs.checksum = pg_catalog.encode(
+     extensions.digest(gs.state::text, 'sha256'),
+     'hex'
+   )
+   from public.game_states gs join created_game_result r on r.game_id = gs.game_id),
+  true,
+  'new games store a database-computed canonical state checksum'
 );
 
 select matches(

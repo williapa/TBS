@@ -1,0 +1,36 @@
+{
+  "name": "@TBS/renderer-2d",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Accessible SVG and emoji renderer for renderer-neutral TBS board view models",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run src",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@TBS/presentation": "workspace:*",
+    "react": "18.3.1"
+  },
+  "devDependencies": {
+    "@testing-library/react": "16.3.2",
+    "@types/react": "18.3.31",
+    "@types/react-dom": "18.3.7",
+    "jsdom": "30.0.1",
+    "typescript": "6.0.3",
+    "vitest": "4.1.10"
+  },
+  "nx": {
+    "projectType": "library",
+    "tags": ["layer:renderer", "type:library"]
+  }
+}

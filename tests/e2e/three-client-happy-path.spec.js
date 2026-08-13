@@ -61,7 +61,7 @@ test("creator, challenger, and spectator complete a live game and all action fam
 
   const finishMap = [[
     cell(0, 0, 0, [1], "soldier", "purple"),
-    cell(0, 1, 1, [0], "none", "gray"),
+    { ...cell(0, 1, 1, [0], "soldier", "orange"), damage: 99 },
   ]];
   const storage = {
     repositoryVersion: 1,
@@ -76,11 +76,12 @@ test("creator, challenger, and spectator complete a live game and all action fam
     await creator.goto("/");
     await expect(creator.getByRole("heading", { name: "Start a game" })).toBeVisible();
     await creator.getByLabel("Display name").fill("Creator");
-    await creator.getByLabel("Map").selectOption("quick-finish");
+    await creator.getByRole("button", { name: /Map.*Default battlefield/ }).click();
+    await creator.getByRole("option", { name: /Quick finish/ }).click();
     await creator.getByRole("button", { name: "Create game" }).click();
     const shareUrl = await creator.getByLabel("Share link").inputValue();
     const invitePath = new URL(shareUrl).pathname;
-    await creator.getByRole("link", { name: "Open game" }).click();
+    await creator.getByRole("button", { name: "Open game" }).click();
     await expect(creator.getByRole("heading", { name: "Waiting for an opponent" })).toBeVisible();
 
     await challenger.goto(invitePath);
@@ -94,15 +95,24 @@ test("creator, challenger, and spectator complete a live game and all action fam
     await expect(spectator.getByText("Watching — Spectator mode")).toBeVisible();
     await expect(spectator.getByText("Spectators online").locator("xpath=following-sibling::*[1]")).toHaveText("1");
 
-    await challenger.getByRole("button", { name: "End turn" }).click();
+    await challenger.getByRole("button", { name: "Use 3D board" }).click();
+    await expect(challenger.getByRole("application", { name: /Three-dimensional game board/ })).toBeVisible();
+    const purpleSoldier = challenger.getByRole("button", { name: /Select Soldier, purple team/ });
+    await purpleSoldier.click();
+    await purpleSoldier.click();
+    await challenger.getByRole("button", { name: "Attack" }).click();
+    const keyboardCell = challenger.getByRole("button", { name: /Current cell:/ });
+    await keyboardCell.press("ArrowRight");
+    await keyboardCell.press("Enter");
+    await challenger.getByRole("button", { name: "Confirm attack" }).click();
     await expect(challenger.getByRole("heading", { name: "Game finished" })).toBeVisible();
     await expect(creator.getByRole("heading", { name: "Game finished" })).toBeVisible();
     await expect(spectator.getByRole("heading", { name: "Game finished" })).toBeVisible();
     await expect(spectator.getByText("Winner").locator("xpath=following-sibling::*[1]")).toHaveText("purple");
     for (const page of [creator, challenger, spectator]) {
-      const opponentEvent = page.locator('[data-revision="1"]');
-      await expect(opponentEvent).toHaveCount(1);
-      await expect(opponentEvent).toContainText("Purple won the game!");
+      const committedEvents = page.locator('[data-revision="1"]');
+      await expect(committedEvents).toHaveCount(2);
+      await expect(committedEvents.filter({ hasText: "Purple won the game!" })).toHaveCount(1);
     }
     const eventTableLayout = await spectator.locator("#events").evaluate((container) => {
       const table = container.querySelector("table");

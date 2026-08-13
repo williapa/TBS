@@ -1,7 +1,7 @@
 import { createContext, useContext } from "react";
-import { GameSessionGateway } from "./GameSessionGateway";
+import type { GameClient } from "@TBS/application";
 
-export const GameSessionGatewayContext = createContext<GameSessionGateway | null>(null);
+export const GameSessionGatewayContext = createContext<GameClient | null>(null);
 
 export const useGameSessionGateway = () => {
   const gateway = useContext(GameSessionGatewayContext);

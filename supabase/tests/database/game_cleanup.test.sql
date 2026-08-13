@@ -2,6 +2,10 @@ begin;
 
 select plan(14);
 
+-- The preview and cleanup functions intentionally operate across every game.
+-- Isolate this transaction from durable local/E2E fixtures; rollback restores them.
+delete from public.game_sessions;
+
 insert into auth.users (id, aud, role)
 values
   ('00000000-0000-0000-0000-000000000101', 'authenticated', 'authenticated'),

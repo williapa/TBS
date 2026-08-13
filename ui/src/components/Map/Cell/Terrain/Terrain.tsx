@@ -1,6 +1,7 @@
 import "./Terrain.css";
 import Bar from "../Health/Bar";
 import Unit from "../../../../components/Map/Unit/Unit";
+import type { TerrainProps } from "../../../../types";
 
 const Terrain = ({
   boosted = false,
@@ -10,7 +11,7 @@ const Terrain = ({
   height,
   loadedUnit,
   moved = false,
-  team = "gray" as TeamType.gray,
+  team = "gray",
   type,
   unitType
 }: TerrainProps) => (

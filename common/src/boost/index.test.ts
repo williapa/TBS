@@ -1,14 +1,11 @@
-declare const require: any;
-export {};
-
-const test = require("node:test");
-const assert = require("node:assert/strict");
-
-const {
+import * as assert from "node:assert/strict";
+import { test } from "node:test";
+import {
   canReceiveBoost,
   canUnitBoost,
   getBoostableCellIndexes,
-} = require("./index");
+} from "./index";
+import type { MapItem, TeamColor, UnitOption } from "../types";
 
 const createCell = ({
   boosted = false,
@@ -20,9 +17,9 @@ const createCell = ({
   boosted?: boolean;
   index: number;
   neighbors?: number[];
-  team?: string;
-  unit?: string;
-}) => ({
+  team?: TeamColor;
+  unit?: UnitOption;
+}): MapItem => ({
   boosted,
   column: index,
   damage: undefined,

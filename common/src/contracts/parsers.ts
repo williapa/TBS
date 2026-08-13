@@ -1,33 +1,36 @@
-import {
-  buildingUnitOptions,
+import { entityId } from "@TBS/game-core";
+import type {
   BuildingUnitOption,
   GameAction,
   MapItem,
-  objectUnitOptions,
   ObjectUnitOption,
-  spawnableUnitOptions,
   SpawnableUnitOption,
+  TeamOption,
+  UnitOption,
+  WinCondition} from "../types";
+import {
+  buildingUnitOptions,
+  objectUnitOptions,
+  spawnableUnitOptions,
   supportedActions,
   teamOptions,
-  TeamOption,
   TerrainOptions,
-  UnitOption,
-  WinCondition,
   winConditions,
   animalUnitOptions,
   peopleUnitOptions,
   vehicleUnitOptions,
 } from "../types";
-import {
+import type {
   ActionEnvelope,
   AppliedAction,
-  CURRENT_GAME_PROTOCOL_VERSION,
-  CURRENT_GAME_SCHEMA_VERSION,
   GameSnapshot,
   GameState,
   PersistedGamePayload,
   PlayerSeat,
-  DomainEvent,
+  DomainEvent} from "./types";
+import {
+  CURRENT_GAME_PROTOCOL_VERSION,
+  CURRENT_GAME_SCHEMA_VERSION
 } from "./types";
 
 export class ContractValidationError extends Error {
@@ -119,6 +122,7 @@ const parseLoadedUnit = (value: unknown, path: string): NonNullable<MapItem["loa
   return {
     damage: item.damage === undefined ? undefined : finiteNumber(item.damage, `${path}.damage`),
     boosted: optionalBoolean(item.boosted, `${path}.boosted`),
+    entityId: item.entityId === undefined ? undefined : entityId(string(item.entityId, `${path}.entityId`)),
     moved: optionalBoolean(item.moved, `${path}.moved`),
     team: enumValue(item.team, [...teamOptions, "gray"], `${path}.team`),
     unit: parseUnitOption(item.unit, `${path}.unit`),
@@ -141,6 +145,7 @@ export const parseMapItem = (value: unknown, path = "mapItem"): MapItem => {
     index: nonNegativeInteger(item.index, `${path}.index`),
     damage,
     boosted: optionalBoolean(item.boosted, `${path}.boosted`),
+    entityId: item.entityId === undefined ? undefined : entityId(string(item.entityId, `${path}.entityId`)),
     loadedUnit: item.loadedUnit === undefined ? undefined : parseLoadedUnit(item.loadedUnit, `${path}.loadedUnit`),
     moved: optionalBoolean(item.moved, `${path}.moved`),
     neighbors: neighbors === undefined

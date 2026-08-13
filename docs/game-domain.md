@@ -9,7 +9,9 @@ Two durable player seats exist: the creator is orange and the challenger is purp
 # Map
 A map in the game is a hexagon, created from hexagonal cells. /common defines functions to reference cells by their number, from left to right, top to bottom, as well as x / y coordinates, starting with a 0 index for both. it also defines functions to retrieve cells which a unit can move to, as well as attack from a given cell position. 
 
-For a player to create a map, each team must have at least 1 initial unit that can move and attack, as the default objective is to destroy all enemy units that can move and attack.
+`@TBS/game-setup` owns map generation, versioned map parsing, topology and size validation, immutable editor updates, and construction of the initial game input. For a player to save or create a game from a map, each team must have at least one initial unit with both move and attack capabilities. If both teams also begin with a capital, setup derives the `capital-or-combat-elimination` objective; otherwise it uses combat elimination.
+
+Setup assigns every initial on-board and transported entity a deterministic stable ID. The normalized engine preserves that ID through movement, load/unload, and combat and derives deterministic IDs for constructed or spawned entities. Existing schema-v1 fixtures without IDs remain valid and retain their locked replay checksum; presentation supplies a deterministic compatibility identity for those historical states.
 
 # Terrain 
 An additonal aspect of map cells is "terrain type". Terrain types, like "forest", "beach", "water", or "road", impact a moving unit's range during a single move. For example, a boat might only be able to move on water. A person unit cannot move onto a water cell at all. A plane unit's range might not be impacted at all by the terrain cells. The attribute which determines range is "energy". 

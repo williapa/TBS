@@ -1,5 +1,5 @@
 import getRowAndColumn from "../map/getRowAndColumn";
-import { MapItem } from "../types";
+import type { MapItem } from "../types";
 import getTerrainUnitMovementCost from "../movement/getTerrainUnitMovementCost";
 
 const filterNeighborsForReachableCells = (unit: string, availableEnergy: number, neighbors: number[], map: MapItem[][]) => {

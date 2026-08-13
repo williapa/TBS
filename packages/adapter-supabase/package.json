@@ -1,0 +1,36 @@
+{
+  "name": "@TBS/adapter-supabase",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Supabase Auth, durable-session, and Realtime implementations of application ports",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run src",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.112.2",
+    "@TBS/application": "workspace:*",
+    "@TBS/common": "workspace:*"
+  },
+  "devDependencies": {
+    "@TBS/test-kit": "workspace:*",
+    "@types/node": "26.2.0",
+    "typescript": "6.0.3",
+    "vitest": "4.1.10"
+  },
+  "nx": {
+    "projectType": "library",
+    "tags": ["layer:infrastructure", "type:library"]
+  }
+}

@@ -19,8 +19,9 @@ import {
   NUKE_OBJECT_SPLASH_DAMAGE,
   NUKE_OBJECT_TARGET_DAMAGE,
 } from "../objects";
-import { buildingUnitOptions, GameAction, MapItem, moveableOptions, peopleUnitOptions, supportedActions, TeamOption, vehicleUnitOptions, winConditions } from "../types";
-import { ApplyGameActionResult, DomainEvent, GameState } from "../contracts/types";
+import type { GameAction, MapItem, TeamOption} from "../types";
+import { buildingUnitOptions, moveableOptions, peopleUnitOptions, supportedActions, vehicleUnitOptions, winConditions } from "../types";
+import type { ApplyGameActionResult, DomainEvent, GameState } from "../contracts/types";
 
 const otherTeam = (team: TeamOption): TeamOption => team === "orange" ? "purple" : "orange";
 
@@ -40,6 +41,7 @@ const clearUnit = (cell: MapItem): MapItem => ({
   ...cell,
   damage: undefined,
   boosted: undefined,
+  entityId: undefined,
   loadedUnit: undefined,
   moved: undefined,
   team: "gray",
@@ -80,10 +82,13 @@ const applyFlatDamage = (
 };
 
 const resetMovedState = (map: MapItem[][]) => map.map((row) => row.map((cell) => {
-  const { moved: _moved, ...rest } = cell;
-  if (!rest.loadedUnit) return rest as MapItem;
-  const { moved: _loadedMoved, ...loadedUnit } = rest.loadedUnit;
-  return { ...rest, loadedUnit } as MapItem;
+  const next = { ...cell };
+  delete next.moved;
+  if (next.loadedUnit) {
+    next.loadedUnit = { ...next.loadedUnit };
+    delete next.loadedUnit.moved;
+  }
+  return next;
 }));
 
 const reject = (
@@ -137,7 +142,7 @@ const applyGameActionCore = (
       if (loadingVehicle.loadedUnit) return reject("invalid-action", "that vehicle is already carrying a unit");
       nextState.map[action.vehicle.x][action.vehicle.y] = {
         ...loadingVehicle,
-        loadedUnit: { damage: loadingCell.damage, boosted: loadingCell.boosted, moved: true, team: loadingCell.team, unit: loadingCell.unit },
+        loadedUnit: { damage: loadingCell.damage, boosted: loadingCell.boosted, entityId: loadingCell.entityId, moved: true, team: loadingCell.team, unit: loadingCell.unit },
       };
       nextState.map[action.end.x][action.end.y] = clearUnit(loadingCell);
       if (destinationObject === "money") nextState.money[actorTeam] += MONEY_OBJECT_REWARD;
@@ -174,7 +179,7 @@ const applyGameActionCore = (
       if (cell.terrain === "water") return reject("invalid-action", "cannot unload onto water");
       const cargo = vehicle.loadedUnit;
       nextState.map[action.cell.x][action.cell.y] = {
-        ...cell, damage: cargo.damage, boosted: cargo.boosted, moved: cargo.moved ? true : undefined,
+        ...cell, damage: cargo.damage, boosted: cargo.boosted, entityId: cargo.entityId, moved: cargo.moved ? true : undefined,
         team: cargo.team, unit: cargo.unit,
       };
       nextState.map[action.end.x][action.end.y] = { ...vehicle, loadedUnit: undefined, moved: true };
@@ -468,7 +473,7 @@ const applyGameActionCore = (
   return { ok: true, state: nextState, events: [] };
 };
 
-export const applyGameAction = (
+export const applyLegacyGameAction = (
   state: GameState,
   actorTeam: TeamOption,
   action: GameAction
@@ -507,4 +512,4 @@ export const applyGameAction = (
   };
 };
 
-export default applyGameAction;
+export default applyLegacyGameAction;

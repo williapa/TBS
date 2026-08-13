@@ -40,15 +40,17 @@ set local role authenticated;
 select * from public.join_game((select invite_token from broadcast_created_game), 'spectator', 'Broadcast Watcher');
 
 reset role;
-set local request.jwt.claims =
-  '{"sub":"00000000-0000-0000-0000-000000000242","role":"authenticated"}';
-set local role authenticated;
+grant select on broadcast_created_game to service_role;
+set local role service_role;
 
 create temporary table broadcast_submission on commit drop as
-select * from public.submit_game_action(
+select * from public.commit_game_action(
   (select game_id from broadcast_created_game),
+  '00000000-0000-0000-0000-000000000242',
   '24000000-0000-0000-0000-000000000001',
   1,
+  'standard@1',
+  'standard@1',
   0,
   '{"action":"end"}'::jsonb,
   '[]'::jsonb,
@@ -177,14 +179,14 @@ create trigger zz_test_force_action_rollback
 after insert on public.game_actions
 for each row execute function public.zz_test_force_action_rollback();
 
-set local request.jwt.claims =
-  '{"sub":"00000000-0000-0000-0000-000000000241","role":"authenticated"}';
-set local role authenticated;
+set local role service_role;
 
 select throws_ok(
-  $$select public.submit_game_action(
+  $$select public.commit_game_action(
       (select game_id from broadcast_created_game),
-      '24000000-0000-0000-0000-000000000002', 1, 1,
+      '00000000-0000-0000-0000-000000000241',
+      '24000000-0000-0000-0000-000000000002', 1,
+      'standard@1', 'standard@1', 1,
       '{"action":"end"}'::jsonb, '[]'::jsonb,
       (select gameplay_payload from broadcast_created_game),
       'active', 'purple', null

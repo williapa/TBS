@@ -1,4 +1,4 @@
-import { MapItem, Coords } from "../types";
+import type { MapItem, Coords } from "../types";
 
 export const checkForDead = (
   map: MapItem[][],

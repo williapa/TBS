@@ -1,10 +1,11 @@
 import { createActiveGameSnapshot } from "@TBS/common";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { LocalStorageMapRepository, MapRepository } from "../../maps";
+import type { MapRepository } from "../../maps";
+import { LocalStorageMapRepository } from "../../maps";
+import { InMemoryGameSessionGateway, InMemoryGameSessionStore } from "@TBS/adapter-memory";
 import { GameSessionGatewayContext } from "../../multiplayer/GameSessionGatewayContext";
 import { GameSessionProvider } from "../../multiplayer/GameSessionProvider";
-import { InMemoryGameSessionGateway, InMemoryGameSessionStore } from "../../multiplayer/InMemoryGameSessionGateway";
 import { SessionFlowRoutes } from "./SessionFlowRoutes";
 import { saveReconnectDetails } from "./sessionReconnect";
 
@@ -29,22 +30,28 @@ describe("new session create and join flow", () => {
   beforeEach(() => window.localStorage.clear());
 
   test("creates a game from a selected local map, copies its payload, and produces a share link", async () => {
-    const writeText = jest.fn().mockResolvedValue(undefined);
+    const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
     const store = new InMemoryGameSessionStore();
     const repository = new LocalStorageMapRepository(window.localStorage, () => "custom-map");
     const custom = createActiveGameSnapshot().state.map;
     custom[0][0].terrain = "forest";
-    await repository.save({ name: "Forest crossing", map: custom });
-    renderFlow(new InMemoryGameSessionGateway(store, "creator"), "/", repository);
+    const savedMap = await repository.save({ name: "Forest crossing", map: custom });
+    const customMapRepository: MapRepository = {
+      list: async () => [savedMap],
+      get: (id) => repository.get(id),
+      save: (input) => repository.save(input),
+      update: (id, input) => repository.update(id, input),
+      delete: (id) => repository.delete(id),
+    };
+    renderFlow(new InMemoryGameSessionGateway(store, "creator"), "/", customMapRepository);
 
-    expect(await screen.findByRole("option", { name: "Forest crossing" })).toBeInTheDocument();
-    fireEvent.change(screen.getByRole("combobox", { name: "Map" }), { target: { value: "custom-map" } });
+    expect(await screen.findByText("Forest crossing")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Display name"), { target: { value: "Ada" } });
     fireEvent.click(screen.getByRole("button", { name: "Create game" }));
     const link = await screen.findByLabelText("Share link");
     expect(link).toHaveValue("http://localhost/game/invite-1");
-    expect(screen.getByRole("link", { name: "Open game" })).toHaveAttribute("href", "/game/invite-1");
+    expect(screen.getByRole("button", { name: "Open game" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
     await waitFor(() => expect(writeText).toHaveBeenCalledWith("http://localhost/game/invite-1"));
     expect(await screen.findByRole("button", { name: "Copied" })).toBeInTheDocument();
@@ -113,7 +120,8 @@ describe("new session create and join flow", () => {
     expect(activeView.queryByRole("button", { name: "End turn" })).not.toBeInTheDocument();
     activeView.unmount();
 
-    const finishedGame = activeStore.games.get(active.gameId)!;
+    const finishedGame = activeStore.games.get(active.gameId);
+    if (!finishedGame) throw new Error("active game fixture is missing");
     finishedGame.state = { ...finishedGame.state, status: "finished", activeTeam: undefined, winner: "orange" };
     const finishedView = renderFlow(new InMemoryGameSessionGateway(activeStore, "purple"), `/game/${active.inviteToken}`);
     expect(await finishedView.findByRole("heading", { name: "Game finished" })).toBeInTheDocument();
@@ -130,12 +138,13 @@ describe("new session create and join flow", () => {
   test("exposes only supported navigation and redirects or explains obsolete bookmarks", async () => {
     const gateway = new InMemoryGameSessionGateway(new InMemoryGameSessionStore(), "visitor");
     const mapsView = renderFlow(gateway, "/maps");
-    expect(await mapsView.findByRole("heading", { name: "Maps" })).toBeInTheDocument();
+    expect(await mapsView.findByRole("heading", { name: "New Map Configuration" })).toBeInTheDocument();
     const navigation = mapsView.getByRole("navigation", { name: "Primary" });
     expect(navigation).toContainElement(mapsView.getByRole("link", { name: "Start game" }));
-    expect(navigation).toContainElement(mapsView.getByRole("link", { name: "Maps" }));
+    expect(navigation).toContainElement(mapsView.getByRole("link", { name: "Create map" }));
     expect(mapsView.queryByText(/signup|profile|lobby/i)).not.toBeInTheDocument();
-    expect(mapsView.getByRole("link", { name: "Create a map" })).toHaveAttribute("href", "/maps/new");
+    expect(mapsView.queryByLabelText("Import map JSON")).not.toBeInTheDocument();
+    expect(mapsView.queryByRole("button", { name: /Export/ })).not.toBeInTheDocument();
     mapsView.unmount();
 
     const redirected = renderFlow(gateway, "/lobby");
@@ -186,7 +195,7 @@ describe("new session create and join flow", () => {
     expect(view.getByText("Viewers online").nextSibling).toHaveTextContent("1");
     expect(view.getByText("Spectators online").nextSibling).toHaveTextContent("1");
     expect(view.queryByRole("button", { name: "End turn" })).not.toBeInTheDocument();
-    fireEvent.click(view.container.querySelector('[data-row="0"][data-column="0"]')!);
+    fireEvent.click(await view.findByRole("button", { name: /Soldier, orange team/ }));
     expect(view.queryByRole("button", { name: "Move" })).not.toBeInTheDocument();
     expect(await view.findByText("Occupant Type")).toBeInTheDocument();
   });

@@ -1,4 +1,6 @@
 import type React from "react";
+import { getEmojiForUnit } from "@TBS/renderer-2d";
+import type { ActionFormProps, GameMenuActionId } from "../../../../types";
 
 const ActionForm = ({ left, onAction, options, top }: ActionFormProps) => {
   const handleClick = (action: GameMenuActionId) => (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -10,7 +12,7 @@ const ActionForm = ({ left, onAction, options, top }: ActionFormProps) => {
   return (
     <form className="edit-cell-form" style={{ top, left }}>
       <p style={{ color: "black" }}> Options </p>
-      {options.map(({ disabled, id, label }) => (
+      {options.map(({ disabled, id, label, unitType }) => (
         <button
           key={id}
           disabled={Boolean(disabled)}
@@ -18,7 +20,7 @@ const ActionForm = ({ left, onAction, options, top }: ActionFormProps) => {
           type="button"
           onClick={handleClick(id)}
         >
-          {label}
+          {unitType ? `${getEmojiForUnit(unitType)} ${label}` : label}
         </button>
       ))}
     </form>

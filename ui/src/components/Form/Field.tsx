@@ -1,26 +1,20 @@
 import "./Field.css";
 import Input from "./Input";
+import type { FieldProps, OptionGroup, OptionGroups, SelectValues } from "../../types";
 
-const enumToStrings = (e: any) => {
-  const stringArray = [];
-  for (const enumMember in e) {
-    const isValueProperty = Number(enumMember) >= 0
-    if (isValueProperty) {
-      stringArray.push(e[enumMember]);
-    } else {
-      stringArray.push(enumMember);
-    }
-  } 
-  return stringArray;
-}
+const enumToStrings = (value: SelectValues) =>
+  Object.values(value).filter((member): member is string => typeof member === "string");
 
 const buildOptionMapper = (group: string ) => {
   return (item: string) => ({ group, label: (item === "gray"? "neutral" : item), value: item });
 };
 
-const buildOptions = (options: SelectTypes | OptionGroups) => {
-  if (Array.isArray(options) && Array.isArray(options[0])) {
-    const x = (options as OptionGroups).map(([label, groupOptions]: OptionGroup) => {
+const isOptionGroups = (options: SelectValues | OptionGroups): options is OptionGroups =>
+  Array.isArray(options) && options.length > 0 && Array.isArray(options[0]);
+
+const buildOptions = (options: SelectValues | OptionGroups) => {
+  if (isOptionGroups(options)) {
+    const x = options.map(([label, groupOptions]: OptionGroup) => {
       return enumToStrings(groupOptions).map(buildOptionMapper(label));
     });
     return x.reduce((prev, current) => (prev.concat(...current)), []);

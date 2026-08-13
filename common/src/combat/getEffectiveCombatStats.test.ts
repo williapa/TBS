@@ -1,13 +1,10 @@
-declare const require: any;
-export {};
+import * as assert from "node:assert/strict";
+import { test } from "node:test";
+import calculateDamage from "./calculateDamage";
+import getEffectiveCombatStats from "./getEffectiveCombatStats";
+import type { MapItem, UnitOption } from "../types";
 
-const test = require("node:test");
-const assert = require("node:assert/strict");
-
-const getEffectiveCombatStats = require("./getEffectiveCombatStats").default;
-const calculateDamage = require("./calculateDamage").default;
-
-const createMapItem = (unit: string, damage = 0, boosted = false) => ({
+const createMapItem = (unit: UnitOption, damage = 0, boosted = false): MapItem => ({
   boosted,
   row: 0,
   column: 0,
@@ -26,7 +23,7 @@ test("studentAthlete gets the michaelJackson combat bonus", () => {
 });
 
 test("studentAthlete gets reduced defense against each vehicle type", () => {
-  const vehicleUnits = ["airplane", "ambulance", "bigTruck", "helicopter", "sub", "truck"];
+  const vehicleUnits: readonly UnitOption[] = ["airplane", "ambulance", "bigTruck", "helicopter", "sub", "truck"];
 
   for (const unit of vehicleUnits) {
     assert.deepEqual(

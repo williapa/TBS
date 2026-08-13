@@ -1,14 +1,10 @@
-declare const require: any;
-export {};
-
-const test = require("node:test");
-const assert = require("node:assert/strict");
-
-const {
+import * as assert from "node:assert/strict";
+import { test } from "node:test";
+import {
   getActionDetailsForUnit,
   getActionDetailsText,
   getActionsForUnit,
-} = require("./getDetailsForUnit");
+} from "./getDetailsForUnit";
 
 test("getActionsForUnit preserves supported special actions", () => {
   assert.deepEqual(getActionsForUnit("doctor"), ["move", "attack", "load", "heal"]);

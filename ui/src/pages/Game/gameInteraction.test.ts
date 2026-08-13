@@ -9,9 +9,18 @@ import {
   buildUnloadAction,
   createInitialGameInteractionState,
   gameInteractionReducer,
-} from "./gameInteraction";
+} from "@TBS/presentation";
 import { createActionEnvelope } from "../../multiplayer/createActionEnvelope";
-import { GameAction } from "@TBS/common";
+import type { GameAction } from "@TBS/common";
+import type {
+  BuildingType,
+  HexMap,
+  MapItem,
+  SpawnableUnitType,
+  TeamType,
+  UnitTypes,
+} from "../../types";
+import type { GameInteractionState } from "@TBS/presentation";
 
 const cell = (
   index: number,
@@ -24,7 +33,7 @@ const cell = (
   neighbors: [],
   row: 0,
   team: team as TeamType,
-  terrain: "plains" as TerrainType,
+  terrain: "plains",
   unit: unit as UnitTypes,
 });
 
@@ -32,6 +41,11 @@ const map: HexMap = [
   [cell(0, 0, "soldier", "orange"), cell(1, 1), cell(2, 2, "soldier", "purple")],
 ];
 const position = { left: 10, top: 20 };
+
+const actionOrThrow = (action: GameAction | null): GameAction => {
+  if (!action) throw new Error("expected action builder to return an action");
+  return action;
+};
 
 const stateWith = (values: Partial<GameInteractionState>): GameInteractionState => ({
   ...createInitialGameInteractionState(),
@@ -52,7 +66,7 @@ describe("game interaction characterization", () => {
       cell: map[0][1],
       position,
       map,
-      perspective: "orange" as TeamType,
+      perspective: "orange",
     });
 
     expect(selected.mode).toBe("unitSelected");
@@ -93,18 +107,18 @@ describe("game interaction characterization", () => {
 
     const actions: GameAction[] = [
       { action: "end" },
-      buildMoveAction(base)!,
-      buildAttackAction({ ...base, selectedAttackTarget: target })!,
-      buildBoostAction({ ...base, selectedBoostTarget: target })!,
-      buildHealAction({ ...base, selectedHealTarget: target })!,
-      buildConstructAction({
+      actionOrThrow(buildMoveAction(base)),
+      actionOrThrow(buildAttackAction({ ...base, selectedAttackTarget: target })),
+      actionOrThrow(buildBoostAction({ ...base, selectedBoostTarget: target })),
+      actionOrThrow(buildHealAction({ ...base, selectedHealTarget: target })),
+      actionOrThrow(buildConstructAction({
         ...base,
         selectedConstructBuilding: "office" as BuildingType,
         selectedConstructTarget: target,
-      })!,
-      buildLoadAction({ ...base, selectedLoadVehicle: target })!,
-      buildSpawnAction({ ...base, selectedSpawnUnit: "soldier" as SpawnableUnitType })!,
-      buildUnloadAction({ ...base, selectedUnloadTarget: target })!,
+      })),
+      actionOrThrow(buildLoadAction({ ...base, selectedLoadVehicle: target })),
+      actionOrThrow(buildSpawnAction({ ...base, selectedSpawnUnit: "soldier" as SpawnableUnitType })),
+      actionOrThrow(buildUnloadAction({ ...base, selectedUnloadTarget: target })),
     ];
 
     expect(actions).toEqual([

@@ -1,6 +1,5 @@
-declare const require: (module: string) => any;
-const assert = require("node:assert/strict");
-const test = require("node:test");
+import * as assert from "node:assert/strict";
+import { test } from "node:test";
 import { createActiveGameSnapshot, createWaitingGameSnapshot } from "./fixtures";
 import {
   ContractValidationError,
@@ -31,6 +30,30 @@ test("invalid terrain, unit, and team values are rejected", () => {
     () => parseMapItem({ row: 0, column: 0, index: 0, terrain: "lava", unit: "none", team: "gray" }),
     /terrain/
   );
+});
+
+test("stable entity IDs are parsed additively on cells and cargo", () => {
+  const parsed = parseMapItem({
+    row: 0,
+    column: 0,
+    index: 0,
+    terrain: "plains",
+    unit: "truck",
+    team: "orange",
+    entityId: "truck-1",
+    loadedUnit: { unit: "soldier", team: "orange", entityId: "soldier-1" },
+  });
+  assert.equal(parsed.entityId, "truck-1");
+  assert.equal(parsed.loadedUnit?.entityId, "soldier-1");
+  assert.throws(() => parseMapItem({
+    row: 0,
+    column: 0,
+    index: 0,
+    terrain: "plains",
+    unit: "soldier",
+    team: "orange",
+    entityId: "",
+  }), /entityId/);
 });
 
 test("unsupported schema versions and malformed snapshots are rejected", () => {

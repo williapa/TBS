@@ -1,66 +1,26 @@
-export const animalUnitOptions = [
-  "dragon",
-  "lion"
-];
+import {
+  animalUnitOptions,
+  buildingUnitOptions,
+  moveableOptions,
+  objectUnitOptions,
+  peopleUnitOptions,
+  vehicleUnitOptions,
+} from "@TBS/common";
+import type { OptionGroups } from "../../../types";
 
-export const buildingUnitOptions = [
-  "airport",
-  "bank",
-  "capital",
-  "church",
-  "college",
-  "factory",
-  "house",
-  "lab",
-  "office",
-  "port",
-  "zoo"
-];
-
-export const objectUnitOptions = [
-  "missile",
-  "money",
-  "none",
-  "nuke",
-];
-
-const peopleUnitOptions = [
-  "bluesMusician",
-  "constructionWorker",
-  "doctor",
-  "engineer",
-  "leader",
-  "michaelJackson",
-  "pilot",
-  "priest",
-  "scientist",
-  "soldier",
-  "studentAthlete",
-  "worker",
-  "zookeeper",
-  "zuckerbird",
-];
-
-const vehicleUnitOptions = [
-  "airplane",
-  "ambulance",
-  "bigTruck",
-  "helicopter",
-  "sub",
-  "truck"
-];
-
+export {
+  animalUnitOptions,
+  buildingUnitOptions,
+  moveableOptions,
+  objectUnitOptions,
+  peopleUnitOptions,
+  vehicleUnitOptions,
+};
 
 export const unitOptions = [
-  ["animals", animalUnitOptions as AnimalType[]],
-  ["buildings", buildingUnitOptions as BuildingType[]],
-  ["objects", objectUnitOptions as ObjectType[]],
-  ["people", peopleUnitOptions as PersonType[]],
-  ["vehicles", vehicleUnitOptions as VehicleType[]],
-] as OptionGroups;
-
-export const moveableOptions = [
-  ...animalUnitOptions,
-  ...peopleUnitOptions,
-  ...vehicleUnitOptions
-];
+  ["animals", animalUnitOptions],
+  ["buildings", buildingUnitOptions],
+  ["objects", objectUnitOptions],
+  ["people", peopleUnitOptions],
+  ["vehicles", vehicleUnitOptions],
+] satisfies OptionGroups;

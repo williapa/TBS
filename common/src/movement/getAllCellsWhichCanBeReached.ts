@@ -1,5 +1,5 @@
 import { isObjectUnit } from "../objects";
-import { MapItem, moveableOptions } from "../types";
+import type { MapItem} from "../types";
 // import canUnitAttack from "./canUnitAttack";
 import getDefaultUnitEnergy from "./getDefaultUnitEnergy";
 import filterNeighborsForMovableCells from "./filterNeighborsForMovableCells";
@@ -20,7 +20,9 @@ const getAllCellsWhichCanBeReached = (startingUnitIndex: number, boardCells: Map
   const queue: [number, number][] = [[startingUnitIndex, getDefaultUnitEnergy(initialUnitType)]]; // initialize the queue with the starting unit index and its energy
 
   while (queue.length > 0) {
-    const [currentIndex, currentEnergy] = queue.shift()!; // get the next cell from the queue
+    const current = queue.shift();
+    if (!current) break;
+    const [currentIndex, currentEnergy] = current; // get the next cell from the queue
     visited.add(currentIndex); // mark the cell as visited
     const currentCell = getCellFromIndex(currentIndex, boardCells); // get the current cell object
     const movableNeighbors = filterNeighborsForMovableCells(initialUnitType, currentCell.neighbors || [], boardCells); // filter the default neighbors for movable indexes

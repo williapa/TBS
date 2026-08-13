@@ -1,4 +1,4 @@
-import { TeamOption } from "../types";
+import type { TeamOption } from "../types";
 
 export const getTeamForPlayer = (
   playerEmail: string,

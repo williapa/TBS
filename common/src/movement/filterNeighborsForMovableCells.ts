@@ -1,6 +1,6 @@
 import { canUnitCollectObjects, isObjectUnit } from "../objects";
 import getRowAndColumn from "../map/getRowAndColumn";
-import { MapItem } from "../types";
+import type { MapItem } from "../types";
 
 const filterNeighborsForMovableCells = (
   unit: string,

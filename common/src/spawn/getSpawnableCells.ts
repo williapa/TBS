@@ -1,5 +1,5 @@
 import getSpawnOptions from "./getSpawnOptions";
-import {
+import type {
   Coords,
   MapItem,
   SpawnableUnitOption,

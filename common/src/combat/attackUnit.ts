@@ -1,4 +1,4 @@
-import { Coords, MapItem } from "../types"
+import type { Coords, MapItem } from "../types"
 import moveMapUnit from "../movement/moveMapUnit";
 import calculateDamage from "./calculateDamage";
 
@@ -14,6 +14,7 @@ const isUnitDead = (dmg: number, unit: MapItem) => {
 const killUnit = (unit: MapItem) => {
   unit.damage = undefined;
   unit.boosted = undefined;
+  unit.entityId = undefined;
   unit.loadedUnit = undefined;
   unit.unit = "none";
   unit.team = "gray";
@@ -24,25 +25,20 @@ const attack = (attacker: MapItem, defender: MapItem): [MapItem, number] => {
 
   const initialDefenderDamage = defender.damage || 0;
 
-  let resultDamage = 0;
-
   const dmg = calculateDamage(attacker, defender);
+  const killed = isUnitDead(dmg, defender);
 
-  if (!isUnitDead(dmg, defender)) {
+  if (!killed) {
 
     defender.damage = (defender.damage || 0) + dmg;
-
-    resultDamage = dmg;
 
   } else {
 
     defender = killUnit(defender);
-    
-    resultDamage = 100 - initialDefenderDamage;
 
   }
 
-  return [defender, resultDamage];
+  return [defender, killed ? 100 - initialDefenderDamage : dmg];
 
 };
 

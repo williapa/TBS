@@ -1,14 +1,11 @@
-declare const require: any;
-export {};
-
-const test = require("node:test");
-const assert = require("node:assert/strict");
-
-const {
+import * as assert from "node:assert/strict";
+import { test } from "node:test";
+import {
   canReceiveHeal,
   canUnitHeal,
   getHealableCellIndexes,
-} = require("./index");
+} from "./index";
+import type { MapItem, TeamColor, UnitOption } from "../types";
 
 const createCell = ({
   damage = undefined,
@@ -20,9 +17,9 @@ const createCell = ({
   damage?: number;
   index: number;
   neighbors?: number[];
-  team?: string;
-  unit?: string;
-}) => ({
+  team?: TeamColor;
+  unit?: UnitOption;
+}): MapItem => ({
   column: index,
   damage,
   index,

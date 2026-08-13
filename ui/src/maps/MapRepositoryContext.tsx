@@ -1,6 +1,7 @@
-import { createContext, ReactNode, useContext, useMemo } from "react";
+import type { ReactNode} from "react";
+import { createContext, useContext, useMemo } from "react";
 import { LocalStorageMapRepository } from "./LocalStorageMapRepository";
-import { MapRepository } from "./MapRepository";
+import type { MapRepository } from "./MapRepository";
 
 const MapRepositoryContext = createContext<MapRepository | null>(null);
 

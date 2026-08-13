@@ -14,6 +14,19 @@ import {
   vehicleUnitOptions,
 } from "@TBS/common";
 import prettyPrint from "../../utils/prettyPrint";
+import type {
+  BuildingType,
+  Coords,
+  GameInteractionState,
+  GamePanelOccupant,
+  GamePanelRow,
+  GamePanelState,
+  HexMap,
+  MapItem,
+  ObjectType,
+  TerrainType,
+  UnitTypes,
+} from "../../types";
 
 const cloneMap = (map: HexMap) => map.map((row) => row.map((cell) => ({ ...cell })));
 
@@ -80,8 +93,8 @@ const formatStats = (occupant: GamePanelOccupant) => {
     column: 0,
     index: 0,
     row: 0,
-    team: occupant.team ?? ("gray" as TeamType.gray),
-    terrain: "plains" as TerrainType.plains,
+    team: occupant.team ?? "gray",
+    terrain: "plains",
     unit: occupant.unit,
     ...(occupant.boosted ? { boosted: true } : {}),
   });
@@ -187,7 +200,7 @@ const buildRowsForOccupant = (
         column: 0,
         index: 0,
         row: 0,
-        team: occupant.team ?? ("gray" as TeamType.gray),
+        team: occupant.team ?? "gray",
         terrain,
         unit: occupant.unit,
       })}`,
