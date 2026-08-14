@@ -3,6 +3,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { presentBoard } from "@TBS/presentation";
 import type { BoardIntent } from "@TBS/presentation";
+import type { BoardInteractionAnchor } from "@TBS/presentation";
 import { describe, expect, test, vi } from "vitest";
 
 import { Renderer2DBoard } from "./index";
@@ -55,19 +56,30 @@ describe("Renderer2DBoard", () => {
     expect(getEmojiForAsset("unit:pathfinder")).toBe("◉");
   });
 
-  test("renders the neutral view model and emits only semantic intents", () => {
-    const intents: BoardIntent[] = [];
-    render(<Renderer2DBoard board={board()} onIntent={(intent) => intents.push(intent)} />);
+  test("renders the neutral view model and reports pointer anchors separately from semantic intents", () => {
+    const emissions: Readonly<{
+      anchor?: BoardInteractionAnchor;
+      intent: BoardIntent;
+    }>[] = [];
+    render(<Renderer2DBoard
+      board={board()}
+      onIntent={(intent, anchor) => {
+        emissions.push({ intent, ...(anchor ? { anchor } : {}) });
+      }}
+    />);
 
     expect(screen.getByRole("grid", { name: /Two-dimensional game board, revision 1/ })).toBeTruthy();
     const entity = screen.getByRole("button", { name: /Soldier, purple team, 75 health, moved/ });
-    fireEvent.click(entity);
+    fireEvent.click(entity, { clientX: 80, clientY: 90 });
     const cells = screen.getAllByRole("gridcell");
     fireEvent.keyDown(cells[0], { key: "Enter" });
 
-    expect(intents).toEqual([
-      { type: "select-entity", entityId: "legacy-cell-1" },
-      { type: "select-cell", cell: { q: 0, r: -1 } },
+    expect(emissions).toEqual([
+      {
+        anchor: { clientX: 80, clientY: 90 },
+        intent: { type: "select-entity", entityId: "legacy-cell-1" },
+      },
+      { intent: { type: "select-cell", cell: { q: 0, r: -1 } } },
     ]);
     expect(cells[0].querySelector("polygon")?.getAttribute("stroke-dasharray")).toBe("7 4");
   });

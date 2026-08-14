@@ -1,6 +1,7 @@
 import type { CSSProperties, KeyboardEvent, MouseEvent } from "react";
 import type {
   BoardEntityViewModel,
+  BoardInteractionAnchor,
   BoardIntent,
   BoardIntentHandler,
   BoardTargetType,
@@ -50,6 +51,13 @@ const dispatchOnKeyboard = (
   onIntent(intent);
 };
 
+const pointerAnchor = (
+  event: MouseEvent<SVGGElement>,
+): BoardInteractionAnchor => ({
+  clientX: event.clientX,
+  clientY: event.clientY,
+});
+
 const entityMotionStyle = (
   entity: BoardEntityViewModel,
   cue: MoveEntityCue | undefined,
@@ -81,7 +89,7 @@ const Entity = ({
   const healthWidth = 44 * (entity.health.current / entity.health.maximum);
   const stopAndSelect = (event: MouseEvent<SVGGElement>) => {
     event.stopPropagation();
-    onIntent(intent);
+    onIntent(intent, pointerAnchor(event));
   };
   return (
     <g
@@ -162,7 +170,7 @@ export const Renderer2DBoard = ({
             aria-label={cell.accessibleDescription}
             data-cell-id={cell.legacyIndex}
             key={cell.id}
-            onClick={() => onIntent(intent)}
+            onClick={(event) => onIntent(intent, pointerAnchor(event))}
             onKeyDown={dispatchOnKeyboard(intent, onIntent)}
             role="gridcell"
             tabIndex={0}

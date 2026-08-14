@@ -45,6 +45,7 @@
   outline: 1px solid rgb(122, 126, 130);
   outline-offset: -1px;
   overflow: hidden;
+  position: relative;
   width: 60%;
   z-index: 1;
 }

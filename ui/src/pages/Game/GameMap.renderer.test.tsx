@@ -8,9 +8,19 @@ const rendererLifecycle = vi.hoisted(() => ({ disposed: vi.fn() }));
 vi.mock("@TBS/renderer-3d", async () => {
   const { useEffect } = await import("react");
   return {
-    Renderer3DBoard: ({ reducedMotion }: Readonly<{ reducedMotion?: boolean }>) => {
+    Renderer3DBoard: ({
+      onViewChange,
+      reducedMotion,
+    }: Readonly<{
+      onViewChange?: () => void;
+      reducedMotion?: boolean;
+    }>) => {
       useEffect(() => () => rendererLifecycle.disposed(), []);
-      return <div aria-label="Mock three-dimensional board" data-reduced-motion={String(reducedMotion)} />;
+      return (
+        <div aria-label="Mock three-dimensional board" data-reduced-motion={String(reducedMotion)}>
+          <button onClick={onViewChange} type="button">Move mock camera</button>
+        </div>
+      );
     },
   };
 });
@@ -52,6 +62,47 @@ describe("GameMap renderer lifecycle", () => {
     fireEvent.click(screen.getByRole("button", { name: "Use 2D board" }));
     await waitFor(() => expect(rendererLifecycle.disposed).toHaveBeenCalledOnce());
     expect(screen.getByRole("grid", { name: /Two-dimensional game board/ })).toBeInTheDocument();
+  });
+
+  test("anchors pointer menus, docks keyboard menus, and restores keyboard focus on Escape", async () => {
+    renderGameMap();
+    let soldier = screen.getByRole("button", { name: /Soldier, orange team/ });
+    fireEvent.click(soldier, { clientX: 120, clientY: 160 });
+    fireEvent.click(soldier, { clientX: 120, clientY: 160 });
+
+    const anchored = screen.getByRole("dialog", { name: "Available actions" });
+    expect(anchored).toHaveClass("game-action-menu--anchored");
+    expect(anchored).toHaveStyle({ left: "132px", top: "172px" });
+    expect(screen.getByRole("button", { name: "Move" })).toHaveFocus();
+
+    fireEvent.keyDown(anchored, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "Available actions" })).not.toBeInTheDocument();
+
+    soldier = screen.getByRole("button", { name: /Soldier, orange team/ });
+    soldier.focus();
+    fireEvent.keyDown(soldier, { key: "Enter" });
+    fireEvent.keyDown(soldier, { key: "Enter" });
+    expect(screen.getByRole("dialog", { name: "Available actions" })).toHaveClass(
+      "game-action-menu--docked",
+    );
+    fireEvent.keyDown(screen.getByRole("dialog", { name: "Available actions" }), { key: "Escape" });
+    await waitFor(() => expect(soldier).toHaveFocus());
+  });
+
+  test("docks an anchored menu when the 3D camera changes", async () => {
+    renderGameMap();
+    const soldier = screen.getByRole("button", { name: /Soldier, orange team/ });
+    fireEvent.click(soldier, { clientX: 120, clientY: 160 });
+    fireEvent.click(soldier, { clientX: 120, clientY: 160 });
+    expect(screen.getByRole("dialog", { name: "Available actions" })).toHaveClass(
+      "game-action-menu--anchored",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Use 3D board" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Move mock camera" }));
+    expect(screen.getByRole("dialog", { name: "Available actions" })).toHaveClass(
+      "game-action-menu--docked",
+    );
   });
 
   test("persists the renderer preference and forwards reduced-motion preference", async () => {

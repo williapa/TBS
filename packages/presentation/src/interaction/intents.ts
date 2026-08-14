@@ -3,6 +3,11 @@ import type { GameMenuActionId } from "./contracts";
 
 export type BoardActionType = GameMenuActionId;
 
+export type BoardInteractionAnchor = Readonly<{
+  clientX: number;
+  clientY: number;
+}>;
+
 export type BoardIntent =
   | Readonly<{ type: "select-cell"; cell: HexCoord }>
   | Readonly<{ type: "select-entity"; entityId: EntityId }>
@@ -10,4 +15,7 @@ export type BoardIntent =
   | Readonly<{ type: "cancel" }>
   | Readonly<{ type: "confirm" }>;
 
-export type BoardIntentHandler = (intent: BoardIntent) => void;
+export type BoardIntentHandler = (
+  intent: BoardIntent,
+  anchor?: BoardInteractionAnchor,
+) => void;

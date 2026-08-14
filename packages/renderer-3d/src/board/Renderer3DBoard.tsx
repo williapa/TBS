@@ -4,6 +4,7 @@ import type { Group, InstancedMesh, OrthographicCamera } from "three";
 import { Object3D } from "three";
 import type {
   BoardEntityViewModel,
+  BoardInteractionAnchor,
   BoardIntentHandler,
   BoardTargetType,
   BoardViewModel,
@@ -19,9 +20,17 @@ import { cellForTerrainInstance, createTerrainBatches, type TerrainBatch } from 
 export type Renderer3DBoardProps = Readonly<{
   board: BoardViewModel;
   onIntent: BoardIntentHandler;
+  onViewChange?: () => void;
   reducedMotion?: boolean;
   className?: string;
 }>;
+
+const pointerAnchor = (
+  event: ThreeEvent<MouseEvent>,
+): BoardInteractionAnchor => ({
+  clientX: event.nativeEvent.clientX,
+  clientY: event.nativeEvent.clientY,
+});
 
 const terrainColors: Readonly<Record<string, string>> = {
   "terrain:beach": "#d6bd72",
@@ -71,7 +80,10 @@ const TerrainInstances = ({ batch, onIntent }: Readonly<{ batch: TerrainBatch; o
   const selectCell = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
     const cell = cellForTerrainInstance(batch, event.instanceId);
-    if (cell) onIntent({ type: "select-cell", cell: cell.coordinate });
+    if (cell) onIntent(
+      { type: "select-cell", cell: cell.coordinate },
+      pointerAnchor(event),
+    );
   };
   return (
     <instancedMesh args={[undefined, undefined, batch.instances.length]} onClick={selectCell} ref={mesh}>
@@ -133,7 +145,10 @@ const Entity = ({ cue, entity, onIntent, reducedMotion }: Readonly<{
   });
   const select = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
-    onIntent({ type: "select-entity", entityId: entity.id });
+    onIntent(
+      { type: "select-entity", entityId: entity.id },
+      pointerAnchor(event),
+    );
   };
   const initial = entityWorldPosition(entity, cue, 0, reducedMotion);
   return (
@@ -199,9 +214,18 @@ const controls: readonly Readonly<{ intent: CameraIntent; label: string; text: s
   { intent: "rotate", label: "Rotate camera clockwise", text: "↻" },
 ];
 
-export const Renderer3DBoard = ({ board, className, onIntent, reducedMotion = false }: Renderer3DBoardProps) => {
+export const Renderer3DBoard = ({
+  board,
+  className,
+  onIntent,
+  onViewChange,
+  reducedMotion = false,
+}: Renderer3DBoardProps) => {
   const [camera, setCamera] = useState(() => initialCameraState(board.cameraBounds));
-  const applyCameraIntent = (intent: CameraIntent) => setCamera((state) => updateCameraState(state, intent, board.cameraBounds));
+  const applyCameraIntent = (intent: CameraIntent) => {
+    onViewChange?.();
+    setCamera((state) => updateCameraState(state, intent, board.cameraBounds));
+  };
   return (
     <div aria-label={`Three-dimensional game board, revision ${board.revision}`} className={className} role="application" style={{ height: "100%", minHeight: 360, position: "relative", width: "100%" }}>
       <Canvas camera={{ far: 100, near: 0.1, position: [8, 10, 8], zoom: 40 }} dpr={[1, 1.75]} frameloop={board.animationCues.length > 0 && !reducedMotion ? "always" : "demand"} gl={{ antialias: true, powerPreference: "high-performance" }} orthographic shadows>

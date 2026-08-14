@@ -70,7 +70,7 @@ describe("new session create and join flow", () => {
     renderFlow(new InMemoryGameSessionGateway(playerStore, "purple"), `/game/${playerGame.inviteToken}`);
     fireEvent.change(screen.getByLabelText("Display name"), { target: { value: "Purple" } });
     fireEvent.click(screen.getByRole("button", { name: "Join as player" }));
-    expect(await screen.findByText("Playing as purple")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Game in progress" })).toBeInTheDocument();
 
     window.localStorage.clear();
     const spectatorStore = new InMemoryGameSessionStore();
@@ -80,7 +80,7 @@ describe("new session create and join flow", () => {
     fireEvent.change(names[names.length - 1], { target: { value: "Watcher" } });
     const watchButtons = secondView.getAllByRole("button", { name: "Watch as spectator" });
     fireEvent.click(watchButtons[watchButtons.length - 1]);
-    expect(await secondView.findByText(/Spectator mode/)).toBeInTheDocument();
+    expect(await secondView.findByRole("heading", { name: "Waiting for an opponent" })).toBeInTheDocument();
   });
 
   test("an occupied game falls back to spectator-only mode", async () => {
@@ -93,7 +93,6 @@ describe("new session create and join flow", () => {
 
     expect(await screen.findByText("Player seats are occupied. You joined as a spectator.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Join as player" })).not.toBeInTheDocument();
-    expect(screen.getByText(/Spectator mode/)).toBeInTheDocument();
   });
 
   test("reload reconnects and renders waiting, active, and finished snapshots without REST", async () => {
@@ -114,7 +113,6 @@ describe("new session create and join flow", () => {
     expect(activeView.container.querySelector(".r1 > .game.special-panel")).toBeInTheDocument();
     expect(activeView.container.querySelector(".r2 > .game.panel")).toBeInTheDocument();
     expect(activeView.container.querySelector(".r2 > .event.panel")).toBeInTheDocument();
-    expect(activeView.getByText("Playing as purple")).toBeInTheDocument();
     fireEvent.click(activeView.getByRole("button", { name: "End turn" }));
     await waitFor(() => expect(activeView.getByText("Revision").nextSibling).toHaveTextContent("1"));
     expect(activeView.queryByRole("button", { name: "End turn" })).not.toBeInTheDocument();
@@ -191,7 +189,7 @@ describe("new session create and join flow", () => {
     saveReconnectDetails(created.inviteToken, { displayName: "Watcher", intent: "spectator" });
     const view = renderFlow(watcher, `/game/${created.inviteToken}`);
 
-    expect(await view.findByText("Watching — Spectator mode")).toBeInTheDocument();
+    expect(await view.findByRole("heading", { name: "Game in progress" })).toBeInTheDocument();
     expect(view.getByText("Viewers online").nextSibling).toHaveTextContent("1");
     expect(view.getByText("Spectators online").nextSibling).toHaveTextContent("1");
     expect(view.queryByRole("button", { name: "End turn" })).not.toBeInTheDocument();

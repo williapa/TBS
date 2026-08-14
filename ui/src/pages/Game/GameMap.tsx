@@ -3,6 +3,7 @@ import {
   createBoardInteractionView,
   createInitialGameInteractionState,
   presentBoard,
+  type BoardInteractionAnchor,
   type BoardIntent,
 } from "@TBS/presentation";
 import { Renderer2DBoard } from "@TBS/renderer-2d";
@@ -21,11 +22,22 @@ const Renderer3DBoard = lazy(async () => {
   return { default: module.Renderer3DBoard };
 });
 
-const menuPositionFor = (element: HTMLDivElement | null): MenuPosition => {
+const MENU_GAP = 12;
+
+const menuPositionFor = (
+  element: HTMLDivElement | null,
+  anchor?: BoardInteractionAnchor,
+): MenuPosition => {
   const bounds = element?.getBoundingClientRect();
+  if (bounds && anchor) {
+    return {
+      left: anchor.clientX - bounds.left + MENU_GAP,
+      top: anchor.clientY - bounds.top + MENU_GAP,
+    };
+  }
   return {
-    left: (bounds?.left ?? 0) + window.scrollX + 16,
-    top: (bounds?.top ?? 0) + window.scrollY + 48,
+    left: (bounds?.width ?? 0) / 2,
+    top: (bounds?.height ?? 0) / 2,
   };
 };
 
@@ -43,6 +55,7 @@ const GameMap = ({
   const [animationEvents, setAnimationEvents] = useState<NonNullable<ActiveMapProps["events"]>>([]);
   const [lastInspectedCoords, setLastInspectedCoords] = useState<Coords | null>(null);
   const [interactionState, setInteractionState] = useState(createInitialGameInteractionState);
+  const [menuPlacement, setMenuPlacement] = useState<"anchored" | "docked">("docked");
   const [renderer, setRenderer] = useState(readRendererPreference);
   const [rendererError, setRendererError] = useState(false);
   const reducedMotion = useReducedMotion();
@@ -88,11 +101,18 @@ const GameMap = ({
     ),
   });
 
-  const handleIntent = (intent: BoardIntent) => {
+  const handleIntent = (intent: BoardIntent, anchor?: BoardInteractionAnchor) => {
+    const menuPosition = anchor
+      ? menuPositionFor(parentRef.current, anchor)
+      : interactionState.menu?.position ?? menuPositionFor(parentRef.current);
     const result = advanceGameInteraction(interactionState, intent, {
       ...context,
-      menuPosition: menuPositionFor(parentRef.current),
+      menuPosition,
     });
+    if (result.state.menu) {
+      if (anchor) setMenuPlacement("anchored");
+      else if (intent.type !== "choose-action") setMenuPlacement("docked");
+    }
     setInteractionState(result.state);
     if ("inspectedCell" in result) setLastInspectedCoords(result.inspectedCell ?? null);
     if (result.command) onAction?.(result.command);
@@ -117,7 +137,12 @@ const GameMap = ({
           onError={() => setRendererError(true)}
         >
           <Suspense fallback={<p className="game-renderer-loading" role="status">Loading 3D board…</p>}>
-            <Renderer3DBoard board={board} onIntent={handleIntent} reducedMotion={reducedMotion} />
+            <Renderer3DBoard
+              board={board}
+              onIntent={handleIntent}
+              onViewChange={() => setMenuPlacement("docked")}
+              reducedMotion={reducedMotion}
+            />
           </Suspense>
         </RendererErrorBoundary>
       )}
@@ -127,6 +152,7 @@ const GameMap = ({
           left={interactionState.menu.position.left}
           onAction={(actionType) => handleIntent({ type: "choose-action", actionType })}
           options={interactionState.menu.options}
+          placement={menuPlacement}
           top={interactionState.menu.position.top}
         />
       )}

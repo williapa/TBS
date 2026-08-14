@@ -179,6 +179,7 @@ export type CellFormProps = Readonly<{
 }>;
 
 export type ActionFormProps = Readonly<{
+  placement?: "anchored" | "docked";
   onAction: (action: GameMenuActionId) => void;
   options: readonly GameMenuOption[];
   top: number;
