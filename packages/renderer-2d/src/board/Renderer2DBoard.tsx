@@ -98,6 +98,7 @@ const Entity = ({
       onClick={stopAndSelect}
       onKeyDown={dispatchOnKeyboard(intent, onIntent)}
       role="button"
+      style={{ outline: "none" }}
       tabIndex={0}
       transform={`translate(${point.x} ${point.y})`}
     >
@@ -121,8 +122,9 @@ const Entity = ({
         {entity.statuses.includes("moved") && (
           <text fill="#ffffff" fontSize={15} fontWeight="bold" x={-27} y={-18}>✓</text>
         )}
-        <rect fill="#321" height={5} rx={2} width={44} x={-22} y={22} />
-        <rect fill={teamColors[entity.team]} height={5} rx={2} width={healthWidth} x={-22} y={22} />
+        <rect fill="#321" height={5} rx={2} width={44} x={-22} y={15} />
+        <rect fill={teamColors[entity.team]} height={5} rx={2} width={healthWidth} x={-22} y={15} />
+        <rect data-health-bar-outline fill="none" height={5} rx={2} stroke="#111" strokeWidth={1} width={44} x={-22} y={15} />
         <circle cx={24} cy={-22} fill={teamColors[entity.team]} r={10} stroke="#111" />
         <text fill={entity.team === "orange" ? "#111" : "#fff"} fontSize={11} fontWeight="bold" textAnchor="middle" x={24} y={-18}>
           {entity.team === "orange" ? "O" : entity.team === "purple" ? "P" : "–"}
@@ -160,11 +162,6 @@ export const Renderer2DBoard = ({
       {board.cells.map((cell) => {
         const point = projectHexTo2D(cell.coordinate);
         const intent: BoardIntent = { type: "select-cell", cell: cell.coordinate };
-        const stroke = cell.target
-          ? targetColors[cell.target]
-          : cell.selection === "focused"
-            ? "#ffffff"
-            : "rgba(8, 12, 18, 0.72)";
         return (
           <g
             aria-label={cell.accessibleDescription}
@@ -173,18 +170,41 @@ export const Renderer2DBoard = ({
             onClick={(event) => onIntent(intent, pointerAnchor(event))}
             onKeyDown={dispatchOnKeyboard(intent, onIntent)}
             role="gridcell"
+            style={{ outline: "none" }}
             tabIndex={0}
             transform={`translate(${point.x} ${point.y})`}
           >
             <polygon
               fill={terrainColors[cell.terrainAssetId] ?? "#77808d"}
               points={hexPolygonPoints()}
-              stroke={stroke}
-              strokeDasharray={cell.target ? "7 4" : undefined}
-              strokeWidth={cell.target || cell.selection === "focused" ? 5 : 2}
+              stroke="rgba(8, 12, 18, 0.72)"
+              strokeWidth={2}
             />
             <title>{cell.target ? `${cell.accessibleDescription}; ${cell.target} target` : cell.accessibleDescription}</title>
           </g>
+        );
+      })}
+      {board.cells.filter((cell) => cell.selection === "focused" || cell.target).map((cell) => {
+        const point = projectHexTo2D(cell.coordinate);
+        const focused = cell.selection === "focused";
+        const stroke = focused
+          ? "#ffffff"
+          : cell.target
+            ? targetColors[cell.target]
+            : undefined;
+        return (
+          <polygon
+            data-cell-highlight={cell.legacyIndex}
+            data-highlight-kind={focused ? "selection" : cell.target}
+            fill="none"
+            key={cell.id}
+            points={hexPolygonPoints()}
+            pointerEvents="none"
+            stroke={stroke}
+            strokeDasharray={focused ? undefined : "7 4"}
+            strokeWidth={5}
+            transform={`translate(${point.x} ${point.y})`}
+          />
         );
       })}
       {board.entities.map((entity) => (

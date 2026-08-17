@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { presentBoard } from "@TBS/presentation";
 import type { BoardIntent } from "@TBS/presentation";
 import type { BoardInteractionAnchor } from "@TBS/presentation";
@@ -81,7 +81,45 @@ describe("Renderer2DBoard", () => {
       },
       { intent: { type: "select-cell", cell: { q: 0, r: -1 } } },
     ]);
-    expect(cells[0].querySelector("polygon")?.getAttribute("stroke-dasharray")).toBe("7 4");
+    expect(cells[0].querySelector("polygon")?.getAttribute("stroke-dasharray")).toBeNull();
+    const healthBarOutline = entity.querySelector("[data-health-bar-outline]");
+    expect(healthBarOutline?.getAttribute("stroke")).toBe("#111");
+    expect(healthBarOutline?.getAttribute("stroke-width")).toBe("1");
+  });
+
+  test("renders focused cell highlighting above every base cell without a rectangular outline", () => {
+    const presented = board();
+    const focusedBoard = {
+      ...presented,
+      cells: presented.cells.map((cell, index) => index === 1
+        ? { ...cell, selection: "focused" as const, target: "attack" as const }
+        : cell),
+    };
+    const { container } = render(
+      <Renderer2DBoard board={focusedBoard} onIntent={vi.fn()} />,
+    );
+
+    const cells = within(container).getAllByRole("gridcell");
+    const entity = within(container).getByRole("button", { name: /Soldier, purple team/ });
+    const basePolygon = cells[1].querySelector("polygon");
+    const targetOverlay = container.querySelector("[data-cell-highlight='0']");
+    const selectionOverlay = container.querySelector("[data-cell-highlight='1']");
+
+    expect(cells[1].getAttribute("style")).toContain("outline: none");
+    expect(entity.getAttribute("style")).toContain("outline: none");
+    expect(basePolygon?.getAttribute("stroke")).toBe("rgba(8, 12, 18, 0.72)");
+    expect(targetOverlay?.getAttribute("data-highlight-kind")).toBe("move");
+    expect(targetOverlay?.getAttribute("stroke")).toBe("#ffffff");
+    expect(targetOverlay?.getAttribute("stroke-dasharray")).toBe("7 4");
+    expect(targetOverlay?.getAttribute("pointer-events")).toBe("none");
+    expect(selectionOverlay?.getAttribute("data-highlight-kind")).toBe("selection");
+    expect(selectionOverlay?.getAttribute("fill")).toBe("none");
+    expect(selectionOverlay?.getAttribute("pointer-events")).toBe("none");
+    expect(selectionOverlay?.getAttribute("stroke")).toBe("#ffffff");
+    expect(selectionOverlay?.getAttribute("stroke-dasharray")).toBeNull();
+    expect(selectionOverlay?.getAttribute("stroke-width")).toBe("5");
+    expect((cells.at(-1)?.compareDocumentPosition(selectionOverlay as Node) ?? 0)
+      & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   test("animates accepted movement and skips it for reduced motion", () => {

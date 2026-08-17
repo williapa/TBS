@@ -1,9 +1,13 @@
 import react from "@vitejs/plugin-react";
+import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
+    alias: {
+      "@TBS/renderer-2d": fileURLToPath(new URL("../packages/renderer-2d/src/index.ts", import.meta.url)),
+    },
     dedupe: ["@react-three/fiber", "react", "react-dom", "three"],
   },
   optimizeDeps: {
@@ -12,7 +16,6 @@ export default defineConfig({
       "@TBS/common",
       "@TBS/game-setup",
       "@TBS/presentation",
-      "@TBS/renderer-2d",
     ],
   },
   build: {
