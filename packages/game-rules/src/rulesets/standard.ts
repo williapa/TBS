@@ -1,8 +1,10 @@
 import {
   ActionRegistryBuilder,
+  contentVersion,
   rulesetVersion,
   type GameState,
   type RegistryExecutionResult,
+  type RegistryValidationResult,
   type RuleViolation,
   type TeamId,
 } from "@TBS/game-core";
@@ -21,9 +23,9 @@ import { getUnitDefinition } from "../content/units";
 import { standardPostActionPipeline } from "../mechanics/standard-pipeline";
 
 export const STANDARD_RULESET_VERSION = rulesetVersion("standard@1");
-export const STANDARD_CONTENT_VERSION = "standard@1" as const;
+export const STANDARD_CONTENT_VERSION = contentVersion("standard@1");
 
-const services: StandardRuleServices = { getUnit: getUnitDefinition };
+export const standardRuleServices: StandardRuleServices = { getUnit: getUnitDefinition };
 
 const registry = new ActionRegistryBuilder<GameState, TeamId, StandardAction, StandardEvent, StandardRuleServices>()
   .register(moveActionHandler)
@@ -45,24 +47,47 @@ const reject = (code: string, message: string): StandardActionResult => ({
   violations: [{ code, message } satisfies RuleViolation],
 });
 
+const validateStandardContext = (
+  state: GameState,
+  actorTeamId: TeamId,
+): RuleViolation | undefined => {
+  if (state.rulesetVersion !== STANDARD_RULESET_VERSION) {
+    return {
+      code: "incompatible-ruleset",
+      message: `Expected ${STANDARD_RULESET_VERSION}, received ${state.rulesetVersion}`,
+    };
+  }
+  if (state.lifecycle.phase === "finished") return { code: "finished-game", message: "the game has already finished" };
+  if (state.lifecycle.phase !== "active") return { code: "inactive-game", message: "the game is not active" };
+  if (state.lifecycle.activeTeamId !== actorTeamId) return { code: "wrong-team", message: "it is not this team's turn" };
+  if (!state.teams[actorTeamId]) return { code: "missing-team", message: "the acting team does not exist" };
+  return undefined;
+};
+
+export const validateStandardAction = (
+  state: GameState,
+  actorTeamId: TeamId,
+  action: StandardAction,
+): RegistryValidationResult => {
+  const violation = validateStandardContext(state, actorTeamId);
+  return violation
+    ? { ok: false, code: "invalid-action", violations: [violation] }
+    : registry.validate({ state, actor: actorTeamId, services: standardRuleServices }, action);
+};
+
 export const applyStandardAction = (
   state: GameState,
   actorTeamId: TeamId,
   action: StandardAction,
 ): StandardActionResult => {
-  if (state.rulesetVersion !== STANDARD_RULESET_VERSION) {
-    return reject("incompatible-ruleset", `Expected ${STANDARD_RULESET_VERSION}, received ${state.rulesetVersion}`);
-  }
-  if (state.lifecycle.phase === "finished") return reject("finished-game", "the game has already finished");
-  if (state.lifecycle.phase !== "active") return reject("inactive-game", "the game is not active");
-  if (state.lifecycle.activeTeamId !== actorTeamId) return reject("wrong-team", "it is not this team's turn");
-  if (!state.teams[actorTeamId]) return reject("missing-team", "the acting team does not exist");
-  const result = registry.execute({ state, actor: actorTeamId, services }, action);
+  const violation = validateStandardContext(state, actorTeamId);
+  if (violation) return reject(violation.code, violation.message);
+  const result = registry.execute({ state, actor: actorTeamId, services: standardRuleServices }, action);
   if (!result.ok) return result;
 
   const postAction = standardPostActionPipeline.run(
     result.state,
-    { actorTeamId, action, services },
+    { actorTeamId, action, services: standardRuleServices },
     result.events,
   );
   return { ok: true, ...postAction };

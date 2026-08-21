@@ -3,6 +3,7 @@ import {
   SupabaseGameClient,
   SupabaseIdentityAdapter,
 } from "@TBS/adapter-supabase";
+import { currentStandardProtocolCodec } from "@TBS/application";
 import type { GameClient, IdentityPort } from "@TBS/application";
 
 import { browserEnvironment } from "../env";
@@ -26,7 +27,7 @@ export const createBrowserApplication = (): BrowserApplication => {
   const providerClient = createSupabaseBrowserClient({ url, publishableKey });
   const identity = new SupabaseIdentityAdapter(providerClient.auth);
   return {
-    gameClient: new SupabaseGameClient(providerClient, identity),
+    gameClient: new SupabaseGameClient(providerClient, currentStandardProtocolCodec, identity),
     identity,
   };
 };

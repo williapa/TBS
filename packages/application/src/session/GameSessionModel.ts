@@ -1,5 +1,3 @@
-import type { ActionEnvelope, AppliedAction, GameSnapshot } from "@TBS/common";
-
 import type {
   CreatedGame,
   CreateGameInput,
@@ -9,6 +7,9 @@ import type {
   JoinIntent,
   PresenceState,
   SessionRole,
+  StandardActionEnvelope,
+  StandardAppliedAction,
+  StandardGameSnapshot,
   SubmitActionResult,
 } from "../contracts";
 import { MAX_ACTION_HISTORY } from "../limits";
@@ -23,8 +24,8 @@ export type GameSubmitState = "idle" | "submitting";
 export type GameSessionState = Readonly<{
   session: GameSession | null;
   role: SessionRole | null;
-  snapshot: GameSnapshot | null;
-  actions: readonly AppliedAction[];
+  snapshot: StandardGameSnapshot | null;
+  actions: readonly StandardAppliedAction[];
   presence: readonly PresenceState[];
   connectionState: GameConnectionState;
   submitState: GameSubmitState;
@@ -85,9 +86,9 @@ export const normalizeGatewayError = (value: unknown): GatewayError => {
 };
 
 const mergeActions = (
-  current: readonly AppliedAction[],
-  incoming: readonly AppliedAction[],
-): readonly AppliedAction[] => {
+  current: readonly StandardAppliedAction[],
+  incoming: readonly StandardAppliedAction[],
+): readonly StandardAppliedAction[] => {
   const actionIds = new Set(current.map((action) => action.actionId));
   const revisions = new Set(current.map((action) => action.revision));
   const merged = [...current];
@@ -142,7 +143,9 @@ export class GameSessionModel {
     () => this.client.joinGame(inviteToken, intent, displayName),
   );
 
-  readonly submitAction = async (envelope: ActionEnvelope): Promise<SubmitActionResult> => {
+  readonly submitAction = async (
+    envelope: StandardActionEnvelope,
+  ): Promise<SubmitActionResult> => {
     const session = this.state.session;
     if (!session) {
       const result: SubmitActionResult = {
@@ -235,7 +238,7 @@ export class GameSessionModel {
   }
 
   private publishSnapshot(
-    snapshot: GameSnapshot,
+    snapshot: StandardGameSnapshot,
     source: ReconciliationSource = "snapshot",
   ): void {
     if (!this.active) return;
@@ -257,7 +260,7 @@ export class GameSessionModel {
     );
   }
 
-  private publishActions(actions: readonly AppliedAction[]): void {
+  private publishActions(actions: readonly StandardAppliedAction[]): void {
     if (this.active) this.update({ actions: mergeActions(this.state.actions, actions) });
   }
 

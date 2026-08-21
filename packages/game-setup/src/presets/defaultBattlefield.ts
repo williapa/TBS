@@ -1,26 +1,26 @@
-import type { MapItem } from "@TBS/common";
+import { teamId, terrainTypeId, unitTypeId } from "@TBS/game-core";
 
 import { CURRENT_MAP_SCHEMA_VERSION } from "../contracts";
-import type { MapDocument } from "../contracts";
+import type { MapDocument, MapGrid } from "../contracts";
 
-const defaultMap = (): MapItem[][] => [[
+const defaultMap = (): MapGrid => [[
   {
     row: 0,
     column: 0,
     index: 0,
     neighbors: [1],
-    terrain: "plains",
-    unit: "soldier",
-    team: "orange",
+    terrain: terrainTypeId("plains"),
+    unit: unitTypeId("soldier"),
+    team: teamId("orange"),
   },
   {
     row: 0,
     column: 1,
     index: 1,
     neighbors: [0],
-    terrain: "plains",
-    unit: "soldier",
-    team: "purple",
+    terrain: terrainTypeId("plains"),
+    unit: unitTypeId("soldier"),
+    team: teamId("purple"),
   },
 ]];
 

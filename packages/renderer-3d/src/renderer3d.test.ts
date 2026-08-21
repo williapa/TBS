@@ -12,9 +12,9 @@ const cellId = (value: string) => value as BoardCellViewModel["id"];
 const board = {
   revision: 2,
   cells: [
-    { id: cellId("0:0"), coordinate: { q: 0, r: 0 }, legacyIndex: 0, neighborIds: [cellId("1:0")], terrainAssetId: "terrain:plains", selection: "none", target: null, accessibleDescription: "Plains" },
-    { id: cellId("1:0"), coordinate: { q: 1, r: 0 }, legacyIndex: 1, neighborIds: [cellId("0:0")], terrainAssetId: "terrain:plains", selection: "none", target: "move", accessibleDescription: "Plains target" },
-    { id: cellId("0:1"), coordinate: { q: 0, r: 1 }, legacyIndex: 2, neighborIds: [], terrainAssetId: "terrain:water", selection: "none", target: null, accessibleDescription: "Water" },
+    { id: cellId("0:0"), coordinate: { q: 0, r: 0 }, neighborIds: [cellId("1:0")], terrainAssetId: "terrain:plains", selection: "none", target: null, accessibleDescription: "Plains" },
+    { id: cellId("1:0"), coordinate: { q: 1, r: 0 }, neighborIds: [cellId("0:0")], terrainAssetId: "terrain:plains", selection: "none", target: "move", accessibleDescription: "Plains target" },
+    { id: cellId("0:1"), coordinate: { q: 0, r: 1 }, neighborIds: [], terrainAssetId: "terrain:water", selection: "none", target: null, accessibleDescription: "Water" },
   ],
   entities: [],
   cameraBounds: { minimum: { q: 0, r: 0 }, maximum: { q: 1, r: 1 }, center: { q: 0.5, r: 0.5 } },
@@ -54,15 +54,15 @@ describe("renderer-3d projection", () => {
     const plains = batches.find(({ assetId }) => assetId === "terrain:plains");
     expect(plains).toBeDefined();
     if (!plains) throw new Error("Expected plains terrain batch");
-    expect(cellForTerrainInstance(plains, 1)?.legacyIndex).toBe(1);
+    expect(cellForTerrainInstance(plains, 1)?.id).toBe(cellId("1:0"));
     expect(cellForTerrainInstance(plains, undefined)).toBeUndefined();
   });
 });
 
 describe("renderer-3d presentation behavior", () => {
   const entity = {
-    id: "unit-1" as BoardEntityViewModel["id"], assetId: "unit:soldier", cellId: cellId("1:0"), coordinate: { q: 1, r: 0 }, orientation: 0,
-    team: "purple", health: { current: 75, maximum: 100 }, statuses: [], selected: false, actionable: true,
+    id: "unit-1" as BoardEntityViewModel["id"], unitTypeId: "soldier" as BoardEntityViewModel["unitTypeId"], assetId: "unit:soldier", cellId: cellId("1:0"), coordinate: { q: 1, r: 0 }, orientation: 0,
+    teamId: "purple" as BoardEntityViewModel["teamId"], health: { current: 75, maximum: 100 }, statuses: [], capabilities: [], selected: false, actionable: true,
     cargo: [], label: "Soldier", accessibleDescription: "Soldier, purple team, 75 health",
   } as const satisfies BoardEntityViewModel;
   const cue = {

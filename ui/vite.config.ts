@@ -6,16 +6,21 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
+      "@TBS/protocol": fileURLToPath(new URL("../packages/protocol/dist/index.js", import.meta.url)),
       "@TBS/renderer-2d": fileURLToPath(new URL("../packages/renderer-2d/src/index.ts", import.meta.url)),
     },
     dedupe: ["@react-three/fiber", "react", "react-dom", "three"],
   },
   optimizeDeps: {
-    // These deployed compatibility packages still emit CommonJS during the incremental migration.
+    // Prebundle current CommonJS workspace entry points reached by the browser app.
+    // Workspace dist files can change without the lockfile/config cache key changing,
+    // so rebuild the prebundle whenever the development server starts.
+    force: true,
     include: [
-      "@TBS/common",
+      "@TBS/game-rules",
       "@TBS/game-setup",
       "@TBS/presentation",
+      "@TBS/protocol",
     ],
   },
   build: {

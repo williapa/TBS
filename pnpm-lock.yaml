@@ -45,34 +45,18 @@ importers:
         specifier: 8.67.0
         version: 8.67.0(eslint@10.8.1(supports-color@7.2.0))(supports-color@7.2.0)(typescript@6.0.3)
 
-  common:
-    dependencies:
-      '@TBS/game-core':
-        specifier: workspace:*
-        version: link:../packages/game-core
-      '@TBS/game-rules':
-        specifier: workspace:*
-        version: link:../packages/game-rules
-      '@TBS/protocol':
-        specifier: workspace:*
-        version: link:../packages/protocol
-    devDependencies:
-      '@types/node':
-        specifier: 26.2.0
-        version: 26.2.0
-      typescript:
-        specifier: 6.0.3
-        version: 6.0.3
-
   packages/adapter-memory:
     dependencies:
       '@TBS/application':
         specifier: workspace:*
         version: link:../application
-      '@TBS/common':
+      '@TBS/protocol':
         specifier: workspace:*
-        version: link:../../common
+        version: link:../protocol
     devDependencies:
+      '@TBS/game-rules':
+        specifier: workspace:*
+        version: link:../game-rules
       '@TBS/test-kit':
         specifier: workspace:*
         version: link:../test-kit
@@ -88,13 +72,16 @@ importers:
       '@TBS/application':
         specifier: workspace:*
         version: link:../application
-      '@TBS/common':
+      '@TBS/protocol':
         specifier: workspace:*
-        version: link:../../common
+        version: link:../protocol
       '@supabase/supabase-js':
         specifier: 2.112.2
         version: 2.112.2
     devDependencies:
+      '@TBS/game-rules':
+        specifier: workspace:*
+        version: link:../game-rules
       '@TBS/test-kit':
         specifier: workspace:*
         version: link:../test-kit
@@ -110,12 +97,15 @@ importers:
 
   packages/application:
     dependencies:
-      '@TBS/common':
+      '@TBS/game-core':
         specifier: workspace:*
-        version: link:../../common
+        version: link:../game-core
       '@TBS/game-rules':
         specifier: workspace:*
         version: link:../game-rules
+      '@TBS/protocol':
+        specifier: workspace:*
+        version: link:../protocol
     devDependencies:
       typescript:
         specifier: 6.0.3
@@ -151,15 +141,15 @@ importers:
 
   packages/game-setup:
     dependencies:
-      '@TBS/common':
-        specifier: workspace:*
-        version: link:../../common
       '@TBS/game-core':
         specifier: workspace:*
         version: link:../game-core
       '@TBS/game-rules':
         specifier: workspace:*
         version: link:../game-rules
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
     devDependencies:
       typescript:
         specifier: 6.0.3
@@ -170,12 +160,12 @@ importers:
 
   packages/presentation:
     dependencies:
-      '@TBS/common':
-        specifier: workspace:*
-        version: link:../../common
       '@TBS/game-core':
         specifier: workspace:*
         version: link:../game-core
+      '@TBS/game-rules':
+        specifier: workspace:*
+        version: link:../game-rules
     devDependencies:
       typescript:
         specifier: 6.0.3
@@ -267,15 +257,15 @@ importers:
       '@TBS/application':
         specifier: workspace:*
         version: link:../application
-      '@TBS/common':
-        specifier: workspace:*
-        version: link:../../common
       '@TBS/game-core':
         specifier: workspace:*
         version: link:../game-core
       '@TBS/game-rules':
         specifier: workspace:*
         version: link:../game-rules
+      '@TBS/game-setup':
+        specifier: workspace:*
+        version: link:../game-setup
       '@TBS/protocol':
         specifier: workspace:*
         version: link:../protocol
@@ -301,9 +291,6 @@ importers:
       '@TBS/application':
         specifier: workspace:*
         version: link:../packages/application
-      '@TBS/common':
-        specifier: workspace:*
-        version: link:../common
       '@TBS/game-setup':
         specifier: workspace:*
         version: link:../packages/game-setup
@@ -332,6 +319,9 @@ importers:
         specifier: 6.30.4
         version: 6.30.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
     devDependencies:
+      '@TBS/game-rules':
+        specifier: workspace:*
+        version: link:../packages/game-rules
       '@TBS/test-kit':
         specifier: workspace:*
         version: link:../packages/test-kit

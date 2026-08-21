@@ -2,29 +2,26 @@ import FieldMapper from "../../Form/FieldMapper";
 import { unitOptions } from "../Unit/unitOptions";
 import "./EditCellForm.css";
 import type { FormEvent, MouseEvent } from "react";
-import { TerrainOptions, teamOptions } from "@TBS/common";
+import { mapTeamOptions, mapTerrainOptions, mapUnitOptions } from "@TBS/game-setup";
 import { inputTypes } from "../../../types";
 import type { CellFormProps, EditableCell, FieldProps, TeamType, TerrainType, UnitTypes } from "../../../types";
 
-const teamTypes = [teamOptions[0], "gray", teamOptions[1]] as const;
-
 const isTerrainType = (value: unknown): value is TerrainType =>
-  typeof value === "string" && TerrainOptions.some((candidate) => candidate === value);
+  typeof value === "string" && mapTerrainOptions.some((candidate) => candidate === value);
 
 const isTeamType = (value: unknown): value is TeamType =>
-  typeof value === "string" && teamTypes.some((candidate) => candidate === value);
+  typeof value === "string" && mapTeamOptions.some((candidate) => candidate === value);
 
 const isUnitType = (value: unknown): value is UnitTypes =>
-  typeof value === "string" &&
-  unitOptions.some(([, candidates]) => candidates.some((candidate) => candidate === value));
+  typeof value === "string" && mapUnitOptions.some((candidate) => candidate === value);
 
 const EditCellForm = ({ initialValues, top, left, save, cancel }: CellFormProps) => {
   const { terrain, unit, team } = initialValues;
   
   const editCellFormFields = [
-    { type: inputTypes.select, name: "terrain", initial: terrain, options: TerrainOptions },
+    { type: inputTypes.select, name: "terrain", initial: terrain, options: mapTerrainOptions },
     { type: inputTypes.select, name: "unit", initial: unit, options: unitOptions },
-    { type: inputTypes.select, name: "team", initial: team, options: teamTypes },
+    { type: inputTypes.select, name: "team", initial: team, options: mapTeamOptions },
   ] satisfies readonly FieldProps[];
 
   const submit = (e: FormEvent<HTMLFormElement>) => {

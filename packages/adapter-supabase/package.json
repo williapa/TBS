@@ -21,9 +21,10 @@
   "dependencies": {
     "@supabase/supabase-js": "2.112.2",
     "@TBS/application": "workspace:*",
-    "@TBS/common": "workspace:*"
+    "@TBS/protocol": "workspace:*"
   },
   "devDependencies": {
+    "@TBS/game-rules": "workspace:*",
     "@TBS/test-kit": "workspace:*",
     "@types/node": "26.2.0",
     "typescript": "6.0.3",

@@ -71,7 +71,7 @@
 .game-board-keyboard-controls {
   background: rgba(12, 18, 28, 0.94);
   bottom: 8px;
-  display: none; /*flex;*/
+  display: flex;
   flex-wrap: wrap;
   gap: 5px;
   left: 8px;

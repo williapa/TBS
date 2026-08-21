@@ -1,15 +1,13 @@
-import type { MapItem } from "@TBS/common";
+import { MapSetupError, type MapCell, type MapGrid } from "../contracts";
 
-import { MapSetupError } from "../contracts";
-
-export type EditableMapCell = Pick<MapItem, "team" | "terrain" | "unit">;
+export type EditableMapCell = Pick<MapCell, "team" | "terrain" | "unit">;
 
 export const updateMapCell = (
-  map: MapItem[][],
+  map: MapGrid,
   row: number,
   column: number,
   patch: EditableMapCell,
-): MapItem[][] => {
+): MapGrid => {
   const current = map[row]?.[column];
   if (!current) {
     throw new MapSetupError("invalid-map", "Editor cell coordinates are outside the map");

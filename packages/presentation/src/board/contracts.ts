@@ -1,5 +1,12 @@
-import type { TeamColor } from "@TBS/common";
-import type { EntityId, HexCoord, HexKey } from "@TBS/game-core";
+import type {
+  EntityId,
+  HexCoord,
+  HexKey,
+  TeamId,
+  TerrainTypeId,
+  UnitTypeId,
+} from "@TBS/game-core";
+import type { UnitCapability } from "@TBS/game-rules";
 
 import type { AnimationCue } from "../animation/contracts";
 
@@ -18,7 +25,6 @@ export type BoardSelectionState = "focused" | "none" | "selected";
 export type BoardCellViewModel = Readonly<{
   id: HexKey;
   coordinate: HexCoord;
-  legacyIndex: number;
   neighborIds: readonly HexKey[];
   terrainAssetId: string;
   selection: BoardSelectionState;
@@ -30,17 +36,20 @@ export type BoardEntityStatus = "boosted" | "moved";
 
 export type BoardEntityViewModel = Readonly<{
   id: EntityId;
+  unitTypeId: UnitTypeId;
   assetId: string;
   cellId: HexKey;
   coordinate: HexCoord;
   orientation: 0 | 1 | 2 | 3 | 4 | 5;
-  team: TeamColor;
-  health: Readonly<{ current: number; maximum: number }>;
+  teamId: TeamId | null;
+  health: Readonly<{ current: number; maximum: number }> | null;
   statuses: readonly BoardEntityStatus[];
+  capabilities: readonly UnitCapability[];
   selected: boolean;
   actionable: boolean;
   cargo: readonly Readonly<{
     id: EntityId;
+    unitTypeId: UnitTypeId;
     assetId: string;
     label: string;
     statuses: readonly BoardEntityStatus[];
@@ -72,11 +81,11 @@ export type BoardInteractionView = Readonly<{
   selectedEntityId?: EntityId;
   focusedCellId?: HexKey;
   actionableEntityIds?: readonly EntityId[];
-  legalTargets?: readonly Readonly<{ cellIndex: number; type: BoardTargetType }>[];
+  legalTargets?: readonly Readonly<{ cellId: HexKey; type: BoardTargetType }>[];
   focusRequest?: BoardFocusRequest;
 }>;
 
 export type PresentationAssetManifest = Readonly<{
-  terrain: (terrainTypeId: string) => Readonly<{ assetId: string; label: string }>;
-  unit: (unitTypeId: string) => Readonly<{ assetId: string; label: string }>;
+  terrain: (terrainTypeId: TerrainTypeId) => Readonly<{ assetId: string; label: string }>;
+  unit: (unitTypeId: UnitTypeId) => Readonly<{ assetId: string; label: string }>;
 }>;

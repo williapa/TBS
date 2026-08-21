@@ -1,6 +1,6 @@
 # TBS Engineering Instructions
 
-These instructions apply to the entire repository. More specific `AGENTS.md` files may add local constraints but must not weaken these standards. The target architecture is defined in `docs/v2-system-design.md`; the currently supported production behavior is defined in `docs/architecture.md` and `docs/game-domain.md`.
+These instructions apply to the entire repository. More specific `AGENTS.md` files may add local constraints but must not weaken these standards. The current architecture and supported production behavior are defined in `docs/architecture.md` and `docs/game-domain.md`; the v2 design and checkpoint documents are historical context.
 
 ## Priorities
 
@@ -25,14 +25,14 @@ Apply these priorities in order:
 ## Architectural boundaries
 
 - The deterministic game core and rules are framework-free TypeScript. They must not import React, Three.js, Supabase, browser APIs, storage, network clients, environment variables, wall clocks, or global randomness.
-- Until the v2 package migration is complete, `common` is the current deterministic core boundary and must remain dependency-light.
+- `game-core` and `game-rules` are the deterministic boundaries. Core has no workspace dependencies; rules depends only on core.
 - React components render view models and emit semantic intents. They do not implement game rules, construct persistence rows, or call Supabase directly.
 - Renderers do not decide legal movement, combat, costs, turn completion, objectives, or setup validity.
 - Setup/map creation is separate from turn execution and from rendering.
 - Infrastructure is accessed through application-owned ports. Provider SDK types, database rows, channel objects, and provider errors remain inside their adapters.
 - Supabase is durable authority; Realtime and Presence are not authoritative state. Presence must never control seats, turns, readiness, or game outcomes.
 - Player commands are validated by the trusted engine boundary. Browser previews are advisory.
-- Package dependencies point inward as documented in `docs/v2-system-design.md`. Do not deep-import another package's internal files or create cycles.
+- Package dependencies point inward as documented in `docs/architecture.md`. Do not deep-import another package's internal files or create cycles.
 - Composition roots construct registries/adapters explicitly. Avoid global mutable registries, service locators, decorator discovery, and invisible side effects.
 
 ## Game-engine standards
@@ -107,7 +107,7 @@ Apply these priorities in order:
 - Comments explain intent, invariant, tradeoff, or non-obvious constraint. Remove stale and commented-out code.
 - Keep functions small enough to understand, but prefer cohesive flow over fragmentation into trivial wrappers.
 - Add a dependency only when it removes meaningful implementation/maintenance risk. Check runtime weight, ownership, license, compatibility, and whether platform/workspace code already solves the need.
-- Use the package manager selected by the root lockfile. Never introduce a second lockfile. During the current npm phase, run root npm workspace commands; after the planned pnpm migration, use the documented pnpm/Nx commands.
+- Use pnpm through the root lockfile and documented root/Nx commands. Never introduce a second lockfile.
 
 ## Testing
 
@@ -115,7 +115,7 @@ Apply these priorities in order:
 - Test observable behavior and invariants rather than implementation details.
 - Engine changes require success, rejection, immutability, event-order, and replay/determinism coverage as applicable.
 - New handlers and adapters must pass their shared contract suites.
-- Persisted-contract changes require parser/schema, migration, round-trip, and old-fixture coverage.
+- Persisted-contract changes require parser/schema, forward-only migration, and round-trip coverage. Prototype data may be reset only when an authoritative migration plan explicitly permits it.
 - Supabase changes require local integration/pgTAP coverage. Multiplayer/reconciliation changes require isolated-client race/reconnect coverage.
 - Renderer changes require semantic interaction tests; use a small number of visual screenshots for layout/scene regressions.
 - Animation tests use a fake clock or controlled frames. Do not rely on real delays.
@@ -125,7 +125,7 @@ Apply these priorities in order:
 ## Documentation
 
 - Update documentation in the same change when behavior, architecture, commands, setup, limits, security assumptions, or supported versions change.
-- Keep `docs/architecture.md` accurate for the currently deployed system and `docs/v2-system-design.md` accurate for the target plan; do not describe proposed behavior as already shipped.
+- Keep `docs/architecture.md` accurate for the supported system; do not describe proposed behavior as already shipped. Preserve explicitly historical documents as records.
 - Add feature rules to the relevant feature/domain document, not only to code comments.
 - Link rather than duplicate authoritative explanations. Mark historical decisions as superseded instead of silently rewriting their rationale.
 
@@ -141,4 +141,3 @@ Before declaring work complete, verify:
 - Documentation and migrations are included when required.
 - The diff contains no secrets, generated noise, debug logging, stale code, unexplained suppressions, or unnecessary dependencies.
 - The implementation is the least verbose solution that still satisfies every standard above.
-

@@ -58,4 +58,25 @@ describe("ActionForm", () => {
     fireEvent.keyDown(screen.getByRole("dialog", { name: "Available actions" }), { key: "Escape" });
     expect(onAction).toHaveBeenCalledWith("cancel");
   });
+
+  test("renders unavailable spawn choices disabled without dispatching them", () => {
+    const onAction = vi.fn();
+    render(
+      <ActionForm
+        left={0}
+        onAction={onAction}
+        options={[
+          { disabled: true, id: "spawn:leader", label: "Leader ($1000)" },
+          { id: "cancel", label: "Cancel" },
+        ]}
+        placement="docked"
+        top={0}
+      />,
+    );
+
+    const leader = screen.getByRole("button", { name: "Leader ($1000)" });
+    expect(leader).toBeDisabled();
+    fireEvent.click(leader);
+    expect(onAction).not.toHaveBeenCalled();
+  });
 });

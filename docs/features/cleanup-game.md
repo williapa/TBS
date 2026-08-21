@@ -196,7 +196,7 @@ Extract pure helpers for the active-turn interaction rules:
 - derive action menu options for the current state
 - build final websocket payloads from the pending interaction state
 
-These helpers should be pure and testable, using `@TBS/common` where possible. `sendMove` remains the transport boundary; optimistic map updates should be isolated behind explicit helper functions rather than mixed into click handlers.
+These helpers should be pure and testable, using application and presentation contracts. Command submission remains the transport boundary; optimistic interaction state should be isolated behind explicit controllers rather than mixed into click handlers.
 
 This is also where future “build/spawn” support should plug in:
 - add a new action derivation branch for build-capable units/buildings

@@ -1,15 +1,17 @@
-import { createActiveGameSnapshot, CURRENT_GAME_PROTOCOL_VERSION } from "@TBS/common";
 import type { GameClient } from "@TBS/application";
 import { InMemoryGameSessionGateway, InMemoryGameSessionStore } from "@TBS/adapter-memory";
+import { applyStandardAction } from "@TBS/game-rules";
+import { createWaitingGameStateFixture } from "@TBS/test-kit";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { GameSessionGatewayContext } from "./GameSessionGatewayContext";
 import { GameSessionProvider, useGameSession } from "./GameSessionProvider";
+import { createActionEnvelope } from "./createActionEnvelope";
 
-const input = () => {
-  const state = createActiveGameSnapshot().state;
-  return { displayName: "Orange", initialPayload: { map: state.map, money: state.money }, winCondition: "combat-elimination" as const };
-};
+const input = () => ({ displayName: "Orange", initialState: createWaitingGameStateFixture() });
+const createStore = () => new InMemoryGameSessionStore(applyStandardAction);
+const endTurnEnvelope = (revision: number, id: string) =>
+  createActionEnvelope(revision, { type: "end-turn" }, () => id);
 
 const wrapperFor = (gateway: GameClient) => ({ children }: { children: ReactNode }) => (
   <GameSessionGatewayContext.Provider value={gateway}>
@@ -19,7 +21,7 @@ const wrapperFor = (gateway: GameClient) => ({ children }: { children: ReactNode
 
 describe("GameSessionProvider", () => {
   test("exposes loading and then a joined player session", async () => {
-    const store = new InMemoryGameSessionStore();
+    const store = createStore();
     const creator = new InMemoryGameSessionGateway(store, "orange");
     const created = await creator.createGame(input());
     const gateway = new InMemoryGameSessionGateway(store, "purple");
@@ -38,12 +40,12 @@ describe("GameSessionProvider", () => {
 
     expect(result.current.connectionState).toBe("connected");
     expect(result.current.role).toBe("purple");
-    expect(result.current.snapshot?.state.status).toBe("active");
+    expect(result.current.snapshot?.state.lifecycle.phase).toBe("active");
     unmount();
   });
 
   test("exposes spectator role and accepted canonical action state", async () => {
-    const store = new InMemoryGameSessionStore();
+    const store = createStore();
     const orange = new InMemoryGameSessionGateway(store, "orange");
     const created = await orange.createGame(input());
     const purple = new InMemoryGameSessionGateway(store, "purple");
@@ -56,12 +58,10 @@ describe("GameSessionProvider", () => {
     const spectatorRevision = spectatorHook.result.current.snapshot?.state.revision;
     let rejected: Awaited<ReturnType<typeof spectatorHook.result.current.submitAction>> | undefined;
     await act(async () => {
-      rejected = await spectatorHook.result.current.submitAction({
-        protocolVersion: CURRENT_GAME_PROTOCOL_VERSION,
-        actionId: "spectator-direct-action",
-        expectedRevision: spectatorRevision ?? 0,
-        action: { action: "end" },
-      });
+      rejected = await spectatorHook.result.current.submitAction(endTurnEnvelope(
+        spectatorRevision ?? 0,
+        "43000000-0000-4000-8000-000000000001",
+      ));
     });
     expect(rejected?.ok).toBe(false);
     if (rejected && !rejected.ok) expect(rejected.error.code).toBe("spectator-read-only");
@@ -73,12 +73,10 @@ describe("GameSessionProvider", () => {
     await act(() => playerHook.result.current.joinGame(created.inviteToken, "player", "Purple"));
     let submission: Awaited<ReturnType<typeof playerHook.result.current.submitAction>> | undefined;
     await act(async () => {
-      submission = await playerHook.result.current.submitAction({
-        protocolVersion: CURRENT_GAME_PROTOCOL_VERSION,
-        actionId: "provider-action-1",
-        expectedRevision: 0,
-        action: { action: "end" },
-      });
+      submission = await playerHook.result.current.submitAction(endTurnEnvelope(
+        0,
+        "43000000-0000-4000-8000-000000000002",
+      ));
     });
     expect(submission?.ok).toBe(true);
     expect(playerHook.result.current.submitState).toBe("idle");
@@ -87,7 +85,7 @@ describe("GameSessionProvider", () => {
   });
 
   test("normalizes gateway errors into provider state and clears them", async () => {
-    const gateway = new InMemoryGameSessionGateway(new InMemoryGameSessionStore(), "visitor");
+    const gateway = new InMemoryGameSessionGateway(createStore(), "visitor");
     const { result } = renderHook(() => useGameSession(), { wrapper: wrapperFor(gateway) });
 
     await act(async () => {
@@ -100,24 +98,27 @@ describe("GameSessionProvider", () => {
   });
 
   test("loads, orders, and deduplicates canonical action history on reconnect", async () => {
-    const store = new InMemoryGameSessionStore();
+    const store = createStore();
     const orange = new InMemoryGameSessionGateway(store, "orange");
     const created = await orange.createGame(input());
     const purple = new InMemoryGameSessionGateway(store, "purple");
     await purple.joinGame(created.inviteToken, "player", "Purple");
     await purple.submitAction({
       gameId: created.gameId,
-      envelope: { protocolVersion: CURRENT_GAME_PROTOCOL_VERSION, actionId: "history-1", expectedRevision: 0, action: { action: "end" } },
+      envelope: endTurnEnvelope(0, "43000000-0000-4000-8000-000000000003"),
     });
     await orange.submitAction({
       gameId: created.gameId,
-      envelope: { protocolVersion: CURRENT_GAME_PROTOCOL_VERSION, actionId: "history-2", expectedRevision: 1, action: { action: "end" } },
+      envelope: endTurnEnvelope(1, "43000000-0000-4000-8000-000000000004"),
     });
     const reconnected = new InMemoryGameSessionGateway(store, "purple");
     const { result, unmount } = renderHook(() => useGameSession(), { wrapper: wrapperFor(reconnected) });
     await act(() => result.current.joinGame(created.inviteToken, "player", "Purple"));
 
-    expect(result.current.actions.map((action) => action.actionId)).toEqual(["history-1", "history-2"]);
+    expect(result.current.actions.map((action) => action.actionId)).toEqual([
+      "43000000-0000-4000-8000-000000000003",
+      "43000000-0000-4000-8000-000000000004",
+    ]);
     expect(result.current.actions.map((action) => action.revision)).toEqual([1, 2]);
     unmount();
   });

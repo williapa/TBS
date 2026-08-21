@@ -46,18 +46,6 @@ const rules = [
       module.startsWith("@supabase/"),
   },
   {
-    roots: ["common/src"],
-    message: "the deterministic common boundary cannot depend on UI, browser, renderer, or provider packages",
-    disallowed: (module) =>
-      module === "react" ||
-      module.startsWith("react/") ||
-      module === "three" ||
-      module.startsWith("@react-three/") ||
-      module.startsWith("@supabase/") ||
-      module.includes("/ui/") ||
-      module.startsWith("../ui"),
-  },
-  {
     roots: ["packages/protocol/src"],
     message: "protocol may depend only on game-core and external runtime-schema libraries",
     disallowed: (module) => module.startsWith("@TBS/") && module !== "@TBS/game-core",
@@ -69,9 +57,8 @@ const rules = [
   },
   {
     roots: ["packages/game-setup/src"],
-    message: "game-setup may depend only on the deterministic core, rules, and deployed common compatibility boundary",
+    message: "game-setup may depend only on game-core and game-rules",
     disallowed: (module) => module.startsWith("@TBS/") && ![
-      "@TBS/common",
       "@TBS/game-core",
       "@TBS/game-rules",
     ].includes(module),
@@ -86,8 +73,8 @@ const rules = [
       || module.startsWith("@react-three/")
       || module.startsWith("@supabase/")
       || (module.startsWith("@TBS/") && ![
-        "@TBS/common",
         "@TBS/game-core",
+        "@TBS/game-rules",
       ].includes(module)),
   },
   {
@@ -97,14 +84,41 @@ const rules = [
   },
   {
     roots: ["packages/application/src"],
-    message: "application ports and use cases cannot depend on React, browser, renderer, or provider implementations",
+    message: "application may depend only on game-core, game-rules, and protocol",
     disallowed: (module) =>
       module === "react" ||
       module.startsWith("react/") ||
       module.startsWith("@supabase/") ||
       module.includes("adapter-supabase") ||
       module.includes("/ui/") ||
-      module.startsWith("../ui"),
+      module.startsWith("../ui") ||
+      (module.startsWith("@TBS/") && ![
+        "@TBS/game-core",
+        "@TBS/game-rules",
+        "@TBS/protocol",
+      ].includes(module)),
+  },
+  {
+    roots: ["packages/adapter-memory/src", "packages/adapter-supabase/src"],
+    excludeFile: (file) => file.endsWith(".test.ts") || file.endsWith(".test.tsx"),
+    message: "adapters may depend only on application and protocol workspace packages; rules codecs are injected by composition",
+    disallowed: (module) => module.startsWith("@TBS/") && ![
+      "@TBS/application",
+      "@TBS/protocol",
+    ].includes(module),
+  },
+  {
+    roots: ["ui/src"],
+    excludeFile: (file) => file.endsWith(".test.ts") || file.endsWith(".test.tsx"),
+    message: "UI production source may depend only on application, presentation, setup, and renderer workspace packages",
+    disallowed: (module) => module.startsWith("@TBS/") && ![
+      "@TBS/adapter-supabase",
+      "@TBS/application",
+      "@TBS/game-setup",
+      "@TBS/presentation",
+      "@TBS/renderer-2d",
+      "@TBS/renderer-3d",
+    ].includes(module),
   },
   {
     roots: ["ui/src"],
@@ -120,12 +134,17 @@ const rules = [
   },
   {
     roots: ["supabase/functions"],
-    message: "Edge Functions are trusted composition roots and cannot depend on React, UI, or browser adapter implementations",
+    message: "Edge Functions may compose core, rules, protocol, and provider clients, but cannot depend on React, UI, or adapters",
     disallowed: (module) =>
       module === "react"
       || module.startsWith("react/")
       || module.includes("/ui/")
-      || module.startsWith("@TBS/adapter-"),
+      || module.startsWith("@TBS/adapter-")
+      || (module.startsWith("@TBS/") && ![
+        "@TBS/game-core",
+        "@TBS/game-rules",
+        "@TBS/protocol",
+      ].includes(module)),
   },
 ];
 

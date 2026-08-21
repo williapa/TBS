@@ -1,16 +1,18 @@
 import {
   advanceGameInteraction,
   createBoardInteractionView,
+  createGameInteractionPreview,
   createInitialGameInteractionState,
   presentBoard,
+  type BoardCellViewModel,
   type BoardInteractionAnchor,
   type BoardIntent,
 } from "@TBS/presentation";
 import { Renderer2DBoard } from "@TBS/renderer-2d";
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import ActionForm from "../../components/Map/Cell/Action/ActionForm";
-import type { ActiveMapProps, Coords, MenuPosition } from "../../types";
+import type { ActiveMapProps, MenuPosition } from "../../types";
 import { AccessibleBoardNavigator } from "./AccessibleBoardNavigator";
 import { buildGamePanelState } from "./gamePanelState";
 import { RendererErrorBoundary } from "./RendererErrorBoundary";
@@ -53,7 +55,7 @@ const GameMap = ({
   const previousRevision = useRef(state.revision);
   const latestEvents = useRef(events);
   const [animationEvents, setAnimationEvents] = useState<NonNullable<ActiveMapProps["events"]>>([]);
-  const [lastInspectedCoords, setLastInspectedCoords] = useState<Coords | null>(null);
+  const [lastInspectedCellId, setLastInspectedCellId] = useState<BoardCellViewModel["id"] | null>(null);
   const [interactionState, setInteractionState] = useState(createInitialGameInteractionState);
   const [menuPlacement, setMenuPlacement] = useState<"anchored" | "docked">("docked");
   const [renderer, setRenderer] = useState(readRendererPreference);
@@ -66,7 +68,7 @@ const GameMap = ({
     previousRevision.current = state.revision;
     setAnimationEvents(adjacent ? latestEvents.current : []);
     setInteractionState(createInitialGameInteractionState());
-    setLastInspectedCoords(null);
+    setLastInspectedCellId(null);
   }, [state.revision]);
 
   useEffect(() => {
@@ -77,46 +79,50 @@ const GameMap = ({
 
   useEffect(() => {
     onPanelStateChange?.(buildGamePanelState({
-      active,
       interactionState,
-      lastInspectedCoords,
-      mapData: state.map,
+      lastInspectedCellId,
+      state,
     }));
-  }, [active, interactionState, lastInspectedCoords, onPanelStateChange, state.map]);
+  }, [interactionState, lastInspectedCellId, onPanelStateChange, state]);
 
-  const context = {
+  const interactionPreview = useMemo(() => createGameInteractionPreview({
     active,
-    availableFunds: state.money[perspective],
-    map: state.map,
-    menuPosition: menuPositionFor(parentRef.current),
+    state,
     perspective,
-  };
-  const board = presentBoard({
+  }), [active, perspective, state]);
+  const interactionView = useMemo(() => createBoardInteractionView(
+    interactionState,
+    { active, state, perspective },
+    lastInspectedCellId,
+    interactionPreview,
+  ), [active, interactionPreview, interactionState, lastInspectedCellId, perspective, state]);
+  const board = useMemo(() => presentBoard({
     state,
     events: animationEvents,
-    interaction: createBoardInteractionView(
-      interactionState,
-      context,
-      lastInspectedCoords,
-    ),
-  });
+    interaction: interactionView,
+  }), [animationEvents, interactionView, state]);
 
-  const handleIntent = (intent: BoardIntent, anchor?: BoardInteractionAnchor) => {
+  const handleIntent = useCallback((intent: BoardIntent, anchor?: BoardInteractionAnchor) => {
     const menuPosition = anchor
       ? menuPositionFor(parentRef.current, anchor)
       : interactionState.menu?.position ?? menuPositionFor(parentRef.current);
     const result = advanceGameInteraction(interactionState, intent, {
-      ...context,
+      active,
       menuPosition,
+      perspective,
+      preview: interactionPreview,
+      state,
     });
     if (result.state.menu) {
       if (anchor) setMenuPlacement("anchored");
       else if (intent.type !== "choose-action") setMenuPlacement("docked");
     }
     setInteractionState(result.state);
-    if ("inspectedCell" in result) setLastInspectedCoords(result.inspectedCell ?? null);
+    if (result.inspectedCellId !== undefined) {
+      setLastInspectedCellId(result.inspectedCellId);
+    }
     if (result.command) onAction?.(result.command);
-  };
+  }, [active, interactionPreview, interactionState, onAction, perspective, state]);
   const selectRenderer = (nextRenderer: "2d" | "3d") => {
     setAnimationEvents([]);
     setRendererError(false);
@@ -160,4 +166,4 @@ const GameMap = ({
   );
 };
 
-export default GameMap;
+export default memo(GameMap);

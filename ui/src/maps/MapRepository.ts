@@ -1,5 +1,4 @@
-import type { MapItem } from "@TBS/common";
-import type { SaveMapInput } from "@TBS/game-setup";
+import type { MapGrid, SaveMapInput } from "@TBS/game-setup";
 import { CURRENT_MAP_SCHEMA_VERSION } from "@TBS/game-setup";
 
 export { CURRENT_MAP_SCHEMA_VERSION };
@@ -9,7 +8,7 @@ export type SavedMap = {
   schemaVersion: typeof CURRENT_MAP_SCHEMA_VERSION;
   id: string;
   name: string;
-  map: MapItem[][];
+  map: MapGrid;
   readOnly: boolean;
 };
 

@@ -1,26 +1,7 @@
-import {
-  animalUnitOptions,
-  buildingUnitOptions,
-  moveableOptions,
-  objectUnitOptions,
-  peopleUnitOptions,
-  vehicleUnitOptions,
-} from "@TBS/common";
+import { mapUnitOptionGroups } from "@TBS/game-setup";
 import type { OptionGroups } from "../../../types";
 
-export {
-  animalUnitOptions,
-  buildingUnitOptions,
-  moveableOptions,
-  objectUnitOptions,
-  peopleUnitOptions,
-  vehicleUnitOptions,
-};
-
 export const unitOptions = [
-  ["animals", animalUnitOptions],
-  ["buildings", buildingUnitOptions],
-  ["objects", objectUnitOptions],
-  ["people", peopleUnitOptions],
-  ["vehicles", vehicleUnitOptions],
+  ["empty", ["none"]],
+  ...mapUnitOptionGroups.map(([category, units]) => [category, units] as const),
 ] satisfies OptionGroups;

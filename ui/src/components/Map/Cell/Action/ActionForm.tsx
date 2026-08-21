@@ -77,7 +77,7 @@ const ActionForm = ({
       style={placement === "anchored" ? position : undefined}
     >
       <p className="game-action-menu__title">Options</p>
-      {options.map(({ disabled, id, label, unitType }) => (
+      {options.map(({ disabled, id, label, unitTypeId }) => (
         <button
           key={id}
           disabled={Boolean(disabled)}
@@ -85,7 +85,7 @@ const ActionForm = ({
           type="button"
           onClick={handleClick(id)}
         >
-          {unitType ? `${getEmojiForUnit(unitType)} ${label}` : label}
+          {unitTypeId ? `${getEmojiForUnit(unitTypeId)} ${label}` : label}
         </button>
       ))}
     </form>

@@ -1,4 +1,5 @@
 const { test, expect } = require("@playwright/test");
+const { actionScenarios } = require("./canonical-game");
 
 const cell = (row, column, index, neighbors, unit, team) => ({
   row, column, index, neighbors, terrain: "plains", unit, team,
@@ -15,30 +16,6 @@ const baseMap = () => [[
   cell(2, 0, 5, [2, 3, 6], "soldier", "purple"),
   cell(2, 1, 6, [3, 4, 5], "none", "gray"),
 ]];
-
-const actionCases = () => [
-  { action: { action: "end" } },
-  { action: { action: "move", start: { x: 0, y: 0 }, end: { x: 0, y: 1 } } },
-  { action: { action: "attack", attacker: { x: 0, y: 0 }, end: { x: 0, y: 1 }, defender: { x: 1, y: 1 } } },
-  { action: { action: "boost", start: { x: 0, y: 0 }, end: { x: 0, y: 1 }, target: { x: 1, y: 1 } }, configure: (map) => {
-    map[0][0].unit = "bluesMusician"; map[1][1].team = "purple";
-  } },
-  { action: { action: "heal", start: { x: 0, y: 0 }, end: { x: 0, y: 1 }, target: { x: 1, y: 1 } }, configure: (map) => {
-    map[0][0].unit = "doctor"; map[1][1].team = "purple"; map[1][1].damage = 10;
-  } },
-  { action: { action: "spawn", building: { x: 0, y: 0 }, end: { x: 0, y: 1 }, unit: "soldier" }, configure: (map) => {
-    map[0][0].unit = "capital";
-  } },
-  { action: { action: "construct", worker: { x: 0, y: 0 }, end: { x: 0, y: 1 }, cell: { x: 1, y: 1 }, building: "office" }, configure: (map) => {
-    map[0][0].unit = "constructionWorker"; map[1][1].unit = "none"; map[1][1].team = "gray";
-  } },
-  { action: { action: "load", start: { x: 0, y: 0 }, end: { x: 0, y: 1 }, vehicle: { x: 1, y: 1 } }, configure: (map) => {
-    map[1][1].unit = "truck"; map[1][1].team = "purple";
-  } },
-  { action: { action: "unload", start: { x: 0, y: 0 }, end: { x: 0, y: 0 }, cell: { x: 0, y: 1 } }, configure: (map) => {
-    map[0][0].unit = "truck"; map[0][0].loadedUnit = { team: "purple", unit: "soldier" };
-  } },
-];
 
 const gatewayCall = (page, method, ...args) => page.evaluate(async ({ method, args }) => {
   const gateway = window.__TBS_E2E_GATEWAY__;
@@ -59,10 +36,19 @@ test("creator, challenger, and spectator complete a live game and all action fam
     return page;
   };
 
-  const finishMap = [[
-    cell(0, 0, 0, [1], "soldier", "purple"),
-    { ...cell(0, 1, 1, [0], "soldier", "orange"), damage: 99 },
-  ]];
+  const finishMap = baseMap();
+  for (const candidate of finishMap.flat()) {
+    candidate.unit = "none";
+    candidate.team = "gray";
+  }
+  finishMap[0][0].unit = "zuckerbird";
+  finishMap[0][0].team = "purple";
+  finishMap[0][1].unit = "capital";
+  finishMap[0][1].team = "orange";
+  finishMap[1][0].unit = "soldier";
+  finishMap[1][0].team = "orange";
+  finishMap[2][1].unit = "capital";
+  finishMap[2][1].team = "purple";
   const storage = {
     repositoryVersion: 1,
     maps: [{ schemaVersion: 1, id: "quick-finish", name: "Quick finish", map: finishMap }],
@@ -87,21 +73,27 @@ test("creator, challenger, and spectator complete a live game and all action fam
     await challenger.goto(invitePath);
     await challenger.getByLabel("Display name").fill("Challenger");
     await challenger.getByRole("button", { name: "Join as player" }).click();
-    await expect(challenger.getByText("Playing as purple")).toBeVisible();
+    await expect(challenger.getByRole("complementary", { name: "purple player" }))
+      .toContainText("Challenger (you)");
 
     await spectator.goto(invitePath);
     await spectator.getByLabel("Display name").fill("Spectator");
     await spectator.getByRole("button", { name: "Watch as spectator" }).click();
-    await expect(spectator.getByText("Watching — Spectator mode")).toBeVisible();
+    await expect(spectator.getByRole("heading", { name: "Game in progress" })).toBeVisible();
+    await expect(spectator.getByRole("button", { name: "End turn" })).toHaveCount(0);
     await expect(spectator.getByText("Spectators online").locator("xpath=following-sibling::*[1]")).toHaveText("1");
 
     await challenger.getByRole("button", { name: "Use 3D board" }).click();
     await expect(challenger.getByRole("application", { name: /Three-dimensional game board/ })).toBeVisible();
-    const purpleSoldier = challenger.getByRole("button", { name: /Select Soldier, purple team/ });
-    await purpleSoldier.click();
-    await purpleSoldier.click();
-    await challenger.getByRole("button", { name: "Attack" }).click();
     const keyboardCell = challenger.getByRole("button", { name: /Current cell:/ });
+    await keyboardCell.press("ArrowRight");
+    await keyboardCell.press("ArrowRight");
+    const purpleAttacker = challenger.getByRole("button", { name: /Select Zuckerbird, purple team/ });
+    await purpleAttacker.click();
+    await purpleAttacker.click();
+    await challenger.getByRole("button", { name: "Attack" }).click();
+    await keyboardCell.press("ArrowRight");
+    await keyboardCell.press("ArrowRight");
     await keyboardCell.press("ArrowRight");
     await keyboardCell.press("Enter");
     await challenger.getByRole("button", { name: "Confirm attack" }).click();
@@ -137,33 +129,31 @@ test("creator, challenger, and spectator complete a live game and all action fam
     await gatewayCall(spectator, "leave");
 
     const committed = [];
-    const cases = actionCases();
+    const cases = actionScenarios();
     for (let index = 0; index < cases.length; index += 1) {
       const entry = cases[index];
-      const map = baseMap();
-      if (entry.configure) entry.configure(map);
       const created = await gatewayCall(creator, "createGame", {
         displayName: `Creator ${index}`,
-        initialPayload: { map, money: { orange: 2000, purple: 2000 } },
-        winCondition: "combat-elimination",
+        initialState: entry.state,
       });
       await gatewayCall(challenger, "joinGame", created.inviteToken, "player", `Challenger ${index}`);
       const result = await gatewayCall(challenger, "submitAction", {
         gameId: created.gameId,
         envelope: {
-          protocolVersion: 1,
+          protocolVersion: 2,
           actionId: `39000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
           expectedRevision: 0,
+          rulesetVersion: "standard@1",
           action: entry.action,
         },
       });
       expect(result.ok).toBe(true);
       expect(result.snapshot.state.revision).toBe(1);
-      committed.push(result.appliedAction.action.action);
+      committed.push(result.appliedAction.action.type);
       await gatewayCall(creator, "leave");
       await gatewayCall(challenger, "leave");
     }
-    expect(committed).toEqual(["end", "move", "attack", "boost", "heal", "spawn", "construct", "load", "unload"]);
+    expect(committed).toEqual(["end-turn", "move", "attack", "boost", "heal", "spawn", "construct", "load", "unload"]);
   } finally {
     if (testInfo.status !== testInfo.expectedStatus) {
       await testInfo.attach("browser-logs", { body: logs.join("\n"), contentType: "text/plain" });

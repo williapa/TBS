@@ -5,14 +5,14 @@ Status - COMPLETE (MERGED)
 ## Summary
 - Add `creatorMoney` and `challengerMoney` to active game records.
 - Initialize both players at `1000` money.
-- Add shared income calculation in `/common`.
+- Add deterministic income calculation in `game-rules`.
 - Award income to the next active player whenever an `endTurn` event is created.
 - Store income and updated money totals on `endTurn` events.
 - Broadcast current money totals with every `gameEvent` payload so the UI stays in sync.
 
 ## Common
 - Add a helper that returns income for a single map item.
-- Export the helper from `common/src/index.ts`.
+- Export the helper deliberately from the `@TBS/game-rules` package entry point.
 - Initial income rules:
   - `capital` => `100`
   - everything else => `0`

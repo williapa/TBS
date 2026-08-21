@@ -1,7 +1,9 @@
-import { createActiveGameSnapshot } from "@TBS/common";
+import { createDefaultBattlefield, mapTerrainOptions, validateMap } from "@TBS/game-setup";
 import { LocalStorageMapRepository } from "./LocalStorageMapRepository";
 
-const map = () => createActiveGameSnapshot().state.map;
+const map = () => validateMap(structuredClone(createDefaultBattlefield().map));
+const forest = mapTerrainOptions.find((terrain) => terrain === "forest");
+if (!forest) throw new Error("Forest terrain fixture is unavailable");
 
 describe("LocalStorageMapRepository", () => {
   beforeEach(() => window.localStorage.clear());
@@ -22,8 +24,8 @@ describe("LocalStorageMapRepository", () => {
 
     const reloadedPage = new LocalStorageMapRepository(window.localStorage, () => "custom-2");
     expect(await reloadedPage.get("custom-1")).toEqual(saved);
-    const updatedMap = map();
-    updatedMap[0][0].terrain = "forest";
+    const updatedMap = map().map((row, rowIndex) => row.map((cell, columnIndex) =>
+      rowIndex === 0 && columnIndex === 0 ? { ...cell, terrain: forest } : cell));
     expect(await reloadedPage.update("custom-1", { name: "Updated", map: updatedMap })).toMatchObject({ name: "Updated" });
     await reloadedPage.delete("custom-1");
     expect(await reloadedPage.get("custom-1")).toBeUndefined();
@@ -44,8 +46,8 @@ describe("LocalStorageMapRepository", () => {
 
   test("rejects invalid coordinates, duplicate indexes, and broken neighbors before writing", async () => {
     const repository = new LocalStorageMapRepository(window.localStorage, () => "bad");
-    const invalid = map();
-    invalid[0][0].row = 3;
+    const invalid = map().map((row, rowIndex) => row.map((cell, columnIndex) =>
+      rowIndex === 0 && columnIndex === 0 ? { ...cell, row: 3 } : cell));
     await expect(repository.save({ name: "Bad", map: invalid })).rejects.toMatchObject({ code: "invalid-map" });
     expect(window.localStorage.getItem("TBS.maps.v1")).toBeNull();
   });

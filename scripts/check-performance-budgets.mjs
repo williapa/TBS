@@ -13,7 +13,6 @@ const cells = Array.from({ length: rows * columns }, (_, index) => {
   return {
     id: `${q}:${r}`,
     coordinate: { q, r },
-    legacyIndex: index,
     neighborIds: [],
     terrainAssetId: `terrain:${["beach", "desert", "forest", "mountain", "plains", "road", "water"][index % 7]}`,
     selection: "none",

@@ -1,5 +1,5 @@
 import type { GatewayError } from "@TBS/application";
-import { ContractValidationError } from "@TBS/common";
+import { ProtocolValidationError } from "@TBS/protocol";
 
 type ErrorLike = { code?: unknown; message?: unknown; retryable?: unknown };
 
@@ -18,19 +18,28 @@ const isGatewayCode = (value: string): value is GatewayError["code"] =>
 export const parseGatewayError = (value: unknown, path = "error"): GatewayError => {
   const error = errorLike(value);
   if (typeof error.code !== "string" || !isGatewayCode(error.code)) {
-    throw new ContractValidationError(`${path}.code`, "expected a supported gateway error code");
+    throw new ProtocolValidationError([{
+      path: `${path}.code`,
+      message: "expected a supported gateway error code",
+    }]);
   }
   if (typeof error.message !== "string") {
-    throw new ContractValidationError(`${path}.message`, "expected a string");
+    throw new ProtocolValidationError([{
+      path: `${path}.message`,
+      message: "expected a string",
+    }]);
   }
   if (typeof error.retryable !== "boolean") {
-    throw new ContractValidationError(`${path}.retryable`, "expected a boolean");
+    throw new ProtocolValidationError([{
+      path: `${path}.retryable`,
+      message: "expected a boolean",
+    }]);
   }
   return { code: error.code, message: error.message, retryable: error.retryable };
 };
 
 export const normalizeSupabaseGatewayError = (value: unknown): GatewayError => {
-  if (value instanceof ContractValidationError) {
+  if (value instanceof ProtocolValidationError) {
     return { code: "incompatible-data", message: value.message, retryable: false };
   }
   const error = errorLike(value);

@@ -53,8 +53,7 @@ export const SessionHomePage = () => {
       const setup = createInitialGameSetup(selected.map);
       const created = await createGame({
         displayName: displayName.trim(),
-        initialPayload: setup.initialPayload,
-        winCondition: setup.winCondition,
+        initialState: setup,
       });
       saveReconnectDetails(created.inviteToken, { displayName: displayName.trim(), intent: "player" });
       setShareUrl(`${window.location.origin}/game/${created.inviteToken}`);

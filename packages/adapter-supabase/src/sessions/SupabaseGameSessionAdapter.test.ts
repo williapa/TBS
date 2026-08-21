@@ -1,32 +1,35 @@
+import { currentStandardProtocolCodec } from "@TBS/application";
+import { applyStandardAction, STANDARD_RULESET_VERSION } from "@TBS/game-rules";
+import { actionId, CURRENT_PROTOCOL_VERSION } from "@TBS/protocol";
 import {
-  applyGameAction,
-  createActiveGameSnapshot,
-  CURRENT_GAME_PROTOCOL_VERSION,
-} from "@TBS/common";
+  createGameSnapshotFixture,
+} from "@TBS/test-kit";
 import { describe, expect, test, vi } from "vitest";
 
 import { SupabaseGameSessionAdapter } from "./SupabaseGameSessionAdapter";
 
 const gameId = "active-game";
-const actionId = "26000000-0000-4000-8000-000000000001";
 const envelope = {
-  protocolVersion: CURRENT_GAME_PROTOCOL_VERSION,
-  actionId,
+  protocolVersion: CURRENT_PROTOCOL_VERSION,
+  actionId: actionId("26000000-0000-4000-8000-000000000001"),
   expectedRevision: 0,
-  action: { action: "end" as const },
+  rulesetVersion: STANDARD_RULESET_VERSION,
+  action: { type: "end-turn" as const },
 };
 
 const successResponse = () => {
-  const snapshot = createActiveGameSnapshot();
-  const reduced = applyGameAction(snapshot.state, "purple", envelope.action);
+  const snapshot = createGameSnapshotFixture();
+  if (snapshot.state.lifecycle.phase !== "active") throw new Error("fixture game must be active");
+  const actorTeamId = snapshot.state.lifecycle.activeTeamId;
+  const reduced = applyStandardAction(snapshot.state, actorTeamId, envelope.action);
   if (!reduced.ok) throw new Error("test fixture action must be valid");
   return {
     ok: true as const,
     appliedAction: {
-      protocolVersion: CURRENT_GAME_PROTOCOL_VERSION,
-      actionId,
+      protocolVersion: CURRENT_PROTOCOL_VERSION,
+      actionId: envelope.actionId,
       revision: reduced.state.revision,
-      actorTeam: "purple",
+      actorTeamId,
       action: envelope.action,
       events: reduced.events,
     },
@@ -39,7 +42,8 @@ describe("SupabaseGameSessionAdapter.submitAction", () => {
     const invoke = vi.fn().mockResolvedValue({ data: successResponse(), error: null });
     const adapter = new SupabaseGameSessionAdapter(
       { functions: { invoke } } as never,
-      { getIdentity: vi.fn().mockResolvedValue({ userId: "purple-member" }) },
+      { getIdentity: vi.fn().mockResolvedValue({ userId: "member-orange" }) },
+      currentStandardProtocolCodec,
     );
 
     const result = await adapter.submitAction({ gameId, envelope });
@@ -58,7 +62,8 @@ describe("SupabaseGameSessionAdapter.submitAction", () => {
           invoke: vi.fn().mockResolvedValue({ data: { ok: true }, error: null }),
         },
       } as never,
-      { getIdentity: vi.fn().mockResolvedValue({ userId: "purple-member" }) },
+      { getIdentity: vi.fn().mockResolvedValue({ userId: "member-orange" }) },
+      currentStandardProtocolCodec,
     );
 
     await expect(adapter.submitAction({ gameId, envelope })).resolves.toMatchObject({

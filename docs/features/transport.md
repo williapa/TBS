@@ -33,7 +33,7 @@ This document describes a feature for "transport". The goal is to make it possib
 When a people unit is unloaded, the people unit should have the same health as when it was loaded. Additionally, if the people unit is unloaded the same turn it was loaded, it should still be marked "moved" (it doesn't get to move/attack again after transport). If the unload action takes place on a subsequent turn, then the people unit should not have been marked moved yet, and gets the option to move and attack during that turn.
 
 ## Testing
-building the code and testing the code will be performed by me, manually, pending all code changes. You should attempt to make all necessary changes for the feature across common, server, and ui. 
+The feature spans deterministic rules, trusted execution, presentation, and UI, with automated coverage at each owning boundary.
 
 - [X] validate load
 - [X] validate move, then load

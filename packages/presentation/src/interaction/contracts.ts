@@ -1,115 +1,80 @@
 import type {
-  BuildingUnitOption,
-  Coords,
-  MapItem,
-  SpawnableUnitOption,
-  TeamColor,
-  UnitOption,
-} from "@TBS/common";
+  EntityId,
+  GameState,
+  HexCoord,
+  HexKey,
+  TeamId,
+  UnitTypeId,
+} from "@TBS/game-core";
+import type {
+  ConstructAction,
+  SpawnAction,
+  StandardAction,
+} from "@TBS/game-rules";
 
-export type HexMap = MapItem[][];
 export type MenuPosition = Readonly<{ top: number; left: number }>;
+export type InteractiveActionType = Exclude<StandardAction["type"], "end-turn">;
 
 export type GameInteractionMode =
   | "idle"
-  | "unitSelected"
-  | "actionMenu"
-  | "targetingAttack"
-  | "targetingBoost"
-  | "targetingHeal"
-  | "targetingMissile"
-  | "targetingNuke"
-  | "targetingConstruct"
-  | "targetingLoad"
-  | "targetingSpawn"
-  | "targetingUnload";
-
-export type GameCellTargetType =
-  | "move"
-  | "attack"
-  | "boost"
-  | "construct"
-  | "heal"
-  | "load"
-  | "spawn"
-  | "unload";
+  | "unit-selected"
+  | "action-menu"
+  | "targeting";
 
 export type GameMenuActionId =
-  | "move"
-  | "chooseAttack"
-  | "chooseBoost"
-  | "chooseConstruct"
-  | "chooseHeal"
-  | "chooseLoad"
-  | "chooseUnload"
-  | "confirmAttack"
-  | "confirmBoost"
-  | "confirmHeal"
-  | "confirmMissileLaunch"
-  | "confirmNukeLaunch"
-  | "confirmConstruct"
-  | "confirmLoad"
-  | "confirmSpawn"
-  | "confirmUnload"
+  | InteractiveActionType
   | "cancel"
-  | `construct:${BuildingUnitOption}`
-  | `spawn:${SpawnableUnitOption}`;
+  | "confirm"
+  | `construct:${string}`
+  | `spawn:${string}`;
 
 export type GameMenuOption = Readonly<{
   disabled?: boolean;
   id: GameMenuActionId;
   label: string;
-  unitType?: UnitOption;
+  unitTypeId?: UnitTypeId;
 }>;
 
 export type GameActionMenuState = Readonly<{
-  cellIndex: number;
-  kind:
-    | "origin"
-    | "move"
-    | "attack"
-    | "boost"
-    | "construct"
-    | "heal"
-    | "missile"
-    | "nuke"
-    | "load"
-    | "spawn"
-    | "unload"
-    | "constructSelection";
+  cellId: HexKey;
+  kind: "origin" | "destination" | "confirm" | "construct-selection" | "spawn-selection";
   options: readonly GameMenuOption[];
   position: MenuPosition;
 }>;
 
+export type GameInteractionTarget = Readonly<{
+  cellId: HexKey;
+  type: InteractiveActionType;
+  entityId?: EntityId;
+}>;
+
 export type GameInteractionState = Readonly<{
-  availableAttackTargets: readonly number[];
-  availableBoostTargets: readonly number[];
-  availableConstructTargets: readonly number[];
-  availableHealTargets: readonly number[];
-  availableLoadTargets: readonly number[];
-  availableMoveTargets: readonly number[];
-  availableSpawnTargets: readonly number[];
-  availableUnloadTargets: readonly number[];
-  menu: GameActionMenuState | null;
   mode: GameInteractionMode;
-  origin: Coords | null;
-  pendingAction: "attack" | "boost" | "construct" | "heal" | "load" | "missile" | "move" | "nuke" | "spawn" | "unload" | null;
-  previewDestination: Coords | null;
-  selectedAttackTarget: Coords | null;
-  selectedBoostTarget: Coords | null;
-  selectedConstructBuilding: BuildingUnitOption | null;
-  selectedConstructTarget: Coords | null;
-  selectedHealTarget: Coords | null;
-  selectedLoadVehicle: Coords | null;
-  selectedSpawnUnit: SpawnableUnitOption | null;
-  selectedUnit: MapItem | null;
-  selectedUnloadTarget: Coords | null;
+  selectedEntityId: EntityId | null;
+  destination: HexCoord | null;
+  pendingAction: InteractiveActionType | null;
+  selectedTargetEntityId: EntityId | null;
+  selectedTargetCellId: HexKey | null;
+  selectedUnitTypeId: UnitTypeId | null;
+  legalTargets: readonly GameInteractionTarget[];
+  menu: GameActionMenuState | null;
+}>;
+
+export type GameInteractionPreview = Readonly<{
+  actionableEntityIds: readonly EntityId[];
 }>;
 
 export type GameInteractionContext = Readonly<{
   active: boolean;
-  availableFunds: number;
-  map: HexMap;
+  state: GameState;
   menuPosition: MenuPosition;
-  perspective: Exclude<TeamColor, "gray">;
+  perspective: TeamId;
+  preview?: GameInteractionPreview;
 }>;
+
+export type ConstructActionDraft = Omit<ConstructAction, "buildingEntityId">;
+export type SpawnActionDraft = Omit<SpawnAction, "spawnedEntityId">;
+export type StandardActionDraft =
+  | Exclude<StandardAction, ConstructAction | SpawnAction>
+  | ConstructActionDraft
+  | SpawnActionDraft;

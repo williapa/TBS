@@ -2,7 +2,7 @@ import { hexKey, unitTypeId, type ActionHandler, type EntityId, type EntityState
 import { z } from "zod";
 
 import { areAdjacent, markEntityActed, planActorMovement } from "../mechanics/movement";
-import type { UnitDefinition } from "../content/units";
+import { calculateCombatDamage } from "../content/combat";
 import { entityIdSchema, hexCoordSchema } from "./shared-schemas";
 import type { AttackAction, StandardEvent, StandardRuleServices } from "./types";
 
@@ -19,34 +19,6 @@ const movementFor = (context: RuleContext<GameState, TeamId, StandardRuleService
     allowSamePosition: true,
     collectibleObjectTypeIds: [unitTypeId("money")],
   });
-
-const effectiveStats = (
-  entity: EntityState,
-  definition: UnitDefinition,
-  opponent: EntityState,
-  opponentDefinition: UnitDefinition,
-): readonly [attack: number, defense: number] => {
-  if (entity.unitTypeId === "studentAthlete" && opponent.unitTypeId === "michaelJackson") return [100, 100];
-  if (entity.unitTypeId === "studentAthlete" && opponentDefinition.category === "vehicle") return [10, 0];
-  if (entity.unitTypeId === "zuckerbird" && opponent.unitTypeId === "capital") return [160, 8];
-  if (entity.unitTypeId === "zuckerbird" && opponent.unitTypeId === "dragon") return [8, 100];
-  const boost = entity.statuses.some(({ type }) => type === "boosted") ? 10 : 0;
-  return [definition.base.attack + boost, definition.base.defense + boost];
-};
-
-const damage = (
-  attacker: EntityState,
-  attackerDefinition: UnitDefinition,
-  defender: EntityState,
-  defenderDefinition: UnitDefinition,
-): number => {
-  if (!attacker.health || !defender.health) return 0;
-  const attackerStats = effectiveStats(attacker, attackerDefinition, defender, defenderDefinition);
-  const defenderStats = effectiveStats(defender, defenderDefinition, attacker, attackerDefinition);
-  const attackDamage = Math.floor(attackerStats[0] * (attacker.health.current / attacker.health.maximum));
-  const defenseDamage = Math.ceil(defenderStats[1] * (defender.health.current / defender.health.maximum));
-  return Math.max(0, attackDamage - defenseDamage);
-};
 
 const removeKilled = (state: GameState, killed: EntityState): GameState => {
   if (!killed.position) return state;
@@ -73,7 +45,7 @@ const strike = (
   if (!attacker || !defender || !attackerDefinition || !defenderDefinition || !defender.health) {
     throw new Error("validated combat dependencies are missing");
   }
-  const applied = Math.min(damage(attacker, attackerDefinition, defender, defenderDefinition), defender.health.current);
+  const applied = Math.min(calculateCombatDamage(attacker, defender, services), defender.health.current);
   if (applied >= defender.health.current) return { state: removeKilled(state, defender), damage: applied, killed: true };
   return {
     state: {

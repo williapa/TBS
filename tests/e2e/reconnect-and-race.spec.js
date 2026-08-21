@@ -1,4 +1,5 @@
 const { test, expect } = require("@playwright/test");
+const { actionScenarios } = require("./canonical-game");
 
 const gatewayCall = (page, method, ...args) => page.evaluate(async ({ method, args }) => {
   const gateway = window.__TBS_E2E_GATEWAY__;
@@ -35,7 +36,8 @@ test("closed player tabs restore from durable state without clearing browser sto
 
     challenger = await challengerContext.newPage();
     await challenger.goto(invitePath);
-    await expect(challenger.getByText("Playing as purple")).toBeVisible();
+    await expect(challenger.getByRole("complementary", { name: "purple player" }))
+      .toContainText("Durable challenger (you)");
     await expect(revision(challenger)).toHaveText("2");
     await expect(challenger.locator('[data-revision="1"]')).toContainText("Purple ended their turn. Orange gained");
     await expect(challenger.locator('[data-revision="2"]')).toContainText("Orange ended their turn. Purple gained");
@@ -46,8 +48,10 @@ test("closed player tabs restore from durable state without clearing browser sto
     challenger = await challengerContext.newPage();
     await creator.goto(invitePath);
     await challenger.goto(invitePath);
-    await expect(creator.getByText("Playing as orange")).toBeVisible();
-    await expect(challenger.getByText("Playing as purple")).toBeVisible();
+    await expect(creator.getByRole("complementary", { name: "orange player" }))
+      .toContainText("Durable creator (you)");
+    await expect(challenger.getByRole("complementary", { name: "purple player" }))
+      .toContainText("Durable challenger (you)");
     await expect(revision(creator)).toHaveText("2");
     await expect(revision(challenger)).toHaveText("2");
   } finally {
@@ -73,14 +77,10 @@ test("two same-member stale tabs commit once and exact action-ID retry is idempo
     await twinPage.goto("/");
     await expect(twinPage.getByRole("heading", { name: "Start a game" })).toBeVisible();
 
-    const initialMap = [[
-      { row: 0, column: 0, index: 0, neighbors: [1], terrain: "plains", unit: "soldier", team: "orange" },
-      { row: 0, column: 1, index: 1, neighbors: [0], terrain: "plains", unit: "soldier", team: "purple" },
-    ]];
+    const initialState = actionScenarios()[0].state;
     const created = await gatewayCall(orange, "createGame", {
       displayName: "Race creator",
-      initialPayload: { map: initialMap, money: { orange: 2000, purple: 2000 } },
-      winCondition: "combat-elimination",
+      initialState,
     });
     await gatewayCall(identityPage, "joinGame", created.inviteToken, "player", "Race challenger");
     await gatewayCall(twinPage, "joinGame", created.inviteToken, "player", "Race challenger");
@@ -88,11 +88,23 @@ test("two same-member stale tabs commit once and exact action-ID retry is idempo
     const requests = [
       {
         gameId: created.gameId,
-        envelope: { protocolVersion: 1, actionId: "40000000-0000-4000-8000-000000000001", expectedRevision: 0, action: { action: "end" } },
+        envelope: {
+          protocolVersion: 2,
+          actionId: "40000000-0000-4000-8000-000000000001",
+          expectedRevision: 0,
+          rulesetVersion: "standard@1",
+          action: { type: "end-turn" },
+        },
       },
       {
         gameId: created.gameId,
-        envelope: { protocolVersion: 1, actionId: "40000000-0000-4000-8000-000000000002", expectedRevision: 0, action: { action: "end" } },
+        envelope: {
+          protocolVersion: 2,
+          actionId: "40000000-0000-4000-8000-000000000002",
+          expectedRevision: 0,
+          rulesetVersion: "standard@1",
+          action: { type: "end-turn" },
+        },
       },
     ];
     const [first, second] = await Promise.all([

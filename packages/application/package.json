@@ -19,8 +19,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@TBS/common": "workspace:*",
-    "@TBS/game-rules": "workspace:*"
+    "@TBS/game-core": "workspace:*",
+    "@TBS/game-rules": "workspace:*",
+    "@TBS/protocol": "workspace:*"
   },
   "devDependencies": {
     "typescript": "6.0.3",

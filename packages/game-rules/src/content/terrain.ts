@@ -1,6 +1,16 @@
-import type { TerrainTypeId } from "@TBS/game-core";
+import { terrainTypeId, type TerrainTypeId } from "@TBS/game-core";
 
 import type { UnitDefinition } from "./units";
+
+export const standardTerrainTypeIds: readonly TerrainTypeId[] = [
+  "beach",
+  "forest",
+  "mountain",
+  "road",
+  "plains",
+  "desert",
+  "water",
+].map(terrainTypeId);
 
 export const getMovementCost = (unit: UnitDefinition, terrain: TerrainTypeId): number => {
   if (!unit.capabilities.includes("move")) return Number.POSITIVE_INFINITY;

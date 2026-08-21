@@ -1,14 +1,19 @@
-import type { MapItem } from "@TBS/common";
-import { createActiveGameSnapshot } from "@TBS/common";
-import { MAX_MAP_COLUMNS, MAX_MAP_ROWS, MAX_SERIALIZED_MAP_BYTES } from "@TBS/game-setup";
+import {
+  createDefaultBattlefield,
+  MAX_MAP_COLUMNS,
+  MAX_MAP_ROWS,
+  MAX_SERIALIZED_MAP_BYTES,
+  validateMap,
+  type MapGrid,
+} from "@TBS/game-setup";
 import { LocalStorageMapRepository } from "./LocalStorageMapRepository";
 import { exportMap, importMap } from "./MapTransfer";
 import type { SavedMap } from "./MapRepository";
 import { CURRENT_MAP_SCHEMA_VERSION } from "./MapRepository";
 
-const map = (): MapItem[][] => JSON.parse(JSON.stringify(createActiveGameSnapshot().state.map)) as MapItem[][];
+const map = (): MapGrid => validateMap(structuredClone(createDefaultBattlefield().map));
 
-const rectangularMap = (rows: number, columns: number): MapItem[][] => {
+const rectangularMap = (rows: number, columns: number): MapGrid => {
   const template = map()[0][0];
   let index = 0;
   return Array.from({ length: rows }, (_, row) => Array.from({ length: columns }, (_, column) => ({

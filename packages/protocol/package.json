@@ -2,7 +2,7 @@
   "name": "@TBS/protocol",
   "version": "0.1.0",
   "private": true,
-  "description": "Versioned runtime schemas, envelopes, and persisted-state migrations",
+  "description": "Current runtime schemas, envelopes, and trust-boundary validation",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {

@@ -1,13 +1,26 @@
+import type { GameState, TeamId } from "@TBS/game-core";
+import type { StandardAction, StandardEvent } from "@TBS/game-rules";
 import type {
   ActionEnvelope,
   AppliedAction,
+  CurrentProtocolCodec,
   GameSnapshot,
-  PersistedGamePayload,
-  TeamOption,
-  WinCondition,
-} from "@TBS/common";
+  RevisionNotice,
+} from "@TBS/protocol";
 
-export type SessionRole = TeamOption | "spectator";
+export { STANDARD_RULESET_VERSION } from "@TBS/game-rules";
+export { CURRENT_PROTOCOL_VERSION } from "@TBS/protocol";
+
+export type StandardActionEnvelope = ActionEnvelope<StandardAction>;
+export type StandardAppliedAction = AppliedAction<StandardAction, StandardEvent>;
+export type StandardGameSnapshot = GameSnapshot<GameState>;
+export type StandardProtocolCodec = CurrentProtocolCodec<
+  GameState,
+  StandardAction,
+  StandardEvent
+>;
+
+export type SessionRole = TeamId | "spectator";
 export type JoinIntent = "player" | "spectator";
 export type Unsubscribe = () => void | Promise<void>;
 
@@ -36,30 +49,29 @@ export type GameSession = Readonly<{
   gameId: string;
   memberId: string;
   role: SessionRole;
-  snapshot: GameSnapshot;
+  snapshot: StandardGameSnapshot;
 }>;
 
 export type CreatedGame = GameSession & Readonly<{ inviteToken: string }>;
 export type CreateGameInput = Readonly<{
   displayName: string;
-  initialPayload: PersistedGamePayload;
-  winCondition: WinCondition;
+  initialState: GameState;
 }>;
 
 export type SubmitActionInput = Readonly<{
   gameId: string;
-  envelope: ActionEnvelope;
+  envelope: StandardActionEnvelope;
 }>;
 
 export type SubmitActionResult =
-  | Readonly<{ ok: true; appliedAction: AppliedAction; snapshot: GameSnapshot }>
-  | Readonly<{ ok: false; error: GatewayError; snapshot?: GameSnapshot }>;
+  | Readonly<{
+    ok: true;
+    appliedAction: StandardAppliedAction;
+    snapshot: StandardGameSnapshot;
+  }>
+  | Readonly<{ ok: false; error: GatewayError; snapshot?: StandardGameSnapshot }>;
 
-export type GameRevisionNotice = Readonly<{
-  gameId: string;
-  revision: number;
-  actionId: string;
-}>;
+export type GameRevisionNotice = RevisionNotice;
 
 export type PresenceInput = Readonly<{
   gameId: string;

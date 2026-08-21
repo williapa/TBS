@@ -1,30 +1,35 @@
-import {
-  applyGameAction,
-  createActiveGameSnapshot,
-  CURRENT_GAME_PROTOCOL_VERSION,
-} from "@TBS/common";
-import type { AppliedAction, GameSnapshot, TeamOption } from "@TBS/common";
+import { applyStandardAction } from "@TBS/game-rules";
+import { actionId, CURRENT_PROTOCOL_VERSION } from "@TBS/protocol";
 import { describe, expect, it } from "vitest";
 
-import type { GameRevisionNotice } from "../contracts";
+import { createGameSnapshotFixture } from "../canonical-test-fixture";
+import type {
+  GameRevisionNotice,
+  StandardAppliedAction,
+  StandardGameSnapshot,
+} from "../contracts";
 import { GameRevisionReconciler } from "./GameRevisionReconciler";
 
 const gameId = "application-reconciliation-game";
-const initialSnapshot = (): GameSnapshot => ({ ...createActiveGameSnapshot(), gameId });
+const initialSnapshot = (): StandardGameSnapshot => ({ ...createGameSnapshotFixture(), gameId });
+const actionIdFor = (revision: number) => actionId(
+  `00000000-0000-4000-8000-${revision.toString().padStart(12, "0")}`,
+);
 
 const buildHistory = (count: number) => {
-  const actions: AppliedAction[] = [];
+  const actions: StandardAppliedAction[] = [];
   let snapshot = initialSnapshot();
   for (let index = 1; index <= count; index += 1) {
-    const actorTeam = snapshot.state.activeTeam as TeamOption;
-    const result = applyGameAction(snapshot.state, actorTeam, { action: "end" });
-    if (!result.ok) throw new Error(result.message);
+    if (snapshot.state.lifecycle.phase !== "active") throw new Error("fixture game should be active");
+    const actorTeamId = snapshot.state.lifecycle.activeTeamId;
+    const result = applyStandardAction(snapshot.state, actorTeamId, { type: "end-turn" });
+    if (!result.ok) throw new Error("fixture action should be valid");
     actions.push({
-      protocolVersion: CURRENT_GAME_PROTOCOL_VERSION,
-      actionId: `action-${index}`,
+      protocolVersion: CURRENT_PROTOCOL_VERSION,
+      actionId: actionIdFor(index),
       revision: index,
-      actorTeam,
-      action: { action: "end" },
+      actorTeamId,
+      action: { type: "end-turn" },
       events: result.events,
     });
     snapshot = { ...snapshot, state: result.state };
@@ -34,13 +39,13 @@ const buildHistory = (count: number) => {
 
 class ReconciliationPort {
   listener?: (notice: GameRevisionNotice) => void;
-  actions: readonly AppliedAction[] = [];
+  actions: readonly StandardAppliedAction[] = [];
   snapshotCalls = 0;
   unsubscribeCalls = 0;
 
   constructor(
-    readonly initial: GameSnapshot,
-    readonly canonical: GameSnapshot,
+    readonly initial: StandardGameSnapshot,
+    readonly canonical: StandardGameSnapshot,
     readonly onSubscribe?: () => void,
   ) {}
 
@@ -63,7 +68,7 @@ class ReconciliationPort {
   }
 
   notice(revision: number) {
-    this.listener?.({ gameId, revision, actionId: `action-${revision}` });
+    this.listener?.({ gameId, revision, actionId: actionIdFor(revision) });
   }
 }
 

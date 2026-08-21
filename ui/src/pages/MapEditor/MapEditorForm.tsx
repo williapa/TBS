@@ -11,13 +11,12 @@ import {
 } from "@cloudscape-design/components";
 import type { FormEvent} from "react";
 import { useState } from "react";
-import { TerrainOptions } from "@TBS/common";
-import { MAX_MAP_SIDE, MIN_MAP_SIDE } from "@TBS/game-setup";
+import { mapTerrainOptions, MAX_MAP_SIDE, MIN_MAP_SIDE } from "@TBS/game-setup";
 import type { MapEditorFormProps, TerrainType } from "../../types";
 
 type TerrainSelectOption = Readonly<{ label: string; value: TerrainType }>;
 
-const terrainSelectOptions: readonly TerrainSelectOption[] = TerrainOptions.map((terrain) => ({
+const terrainSelectOptions: readonly TerrainSelectOption[] = mapTerrainOptions.map((terrain) => ({
   label: terrain[0].toUpperCase() + terrain.slice(1),
   value: terrain,
 }));

@@ -9,28 +9,27 @@ import type {
   PresenceInput,
   PresenceState,
   SessionRole,
+  StandardActionEvaluator,
+  StandardAppliedAction,
+  StandardGameSnapshot,
   SubmitActionInput,
   SubmitActionResult,
   Unsubscribe,
 } from "@TBS/application";
-import {
-  applyGameAction,
-  CURRENT_GAME_PROTOCOL_VERSION,
-  CURRENT_GAME_SCHEMA_VERSION,
-} from "@TBS/common";
-import type { AppliedAction, GameSnapshot, GameState, PlayerSeat } from "@TBS/common";
+import type { PlayerSeat } from "@TBS/protocol";
 
 const DEFAULT_MAX_SPECTATORS = 20;
 
 type Member = PlayerSeat & { role: SessionRole };
 type RecordState = {
-  actions: AppliedAction[];
+  actions: StandardAppliedAction[];
   inviteToken: string;
   listeners: Set<(notice: GameRevisionNotice) => void>;
   presenceListeners: Set<(presence: readonly PresenceState[]) => void>;
   members: Map<string, Member>;
   presence: Map<string, PresenceState>;
-  state: GameState;
+  state: StandardGameSnapshot["state"];
+  teamOrder: readonly Exclude<SessionRole, "spectator">[];
 };
 
 const gatewayError = (
@@ -39,9 +38,15 @@ const gatewayError = (
   retryable = false,
 ): GatewayError => ({ code, message, retryable });
 
+const rejectionMessage = (
+  result: Exclude<ReturnType<StandardActionEvaluator>, { ok: true }>,
+): string => result.violations.map(({ message }) => message).join("; ") || "The action is invalid";
+
 export class InMemoryGameSessionStore {
   readonly games = new Map<string, RecordState>();
   private nextGame = 1;
+
+  constructor(readonly evaluateAction: StandardActionEvaluator) {}
 
   createIds() {
     const value = this.nextGame++;
@@ -75,14 +80,17 @@ export class InMemoryGameSessionGateway implements GameClient {
     return game;
   }
 
-  private snapshot(gameId: string, game: RecordState): GameSnapshot {
-    const players: GameSnapshot["players"] = {};
+  private snapshot(gameId: string, game: RecordState): StandardGameSnapshot {
+    const players: Partial<Record<Exclude<SessionRole, "spectator">, PlayerSeat>> = {};
     let spectatorCount = 0;
     for (const member of game.members.values()) {
-      if (member.role === "orange" || member.role === "purple") {
-        players[member.role] = { memberId: member.memberId, displayName: member.displayName };
-      } else {
+      if (member.role === "spectator") {
         spectatorCount += 1;
+      } else {
+        players[member.role] = {
+          memberId: member.memberId,
+          displayName: member.displayName,
+        };
       }
     }
     return { gameId, players, spectatorCount, state: game.state };
@@ -106,11 +114,22 @@ export class InMemoryGameSessionGateway implements GameClient {
   }
 
   async createGame(input: CreateGameInput): Promise<CreatedGame> {
+    if (input.initialState.revision !== 0 || input.initialState.lifecycle.phase !== "waiting") {
+      throw gatewayError(
+        "invalid-action",
+        "new games require a waiting revision-zero initial state",
+      );
+    }
+    const teamOrder = Object.values(input.initialState.teams).map(({ id }) => id);
+    const creatorTeamId = teamOrder[0];
+    if (!creatorTeamId || teamOrder.length < 2) {
+      throw gatewayError("invalid-action", "new games require at least two teams");
+    }
     const { gameId, inviteToken } = this.store.createIds();
     const member: Member = {
       memberId: this.userId,
       displayName: input.displayName,
-      role: "orange",
+      role: creatorTeamId,
     };
     const game: RecordState = {
       actions: [],
@@ -119,25 +138,30 @@ export class InMemoryGameSessionGateway implements GameClient {
       presenceListeners: new Set(),
       members: new Map([[this.userId, member]]),
       presence: new Map(),
-      state: {
-        ...input.initialPayload,
-        schemaVersion: CURRENT_GAME_SCHEMA_VERSION,
-        revision: 0,
-        status: "waiting",
-        winCondition: input.winCondition,
-      },
+      state: structuredClone(input.initialState),
+      teamOrder,
     };
     this.store.games.set(gameId, game);
     return { ...this.session(gameId, game), inviteToken };
   }
 
-  async joinGame(inviteToken: string, intent: JoinIntent, displayName: string): Promise<GameSession> {
+  async joinGame(
+    inviteToken: string,
+    intent: JoinIntent,
+    displayName: string,
+  ): Promise<GameSession> {
     const found = this.store.findByInvite(inviteToken);
     if (!found) throw gatewayError("invalid-invite", "invite token is invalid");
     const existing = found.game.members.get(this.userId);
     if (!existing) {
-      const purpleTaken = [...found.game.members.values()].some(({ role }) => role === "purple");
-      const role: SessionRole = intent === "player" && !purpleTaken ? "purple" : "spectator";
+      const occupiedTeams = new Set(
+        [...found.game.members.values()].flatMap(({ role }) =>
+          role === "spectator" ? [] : [role]),
+      );
+      const availableTeam = found.game.teamOrder.find((team) => !occupiedTeams.has(team));
+      const role: SessionRole = intent === "player" && availableTeam
+        ? availableTeam
+        : "spectator";
       const spectatorCount = [...found.game.members.values()]
         .filter((member) => member.role === "spectator").length;
       if (role === "spectator" && spectatorCount >= this.maxSpectators) {
@@ -146,9 +170,17 @@ export class InMemoryGameSessionGateway implements GameClient {
           `spectator limit reached (maximum ${this.maxSpectators})`,
         );
       }
-      found.game.members.set(this.userId, { memberId: this.userId, displayName, role });
-      if (role === "purple") {
-        found.game.state = { ...found.game.state, status: "active", activeTeam: "purple" };
+      found.game.members.set(this.userId, {
+        memberId: this.userId,
+        displayName,
+        role,
+      });
+      if (role !== "spectator" && found.game.state.lifecycle.phase === "waiting") {
+        found.game.state = {
+          ...found.game.state,
+          lifecycle: { phase: "active", activeTeamId: role },
+          turn: { number: 1 },
+        };
       }
     }
     return this.session(found.gameId, found.game);
@@ -197,7 +229,11 @@ export class InMemoryGameSessionGateway implements GameClient {
     }
     const duplicate = game.actions.find(({ actionId }) => actionId === input.envelope.actionId);
     if (duplicate) {
-      return { ok: true, appliedAction: duplicate, snapshot: this.snapshot(input.gameId, game) };
+      return {
+        ok: true,
+        appliedAction: duplicate,
+        snapshot: this.snapshot(input.gameId, game),
+      };
     }
     if (input.envelope.expectedRevision !== game.state.revision) {
       return {
@@ -206,27 +242,35 @@ export class InMemoryGameSessionGateway implements GameClient {
         snapshot: this.snapshot(input.gameId, game),
       };
     }
-    const result = applyGameAction(game.state, member.role, input.envelope.action);
+    if (input.envelope.rulesetVersion !== game.state.rulesetVersion) {
+      return {
+        ok: false,
+        error: gatewayError("incompatible-data", "envelope ruleset does not match the game"),
+      };
+    }
+    const result = this.store.evaluateAction(game.state, member.role, input.envelope.action);
     if (!result.ok) {
       return {
         ok: false,
         error: gatewayError(
-          result.code === "wrong-team" ? "wrong-team" : "invalid-action",
-          result.message,
+          result.violations.some(({ code }) => code === "wrong-team")
+            ? "wrong-team"
+            : "invalid-action",
+          rejectionMessage(result),
         ),
       };
     }
     game.state = result.state;
-    const appliedAction: AppliedAction = {
-      protocolVersion: CURRENT_GAME_PROTOCOL_VERSION,
+    const appliedAction: StandardAppliedAction = {
+      protocolVersion: input.envelope.protocolVersion,
       actionId: input.envelope.actionId,
       revision: game.state.revision,
-      actorTeam: member.role,
+      actorTeamId: member.role,
       action: input.envelope.action,
       events: result.events,
     };
     game.actions.push(appliedAction);
-    const notice = {
+    const notice: GameRevisionNotice = {
       gameId: input.gameId,
       revision: appliedAction.revision,
       actionId: appliedAction.actionId,
@@ -238,7 +282,11 @@ export class InMemoryGameSessionGateway implements GameClient {
   async updatePresence(input: PresenceInput) {
     const game = this.getGame(input.gameId);
     const member = this.member(game);
-    game.presence.set(this.userId, { ...input, role: member.role, memberId: this.userId });
+    game.presence.set(this.userId, {
+      ...input,
+      role: member.role,
+      memberId: this.userId,
+    });
     const presence = [...game.presence.values()];
     for (const listener of game.presenceListeners) listener(presence);
   }

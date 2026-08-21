@@ -1,15 +1,12 @@
-import type { MapItem, TerrainOption } from "@TBS/common";
-import {
-  axialToLegacyIndex,
-  getHexNeighbors,
-  legacyIndexToAxial,
-} from "@TBS/game-core";
+import { getHexNeighbors, type TerrainTypeId } from "@TBS/game-core";
 
 import {
   MAX_MAP_SIDE,
   MIN_MAP_SIDE,
   MapSetupError,
+  type MapGrid,
 } from "../contracts";
+import { axialToMapIndex, mapIndexToAxial } from "../geometry/mapHex";
 
 export const generateHexagonalIndexGrid = (width: number): number[][] => {
   if (!Number.isSafeInteger(width) || width < MIN_MAP_SIDE || width > MAX_MAP_SIDE) {
@@ -27,10 +24,10 @@ export const generateHexagonalIndexGrid = (width: number): number[][] => {
 };
 
 const neighborIndexes = (index: number, width: number): number[] =>
-  getHexNeighbors(legacyIndexToAxial(index, width))
+  getHexNeighbors(mapIndexToAxial(index, width))
     .flatMap((neighbor) => {
       try {
-        return [axialToLegacyIndex(neighbor, width)];
+        return [axialToMapIndex(neighbor, width)];
       } catch {
         return [];
       }
@@ -39,8 +36,8 @@ const neighborIndexes = (index: number, width: number): number[] =>
 
 export const createHexMap = (
   width: number,
-  defaultTerrain: TerrainOption,
-): MapItem[][] => generateHexagonalIndexGrid(width).map((row, rowIndex) =>
+  defaultTerrain: TerrainTypeId,
+): MapGrid => generateHexagonalIndexGrid(width).map((row, rowIndex) =>
   row.map((index, column) => ({
     row: rowIndex,
     column,

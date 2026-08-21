@@ -1,31 +1,40 @@
 import {
-  applyGameAction,
-  createActiveGameSnapshot,
-  CURRENT_GAME_PROTOCOL_VERSION,
-} from "@TBS/common";
-import type { AppliedAction, GameSnapshot } from "@TBS/common";
+  applyStandardAction,
+  STANDARD_RULESET_VERSION,
+} from "@TBS/game-rules";
+import { actionId, CURRENT_PROTOCOL_VERSION } from "@TBS/protocol";
 import { describe, expect, it, vi } from "vitest";
 
+import {
+  createGameSnapshotFixture,
+  orangeTeamId,
+  purpleTeamId,
+} from "../canonical-test-fixture";
+import type {
+  StandardAppliedAction,
+  StandardGameSnapshot,
+} from "../contracts";
 import type { GameClient } from "../ports/game-client";
 import { GameSessionModel } from "./GameSessionModel";
 
 const envelope = {
-  protocolVersion: CURRENT_GAME_PROTOCOL_VERSION,
-  actionId: "action-1",
+  protocolVersion: CURRENT_PROTOCOL_VERSION,
+  actionId: actionId("00000000-0000-4000-8000-000000000001"),
   expectedRevision: 0,
-  action: { action: "end" as const },
+  rulesetVersion: STANDARD_RULESET_VERSION,
+  action: { type: "end-turn" as const },
 };
 
-const sessionFor = (snapshot: GameSnapshot) => ({
+const sessionFor = (snapshot: StandardGameSnapshot) => ({
   gameId: snapshot.gameId,
   memberId: "purple-member",
-  role: "purple" as const,
+  role: purpleTeamId,
   snapshot,
 });
 
 const clientFor = (
-  snapshot: GameSnapshot,
-  actions: readonly AppliedAction[] = [],
+  snapshot: StandardGameSnapshot,
+  actions: readonly StandardAppliedAction[] = [],
 ): GameClient => ({
   createGame: vi.fn(async () => ({
     ...sessionFor(snapshot),
@@ -51,14 +60,14 @@ const clientFor = (
 
 describe("GameSessionModel", () => {
   it("owns connection state, bounded history, and presence publication", async () => {
-    const first = createActiveGameSnapshot();
-    const firstResult = applyGameAction(first.state, "purple", envelope.action);
+    const first = createGameSnapshotFixture();
+    const firstResult = applyStandardAction(first.state, orangeTeamId, envelope.action);
     if (!firstResult.ok) throw new Error("fixture action should be valid");
-    const action: AppliedAction = {
+    const action: StandardAppliedAction = {
       protocolVersion: envelope.protocolVersion,
       actionId: envelope.actionId,
       revision: firstResult.state.revision,
-      actorTeam: "purple",
+      actorTeamId: orangeTeamId,
       action: envelope.action,
       events: firstResult.events,
     };
@@ -77,7 +86,7 @@ describe("GameSessionModel", () => {
       connectionState: "connected",
       submitState: "idle",
     });
-    expect(model.getState().actions.map(({ actionId }) => actionId)).toEqual(["action-1"]);
+    expect(model.getState().actions.map(({ actionId: id }) => id)).toEqual([envelope.actionId]);
     expect(client.updatePresence).toHaveBeenCalledWith({
       gameId: snapshot.gameId,
       displayName: "Purple",
@@ -88,14 +97,14 @@ describe("GameSessionModel", () => {
   });
 
   it("publishes canonical successful submissions and returns to idle", async () => {
-    const snapshot = createActiveGameSnapshot();
-    const reduced = applyGameAction(snapshot.state, "purple", envelope.action);
+    const snapshot = createGameSnapshotFixture();
+    const reduced = applyStandardAction(snapshot.state, orangeTeamId, envelope.action);
     if (!reduced.ok) throw new Error("fixture action should be valid");
-    const appliedAction: AppliedAction = {
+    const appliedAction: StandardAppliedAction = {
       protocolVersion: envelope.protocolVersion,
       actionId: envelope.actionId,
       revision: reduced.state.revision,
-      actorTeam: "purple",
+      actorTeamId: orangeTeamId,
       action: envelope.action,
       events: reduced.events,
     };
@@ -118,7 +127,7 @@ describe("GameSessionModel", () => {
   });
 
   it("normalizes connection failures and clears or resets owned state", async () => {
-    const client = clientFor(createActiveGameSnapshot());
+    const client = clientFor(createGameSnapshotFixture());
     client.joinGame = vi.fn(async () => {
       throw {
         code: "invalid-invite",

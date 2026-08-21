@@ -20,7 +20,7 @@ The browser may use the publishable key. Never copy or commit the service-role k
 - `pnpm supabase:reset` recreates the local database, reapplies all migrations in filename order, and then runs `supabase/seed.sql`. This destroys local Supabase database data only.
 - `pnpm supabase:test` runs the committed pgTAP database tests.
 - `pnpm supabase:lint` checks the local schema for SQL errors and warnings.
-- `pnpm edge:build` creates the ignored, deployable trusted-action runtime bundle from the shared application and rules packages.
+- `pnpm edge:build` creates the ignored, deployable trusted-action runtime bundle directly from the current shared TypeScript sources, independent of potentially stale package `dist` output.
 - `pnpm edge:serve` rebuilds that bundle and serves local Edge Functions until stopped.
 
 ## Create a migration

@@ -14,7 +14,26 @@ import {
 import { describe, expect, it } from "vitest";
 
 import { parseMoveAction } from "../actions/move";
-import { applyStandardAction, STANDARD_RULESET_VERSION, standardActionTypes } from "./standard";
+import { calculateCombatDamage, getEffectiveCombatStats } from "../content/combat";
+import {
+  getActionableEntityIds,
+  getAttackTargetIds,
+  getAvailableActionTypes,
+  getEntityCapabilities,
+  getLegalMoveOptions,
+  getLegalMovePositions,
+  getLegalProductionOptions,
+  getTeamIncome,
+  hasAnyLegalAction,
+  isSelectableEntity,
+} from "../selectors/standard-legality";
+import {
+  applyStandardAction,
+  STANDARD_RULESET_VERSION,
+  standardActionTypes,
+  standardRuleServices,
+  validateStandardAction,
+} from "./standard";
 
 const orange = teamId("orange");
 const purple = teamId("purple");
@@ -135,6 +154,15 @@ describe("standard ruleset action registry", () => {
       destination: hexCoord(1, 0),
     });
     expect(result).toMatchObject({ ok: false, violations: [{ code: "wrong-team" }] });
+    expect(validateStandardAction(state, purple, {
+      type: "move",
+      actorId: soldier,
+      destination: hexCoord(1, 0),
+    })).toEqual(result.ok ? { ok: true } : {
+      ok: false,
+      code: result.code,
+      violations: result.violations,
+    });
     expect(state).toEqual(stateFixture());
   });
 
@@ -179,6 +207,12 @@ describe("standard ruleset action registry", () => {
       health: { current: 100, maximum: 100 },
       actionBudget: { moved: false, acted: false },
       statuses: [],
+    });
+    expect(getLegalMoveOptions(state, orange, soldier)).toContainEqual({
+      type: "move",
+      actorId: soldier,
+      destination: missilePosition,
+      objectTarget: targetPosition,
     });
     const result = applyStandardAction(state, orange, {
       type: "move",
@@ -325,7 +359,7 @@ describe("standard ruleset action registry", () => {
     })]);
   });
 
-  it("loads and unloads explicit cargo relationships", () => {
+  it("preserves a passenger's action budget when unloading", () => {
     const vehicleId = entityId("vehicle-1");
     const vehiclePosition = hexCoord(1, 0);
     const loaded = applyStandardAction(placeEntity(stateFixture(), {
@@ -345,31 +379,41 @@ describe("standard ruleset action registry", () => {
     expect(loaded.ok).toBe(true);
     if (!loaded.ok) return;
     expect(loaded.state.entities[soldier]?.position).toBeUndefined();
+    expect(loaded.state.entities[soldier]?.actionBudget).toEqual({ moved: true, acted: true });
     expect(loaded.state.entities[vehicleId]?.cargo?.entityIds).toEqual([soldier]);
     expect(loaded.state.board.cells[hexKey(hexCoord(0, 0))]?.occupantEntityId).toBeUndefined();
 
-    const unloadState: GameState = {
-      ...loaded.state,
-      lifecycle: { phase: "active", activeTeamId: orange },
-      entities: {
-        ...loaded.state.entities,
-        [vehicleId]: {
-          ...loaded.state.entities[vehicleId],
-          actionBudget: { moved: false, acted: false },
-        },
-      },
-    };
-    const unloaded = applyStandardAction(unloadState, orange, {
+    const unloadedSameTurn = applyStandardAction(loaded.state, orange, {
       type: "unload",
       actorId: vehicleId,
       destination: vehiclePosition,
       unloadPosition: hexCoord(2, 0),
     });
-    expect(unloaded.ok).toBe(true);
-    if (!unloaded.ok) return;
-    expect(unloaded.state.entities[soldier]?.position).toEqual({ q: 2, r: 0 });
-    expect(unloaded.state.entities[vehicleId]?.cargo?.entityIds).toEqual([]);
-    expect(unloaded.events).toEqual([expect.objectContaining({ type: "unit-unloaded", entityId: soldier })]);
+    expect(unloadedSameTurn.ok).toBe(true);
+    if (!unloadedSameTurn.ok) return;
+    expect(unloadedSameTurn.state.entities[soldier]?.position).toEqual({ q: 2, r: 0 });
+    expect(unloadedSameTurn.state.entities[soldier]?.actionBudget).toEqual({ moved: true, acted: true });
+    expect(unloadedSameTurn.state.entities[vehicleId]?.cargo?.entityIds).toEqual([]);
+    expect(unloadedSameTurn.events).toEqual([expect.objectContaining({ type: "unit-unloaded", entityId: soldier })]);
+
+    const purpleTurn = applyStandardAction(loaded.state, orange, { type: "end-turn" });
+    expect(purpleTurn.ok).toBe(true);
+    if (!purpleTurn.ok) return;
+    const nextOrangeTurn = applyStandardAction(purpleTurn.state, purple, { type: "end-turn" });
+    expect(nextOrangeTurn.ok).toBe(true);
+    if (!nextOrangeTurn.ok) return;
+    expect(nextOrangeTurn.state.entities[soldier]?.actionBudget).toEqual({ moved: false, acted: false });
+
+    const unloadedLater = applyStandardAction(nextOrangeTurn.state, orange, {
+      type: "unload",
+      actorId: vehicleId,
+      destination: vehiclePosition,
+      unloadPosition: hexCoord(2, 0),
+    });
+    expect(unloadedLater.ok).toBe(true);
+    if (!unloadedLater.ok) return;
+    expect(unloadedLater.state.entities[soldier]?.position).toEqual({ q: 2, r: 0 });
+    expect(unloadedLater.state.entities[soldier]?.actionBudget).toEqual({ moved: false, acted: false });
   });
 
   it("runs ordered turn-completion and income mechanics after the action", () => {
@@ -428,5 +472,63 @@ describe("standard ruleset action registry", () => {
     if (!result.ok) return;
     expect(result.state.lifecycle).toEqual({ phase: "finished", winnerTeamId: orange });
     expect(result.events.map(({ type }) => type)).toEqual(["unit-moved", "game-over"]);
+  });
+
+  it("uses registered handler policies for read-only legality and availability selectors", () => {
+    const state = stateFixture();
+    expect(getLegalMovePositions(state, orange, soldier)).toEqual([
+      hexCoord(1, 0),
+      hexCoord(2, 0),
+    ]);
+    expect(getAttackTargetIds(state, orange, soldier, hexCoord(0, 0))).toEqual([purpleGuard]);
+    expect(isSelectableEntity(state, orange, soldier)).toBe(true);
+    expect(getActionableEntityIds(state, orange)).toContain(soldier);
+    expect(getAvailableActionTypes(state, orange, soldier)).toEqual(["move", "attack"]);
+    expect(Object.values(state.entities).map(({ id }) => hasAnyLegalAction(state, orange, id)))
+      .toEqual(Object.values(state.entities).map(({ id }) =>
+        getAvailableActionTypes(state, orange, id).length > 0));
+    expect(getEntityCapabilities(state, soldier)).toContain("attack");
+    expect(getLegalMovePositions(state, purple, soldier)).toEqual([]);
+
+    const selectedAction = {
+      type: "attack" as const,
+      actorId: soldier,
+      destination: hexCoord(0, 0),
+      defenderId: purpleGuard,
+    };
+    expect(validateStandardAction(state, orange, selectedAction)).toEqual({ ok: true });
+    expect(applyStandardAction(state, orange, selectedAction).ok).toBe(true);
+  });
+
+  it("derives production, income, and combat read models from authoritative rule content", () => {
+    const base = stateFixture();
+    const actor = base.entities[soldier];
+    const defender = base.entities[purpleGuard];
+    if (!actor || !defender) throw new Error("missing test combatants");
+    expect(getEffectiveCombatStats(actor, defender, standardRuleServices)).toEqual({ attack: 30, defense: 15 });
+    expect(calculateCombatDamage(actor, defender, standardRuleServices)).toBe(15);
+
+    const bankId = entityId("bank-income");
+    const withBank = placeEntity(base, {
+      id: bankId,
+      unitTypeId: unitTypeId("bank"),
+      ownerTeamId: orange,
+      position: hexCoord(2, 0),
+      health: { current: 100, maximum: 100 },
+      actionBudget: { moved: false, acted: false },
+      statuses: [],
+    });
+    expect(getTeamIncome(withBank, orange)).toBe(1000);
+
+    const capitalState: GameState = {
+      ...base,
+      teams: { ...base.teams, [orange]: { id: orange, money: 1000 } },
+      entities: {
+        ...base.entities,
+        [soldier]: { ...actor, unitTypeId: unitTypeId("capital") },
+      },
+    };
+    expect(getLegalProductionOptions(capitalState, orange, soldier, hexCoord(1, 0))
+      .map(({ unitTypeId: id }) => id)).toEqual(["soldier", "leader", "constructionWorker"]);
   });
 });

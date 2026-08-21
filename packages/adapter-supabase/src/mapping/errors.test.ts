@@ -1,4 +1,4 @@
-import { ContractValidationError } from "@TBS/common";
+import { ProtocolValidationError } from "@TBS/protocol";
 import { describe, expect, test } from "vitest";
 
 import { normalizeSupabaseGatewayError, parseGatewayError } from "./errors";
@@ -17,7 +17,10 @@ describe("normalizeSupabaseGatewayError", () => {
   });
 
   test("maps runtime parser failures to incompatible data", () => {
-    expect(normalizeSupabaseGatewayError(new ContractValidationError("snapshot", "bad")))
+    expect(normalizeSupabaseGatewayError(new ProtocolValidationError([{
+      path: "snapshot",
+      message: "bad",
+    }])))
       .toMatchObject({ code: "incompatible-data", retryable: false });
   });
 
@@ -31,6 +34,6 @@ describe("normalizeSupabaseGatewayError", () => {
       code: "invented-code",
       message: "bad",
       retryable: false,
-    })).toThrow(ContractValidationError);
+    })).toThrow(ProtocolValidationError);
   });
 });

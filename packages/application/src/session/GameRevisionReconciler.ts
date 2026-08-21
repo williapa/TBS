@@ -1,7 +1,12 @@
-import { applyGameAction } from "@TBS/common";
-import type { AppliedAction, GameSnapshot } from "@TBS/common";
+import { applyStandardAction } from "@TBS/game-rules";
 
-import type { GameRevisionNotice, PresenceState, Unsubscribe } from "../contracts";
+import type {
+  GameRevisionNotice,
+  PresenceState,
+  StandardAppliedAction,
+  StandardGameSnapshot,
+  Unsubscribe,
+} from "../contracts";
 import { MAX_REPLAY_GAP } from "../limits";
 import type { GameQueryPort } from "../ports/query";
 import type { GameRealtimePort } from "../ports/realtime";
@@ -9,10 +14,13 @@ import type { GameRealtimePort } from "../ports/realtime";
 type ReconciliationPort = GameQueryPort & Pick<GameRealtimePort, "subscribe">;
 
 export type ReconciliationSource = "initial" | "replay" | "snapshot";
-export type ReconciliationListener = (snapshot: GameSnapshot, source: ReconciliationSource) => void;
+export type ReconciliationListener = (
+  snapshot: StandardGameSnapshot,
+  source: ReconciliationSource,
+) => void;
 export type GameRevisionReconcilerOptions = Readonly<{
   maxReplayGap?: number;
-  onAction?: (action: AppliedAction) => void;
+  onAction?: (action: StandardAppliedAction) => void;
   onPresence?: (presence: readonly PresenceState[]) => void;
   onError?: (error: unknown) => void;
 }>;
@@ -21,10 +29,10 @@ const sameValue = (left: unknown, right: unknown) => JSON.stringify(left) === JS
 
 export class GameRevisionReconciler {
   private readonly maxReplayGap: number;
-  private readonly onAction?: (action: AppliedAction) => void;
+  private readonly onAction?: (action: StandardAppliedAction) => void;
   private readonly onPresence?: (presence: readonly PresenceState[]) => void;
   private readonly onError?: (error: unknown) => void;
-  private current?: GameSnapshot;
+  private current?: StandardGameSnapshot;
   private gameId?: string;
   private listener?: ReconciliationListener;
   private unsubscribe?: Unsubscribe;
@@ -111,7 +119,7 @@ export class GameRevisionReconciler {
       return;
     }
 
-    let actions: readonly AppliedAction[];
+    let actions: readonly StandardAppliedAction[];
     try {
       actions = await this.port.getActions(gameId, current.state.revision);
     } catch {
@@ -137,9 +145,9 @@ export class GameRevisionReconciler {
     }
   }
 
-  private replay(action: AppliedAction) {
+  private replay(action: StandardAppliedAction) {
     if (!this.current) return false;
-    const result = applyGameAction(this.current.state, action.actorTeam, action.action);
+    const result = applyStandardAction(this.current.state, action.actorTeamId, action.action);
     if (!result.ok || result.state.revision !== action.revision || !sameValue(result.events, action.events)) return false;
     this.current = { ...this.current, state: result.state };
     this.onAction?.(action);

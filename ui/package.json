@@ -9,7 +9,6 @@
     "@TBS/adapter-memory": "workspace:*",
     "@TBS/adapter-supabase": "workspace:*",
     "@TBS/application": "workspace:*",
-    "@TBS/common": "workspace:*",
     "@TBS/game-setup": "workspace:*",
     "@TBS/presentation": "workspace:*",
     "@TBS/renderer-2d": "workspace:*",
@@ -38,6 +37,7 @@
     ]
   },
   "devDependencies": {
+    "@TBS/game-rules": "workspace:*",
     "@TBS/test-kit": "workspace:*",
     "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "7.0.1",

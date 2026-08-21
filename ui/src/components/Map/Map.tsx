@@ -1,5 +1,5 @@
-import type { MapItem as CommonMapItem } from "@TBS/common";
-import { createHexMap, updateMapCell } from "@TBS/game-setup";
+import { createHexMap, mapTerrainOptions, updateMapCell } from "@TBS/game-setup";
+import type { MapGrid } from "@TBS/game-setup";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import HexGrid from "../../components/HexGrid/HexGrid";
@@ -14,16 +14,19 @@ type MapProps = {
   name?: string;
   submitted?: boolean;
   mapId?: string;
-  initialMap?: CommonMapItem[][];
+  initialMap?: MapGrid;
 }
 
-const Map = ({ mode = "editor", name, dimension = 16, defaultTerrain = "forest", mapId, initialMap }: MapProps) => {
+const Map = ({ name, dimension = 16, defaultTerrain, mapId, initialMap }: MapProps) => {
   const navigate = useNavigate();
   const mapRepository = useMapRepository();
   const { height, width } = useWindowDimensions();
 
 
-  const initialGridData: HexMap = initialMap ?? createHexMap(dimension, defaultTerrain);
+  const terrain = defaultTerrain ?? mapTerrainOptions.find((value) => value === "forest")
+    ?? mapTerrainOptions[0];
+  if (!terrain) throw new Error("The map editor requires at least one terrain option");
+  const initialGridData: HexMap = initialMap ?? createHexMap(dimension, terrain);
 
   const [mapData, setMapData] = useState(initialGridData);
   const [editing, setEditing] = useState(false);
@@ -69,7 +72,6 @@ const Map = ({ mode = "editor", name, dimension = 16, defaultTerrain = "forest",
         dimensions={{ width: .6 * width, height: height - 110 }}
         editing={editing}
         mapData={mapData}
-        mode={mode}
         setEdit={setEditing}
       />
     </div>

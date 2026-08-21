@@ -1,253 +1,127 @@
 begin;
 
-select plan(21);
-
-insert into auth.users (id, aud, role)
-values
-  ('00000000-0000-0000-0000-000000000001', 'authenticated', 'authenticated'),
-  ('00000000-0000-0000-0000-000000000002', 'authenticated', 'authenticated'),
-  ('00000000-0000-0000-0000-000000000003', 'authenticated', 'authenticated');
-
-insert into public.game_sessions (
-  id, invite_code_hash, schema_version, status, revision, win_condition
-) values (
-  '10000000-0000-0000-0000-000000000001',
-  'invite-hash-1',
-  1,
-  'waiting',
-  0,
-  'combat-elimination'
-);
+select plan(20);
 
 select lives_ok(
-  $$select private.assert_supported_schema_version(1)$$,
-  'the RPC schema-version guard accepts the current version'
+  $$select private.assert_current_state(
+    '{
+      "schemaVersion":2,"rulesetVersion":"standard@1","contentVersion":"standard@1",
+      "revision":0,"lifecycle":{"phase":"waiting"},"board":{"cells":{}},
+      "entities":{},"teams":{"orange":{"id":"orange","money":0},"purple":{"id":"purple","money":0}},
+      "objectives":[],"turn":{"number":0}
+    }'::jsonb,
+    0
+  )$$,
+  'the database accepts the current normalized state shape'
 );
 
 select throws_ok(
-  $$select private.assert_supported_schema_version(2)$$,
+  $$select private.assert_current_state(
+    '{
+      "schemaVersion":1,"rulesetVersion":"standard@1","contentVersion":"standard@1",
+      "revision":0,"lifecycle":{"phase":"waiting"},"board":{"cells":{}},
+      "entities":{},"teams":{"orange":{},"purple":{}},"objectives":[],"turn":{"number":0}
+    }'::jsonb,
+    0
+  )$$,
   '22023',
-  'unsupported game schema version: 2',
-  'the RPC schema-version guard rejects unsupported versions'
-);
-
-select lives_ok(
-  $$select private.assert_supported_protocol_version(1)$$,
-  'the RPC protocol-version guard accepts the current version'
+  'state uses unsupported engine versions',
+  'v1 state is rejected'
 );
 
 select throws_ok(
-  $$select private.assert_supported_protocol_version(2)$$,
+  $$select private.assert_current_state(
+    '{
+      "schemaVersion":2,"rulesetVersion":"standard@1","contentVersion":"standard@1",
+      "revision":0,"lifecycle":{"phase":"waiting"},"board":{"cells":{}},
+      "entities":{},"teams":{"orange":{},"purple":{}},"objectives":[],"turn":{"number":0},
+      "map":[]
+    }'::jsonb,
+    0
+  )$$,
   '22023',
-  'unsupported game protocol version: 2',
-  'the RPC protocol-version guard rejects unsupported versions'
-);
-
-select lives_ok(
-  $$insert into public.game_states (game_id, revision, state)
-    values (
-      '10000000-0000-0000-0000-000000000001',
-      0,
-      '{"map":[],"money":{"orange":0,"purple":0}}'::jsonb
-    )$$,
-  'a supported gameplay payload can be stored'
+  'state contains unsupported top-level fields',
+  'legacy top-level state fields are rejected'
 );
 
 select throws_ok(
-  $$insert into public.game_sessions (
-      invite_code_hash, schema_version, status, revision, win_condition
-    ) values ('bad-schema', 2, 'waiting', 0, 'combat-elimination')$$,
-  '23514',
-  'new row for relation "game_sessions" violates check constraint "game_sessions_supported_schema_version"',
-  'unsupported schema versions are rejected'
+  $$select private.assert_current_state(
+    '{
+      "schemaVersion":2,"rulesetVersion":"standard@1","contentVersion":"standard@1",
+      "revision":1,"lifecycle":{"phase":"waiting"},"board":{"cells":{}},
+      "entities":{},"teams":{"orange":{},"purple":{}},"objectives":[],"turn":{"number":0}
+    }'::jsonb,
+    0
+  )$$,
+  '22023',
+  'state revision does not match the proposed revision',
+  'state revision must match the row and commit revision'
 );
 
-select throws_ok(
-  $$insert into public.game_members (game_id, user_id, role, display_name)
-    values (
-      '10000000-0000-0000-0000-000000000001',
-      '00000000-0000-0000-0000-000000000001',
-      'owner',
-      'Invalid'
-    )$$,
-  '23514',
-  'new row for relation "game_members" violates check constraint "game_members_role_valid"',
-  'invalid member roles are rejected'
-);
+select is(private.max_state_bytes(), 1048576, 'state cap is 1 MiB');
+select is(private.max_action_bytes(), 16384, 'action cap matches the current protocol');
+select is(private.max_event_bytes(), 65536, 'per-event cap matches the current protocol');
+select is(private.max_action_history_page_size(), 100, 'history page size is bounded');
 
-insert into public.game_members (game_id, user_id, role, display_name)
-values (
-  '10000000-0000-0000-0000-000000000001',
-  '00000000-0000-0000-0000-000000000001',
-  'orange',
-  'Orange One'
-);
-
-select throws_ok(
-  $$insert into public.game_members (game_id, user_id, role, display_name)
-    values (
-      '10000000-0000-0000-0000-000000000001',
-      '00000000-0000-0000-0000-000000000002',
-      'orange',
-      'Orange Two'
-    )$$,
-  '23505',
-  'duplicate key value violates unique constraint "game_members_one_orange_per_game"',
-  'only one orange seat is allowed per game'
-);
-
-select throws_ok(
-  $$insert into public.game_members (game_id, user_id, role, display_name)
-    values (
-      '10000000-0000-0000-0000-000000000001',
-      '00000000-0000-0000-0000-000000000001',
-      'spectator',
-      'Duplicate membership'
-    )$$,
-  '23505',
-  'duplicate key value violates unique constraint "game_members_pkey"',
-  'a user has only one membership per game'
-);
-
-insert into public.game_members (game_id, user_id, role, display_name)
-values (
-  '10000000-0000-0000-0000-000000000001',
-  '00000000-0000-0000-0000-000000000002',
-  'purple',
-  'Purple'
-);
-
-select throws_ok(
-  $$update public.game_states
-    set state = state || '{"status":"waiting"}'::jsonb
-    where game_id = '10000000-0000-0000-0000-000000000001'$$,
-  '23514',
-  null,
-  'session metadata cannot be embedded in gameplay JSON'
-);
-
-select throws_ok(
-  $$insert into public.game_actions (
-      game_id, revision, protocol_version, action_id,
-      actor_user_id, actor_team, action, events
-    ) values (
-      '10000000-0000-0000-0000-000000000001', 1, 2,
-      '20000000-0000-0000-0000-000000000001',
-      '00000000-0000-0000-0000-000000000001', 'orange',
-      '{"action":"end"}'::jsonb, '[]'::jsonb
-    )$$,
-  '23514',
-  'new row for relation "game_actions" violates check constraint "game_actions_supported_protocol_version"',
-  'unsupported protocol versions are rejected'
-);
-
-select lives_ok(
-  $$insert into public.game_actions (
-      game_id, revision, protocol_version, action_id,
-      actor_user_id, actor_team, action, events
-    ) values (
-      '10000000-0000-0000-0000-000000000001', 1, 1,
-      '20000000-0000-0000-0000-000000000001',
-      '00000000-0000-0000-0000-000000000001', 'orange',
-      '{"action":"end"}'::jsonb, '[]'::jsonb
-    )$$,
-  'a supported action is stored'
-);
-
-select throws_ok(
-  $$insert into public.game_actions (
-      game_id, revision, protocol_version, action_id,
-      actor_user_id, actor_team, action, events
-    ) values (
-      '10000000-0000-0000-0000-000000000001', 1, 1,
-      '20000000-0000-0000-0000-000000000002',
-      '00000000-0000-0000-0000-000000000001', 'orange',
-      '{"action":"end"}'::jsonb, '[]'::jsonb
-    )$$,
-  '23505',
-  'duplicate key value violates unique constraint "game_actions_pkey"',
-  'duplicate revisions are rejected'
-);
-
-select throws_ok(
-  $$insert into public.game_actions (
-      game_id, revision, protocol_version, action_id,
-      actor_user_id, actor_team, action, events
-    ) values (
-      '10000000-0000-0000-0000-000000000001', 2, 1,
-      '20000000-0000-0000-0000-000000000001',
-      '00000000-0000-0000-0000-000000000001', 'orange',
-      '{"action":"end"}'::jsonb, '[]'::jsonb
-    )$$,
-  '23505',
-  'duplicate key value violates unique constraint "game_actions_action_id_unique"',
-  'duplicate action IDs are rejected'
-);
-
-select throws_ok(
-  $$insert into public.game_actions (
-      game_id, revision, protocol_version, action_id,
-      actor_user_id, actor_team, action, events
-    ) values (
-      '10000000-0000-0000-0000-000000000001', 2, 1,
-      '20000000-0000-0000-0000-000000000003',
-      '00000000-0000-0000-0000-000000000003', 'orange',
-      '{"action":"end"}'::jsonb, '[]'::jsonb
-    )$$,
-  '23503',
-  null,
-  'action actors must be game members'
-);
-
-update public.game_sessions
-set status = 'active', active_team = 'purple', revision = 1
-where id = '10000000-0000-0000-0000-000000000001';
-
-select throws_ok(
-  $$update public.game_states
-    set revision = 2
-    where game_id = '10000000-0000-0000-0000-000000000001'$$,
-  '23503',
-  null,
-  'gameplay state cannot advance independently of its session'
-);
+select has_column('public', 'game_sessions', 'lifecycle_phase', 'sessions own indexed lifecycle metadata');
+select has_column('public', 'game_states', 'state', 'states store one normalized document');
+select has_column('public', 'game_actions', 'actor_team_id', 'actions use the current actor-team field');
+select hasnt_column('public', 'game_sessions', 'win_condition', 'legacy win-condition metadata is gone');
+select hasnt_column('public', 'game_states', 'gameplay_payload', 'there is no split gameplay payload column');
 
 select is(
-  (select s.revision = gs.revision
-   from public.game_sessions s
-   join public.game_states gs on gs.game_id = s.id
-   where s.id = '10000000-0000-0000-0000-000000000001'),
+  pg_catalog.to_regprocedure(
+    'public.submit_game_action(uuid,uuid,integer,integer,jsonb,jsonb,jsonb,text,text,text)'
+  ) is null,
   true,
-  'session revision updates cascade atomically to gameplay state'
+  'the browser candidate-state RPC no longer exists'
 );
-
 select is(
-  (select status from public.game_sessions
-   where id = '10000000-0000-0000-0000-000000000001'),
-  'active',
-  'session lifecycle metadata remains relational'
+  pg_catalog.to_regprocedure(
+    'public.commit_game_action(uuid,uuid,uuid,integer,text,text,integer,jsonb,jsonb,jsonb,text,text,text)'
+  ) is null,
+  true,
+  'the legacy commit signature no longer exists'
 );
-
 select is(
-  (select state ? 'status' from public.game_states
-   where game_id = '10000000-0000-0000-0000-000000000001'),
+  pg_catalog.to_regprocedure(
+    'public.commit_game_action(uuid,uuid,uuid,integer,text,text,integer,jsonb,jsonb,jsonb)'
+  ) is not null,
+  true,
+  'exactly the current trusted commit signature exists'
+);
+select is(
+  pg_catalog.has_function_privilege(
+    'authenticated',
+    'public.commit_game_action(uuid,uuid,uuid,integer,text,text,integer,jsonb,jsonb,jsonb)',
+    'EXECUTE'
+  ),
   false,
-  'gameplay state does not duplicate lifecycle metadata'
+  'authenticated browsers cannot commit canonical state'
 );
-
 select is(
-  (select count(*)::integer from public.game_members
-   where game_id = '10000000-0000-0000-0000-000000000001'
-     and role in ('orange', 'purple')),
-  2,
-  'both unique player seats can coexist'
+  pg_catalog.has_function_privilege(
+    'service_role',
+    'public.commit_game_action(uuid,uuid,uuid,integer,text,text,integer,jsonb,jsonb,jsonb)',
+    'EXECUTE'
+  ),
+  true,
+  'the trusted service role can commit canonical state'
 );
-
 select is(
-  (select count(*)::integer from public.game_actions
-   where game_id = '10000000-0000-0000-0000-000000000001'),
+  (select count(*)::integer from pg_catalog.pg_class
+   where relnamespace = 'public'::regnamespace
+     and relname in ('game_sessions', 'game_members', 'game_states', 'game_actions')
+     and relrowsecurity),
+  4,
+  'RLS is enabled on every exposed game table'
+);
+select is(
+  (select count(*)::integer from pg_catalog.pg_proc p
+   join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public' and p.proname = 'create_game'),
   1,
-  'only the accepted ordered action was stored'
+  'only one current create-game RPC exists'
 );
 
 select * from finish();

@@ -1,5 +1,7 @@
 export * from "./contracts";
+export * from "./commands/evaluateTrustedAction";
 export * from "./limits";
+export * from "./ports/action-evaluator";
 export * from "./ports/command";
 export * from "./ports/clock";
 export * from "./ports/game-client";

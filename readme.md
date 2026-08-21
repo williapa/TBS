@@ -2,7 +2,7 @@
 
 TBS (“Medal Versus”) is a browser-based turn-based strategy game with durable two-player sessions and read-only spectators.
 
-The supported stack is React, deterministic TypeScript core/rules/setup packages with `@TBS/common` as the deployed compatibility boundary, and Supabase for anonymous Auth, trusted Edge action evaluation, Postgres persistence/RPCs, Realtime Broadcast, and Presence. The browser runs without Express, Socket.IO, DynamoDB, or server-side map storage.
+The supported stack is React, a normalized deterministic TypeScript core with focused rules, protocol, setup, application, presentation, renderer, and adapter packages, and Supabase for anonymous Auth, trusted Edge action evaluation, Postgres persistence/RPCs, Realtime Broadcast, and Presence. The browser runs without Express, Socket.IO, DynamoDB, or server-side map storage.
 
 ## Local development
 
@@ -35,11 +35,11 @@ The publishable key is safe for browser configuration. Never place the service-r
 - `pnpm performance:check` enforces the maximum-board and production-bundle budgets.
 - `pnpm edge:build` builds the shared trusted-action runtime for Supabase Edge Functions.
 - `pnpm edge:serve` builds and serves the local trusted action authority.
-- `pnpm common:test` runs deterministic engine/contracts tests.
+- `pnpm test` runs the deterministic engine, protocol, application, presentation, renderer, and adapter suites.
 - `pnpm ui:test` runs UI and gateway unit/contract tests.
 - `pnpm supabase:reset` rebuilds only the local Supabase database from migrations.
 - `pnpm supabase:test` runs pgTAP database/RLS/RPC tests.
 - `pnpm supabase:lint` lints the local schema.
 - `pnpm test:e2e` runs the three-context Chromium journeys against local Supabase.
 
-See [docs/architecture.md](./docs/architecture.md), [docs/game-domain.md](./docs/game-domain.md), and [docs/testing.md](./docs/testing.md) for the supported design. The implemented replacement architecture is documented in [docs/v2-system-design.md](./docs/v2-system-design.md), with acceptance evidence in [docs/v2-implementation-checkpoint.md](./docs/v2-implementation-checkpoint.md).
+See [docs/architecture.md](./docs/architecture.md), [docs/game-domain.md](./docs/game-domain.md), and [docs/testing.md](./docs/testing.md) for the supported design. The v2 design and implementation checkpoint are retained as historical context.

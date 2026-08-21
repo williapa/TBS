@@ -6,8 +6,9 @@ import type {
   PresenceInput,
   PresenceState,
   Unsubscribe,
+  StandardProtocolCodec,
 } from "@TBS/application";
-import { ContractValidationError } from "@TBS/common";
+import { ProtocolValidationError } from "@TBS/protocol";
 import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
 
 import { normalizeSupabaseGatewayError } from "../mapping/errors";
@@ -27,6 +28,7 @@ export class SupabaseRealtimeAdapter implements GameRealtimePort {
     private readonly client: SupabaseClient,
     private readonly identity: IdentityPort,
     private readonly queries: GameQueryPort,
+    private readonly codec: StandardProtocolCodec,
   ) {}
 
   private fail(error: unknown): never {
@@ -38,16 +40,16 @@ export class SupabaseRealtimeAdapter implements GameRealtimePort {
     const payload = record(envelope.payload, "revisionBroadcast.payload");
     const gameId = nonEmptyString(payload.gameId, "revisionBroadcast.payload.gameId");
     if (gameId !== expectedGameId) {
-      throw new ContractValidationError(
-        "revisionBroadcast.payload.gameId",
-        "did not match the subscribed game",
-      );
+      throw new ProtocolValidationError([{
+        path: "revisionBroadcast.payload.gameId",
+        message: "did not match the subscribed game",
+      }]);
     }
-    return {
+    return this.codec.parseRevisionNotice({
       gameId,
       revision: nonNegativeInteger(payload.revision, "revisionBroadcast.payload.revision"),
       actionId: nonEmptyString(payload.actionId, "revisionBroadcast.payload.actionId"),
-    };
+    });
   }
 
   private parsePresence(channel: RealtimeChannel, expectedGameId: string): PresenceState[] {
@@ -55,17 +57,26 @@ export class SupabaseRealtimeAdapter implements GameRealtimePort {
     const parsed: PresenceState[] = [];
     for (const [memberId, values] of Object.entries(state)) {
       if (!Array.isArray(values)) {
-        throw new ContractValidationError(`presenceState.${memberId}`, "expected an array");
+        throw new ProtocolValidationError([{
+          path: `presenceState.${memberId}`,
+          message: "expected an array",
+        }]);
       }
       for (const [index, value] of values.entries()) {
         const item = record(value, `presenceState.${memberId}[${index}]`);
         const gameId = nonEmptyString(item.gameId, `presenceState.${memberId}[${index}].gameId`);
         if (gameId !== expectedGameId) {
-          throw new ContractValidationError("presenceState.gameId", "did not match the subscribed game");
+          throw new ProtocolValidationError([{
+            path: "presenceState.gameId",
+            message: "did not match the subscribed game",
+          }]);
         }
         const onlineAt = nonEmptyString(item.onlineAt, `presenceState.${memberId}[${index}].onlineAt`);
         if (Number.isNaN(Date.parse(onlineAt))) {
-          throw new ContractValidationError("presenceState.onlineAt", "expected an ISO timestamp");
+          throw new ProtocolValidationError([{
+            path: "presenceState.onlineAt",
+            message: "expected an ISO timestamp",
+          }]);
         }
         parsed.push({
           memberId: nonEmptyString(memberId, "presenceState.memberId"),
@@ -74,7 +85,7 @@ export class SupabaseRealtimeAdapter implements GameRealtimePort {
             item.displayName,
             `presenceState.${memberId}[${index}].displayName`,
           ),
-          role: sessionRole(item.role, `presenceState.${memberId}[${index}].role`),
+          role: sessionRole(this.codec, item.role, `presenceState.${memberId}[${index}].role`),
           onlineAt,
         });
       }
@@ -150,11 +161,9 @@ export class SupabaseRealtimeAdapter implements GameRealtimePort {
     try {
       const identity = await this.identity.getIdentity();
       const snapshot = await this.queries.getSnapshot(input.gameId);
-      const role = snapshot.players.orange?.memberId === identity.userId
-        ? "orange"
-        : snapshot.players.purple?.memberId === identity.userId
-          ? "purple"
-          : "spectator";
+      const role = Object.values(snapshot.state.teams)
+        .find(({ id }) => snapshot.players[id]?.memberId === identity.userId)?.id
+        ?? "spectator";
       const channel = this.presenceChannels.get(input.gameId);
       if (!channel) {
         throw { code: "network", message: "Presence channel is not subscribed", retryable: true };

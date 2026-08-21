@@ -1,38 +1,35 @@
 import type {
-  BuildingUnitOption,
-  Coords,
-  GameAction,
-  MapItem,
-  SpawnableUnitOption,
-  TeamColor,
-  TeamOption,
-  TerrainOption,
-  UnitOption,
-  DomainEvent,
-  GameState,
-} from "@TBS/common";
+  SessionRole,
+  StandardAppliedAction,
+  StandardGameSnapshot,
+} from "@TBS/application";
 import type {
+  EditableMapCell,
+  MapCell,
+  MapGrid,
+  MapLoadedUnit,
+  MapTeamId,
+  MapUnitTypeId,
+} from "@TBS/game-setup";
+import type {
+  BoardCellViewModel,
   GameActionMenuState,
-  GameCellTargetType,
   GameInteractionMode,
   GameInteractionState,
   GameMenuActionId,
   GameMenuOption,
   MenuPosition,
+  StandardActionDraft,
 } from "@TBS/presentation";
-import type { EditableMapCell } from "@TBS/game-setup";
 import type { ReactNode } from "react";
 
-export type {
-  BuildingUnitOption,
-  Coords,
-  MapItem,
-  SpawnableUnitOption,
-  TeamColor,
-  TeamOption,
-  TerrainOption,
-  UnitOption,
-};
+export type MapItem = MapCell;
+export type LoadedUnit = MapLoadedUnit;
+export type HexMap = MapGrid;
+export type Coords = BoardCellViewModel["coordinate"];
+export type TeamType = MapTeamId;
+export type TerrainType = MapCell["terrain"];
+export type UnitTypes = MapUnitTypeId;
 
 export const inputTypes = {
   check: "check",
@@ -49,18 +46,6 @@ export const mirrorTypes = {
 } as const;
 export type MirrorType = (typeof mirrorTypes)[keyof typeof mirrorTypes];
 
-export type TeamType = TeamColor;
-export type TerrainType = TerrainOption;
-export type AnimalType = Extract<UnitOption, "dragon" | "lion">;
-export type BuildingType = BuildingUnitOption;
-export type ObjectType = Extract<UnitOption, "money" | "missile" | "none" | "nuke">;
-export type PersonType = Exclude<UnitOption, AnimalType | BuildingType | ObjectType | VehicleType>;
-export type VehicleType = Extract<UnitOption, "airplane" | "ambulance" | "bigTruck" | "helicopter" | "sub" | "truck">;
-export type UnitTypes = UnitOption;
-export type SpawnableUnitType = SpawnableUnitOption;
-export type LoadedUnit = NonNullable<MapItem["loadedUnit"]>;
-export type HexMap = MapItem[][];
-
 export type RowCol = Readonly<{
   row: number;
   column: number;
@@ -68,11 +53,6 @@ export type RowCol = Readonly<{
 
 export type ModeType = "editor" | "game";
 export type Dimensions = Readonly<{ width: number; height: number }>;
-export type GameCellMenu = Readonly<{
-  options: readonly GameMenuOption[];
-  position: MenuPosition;
-  onAction: (action: GameMenuActionId) => void;
-}>;
 
 export type GamePanelAction = Readonly<{
   id: string;
@@ -82,62 +62,29 @@ export type GamePanelAction = Readonly<{
 
 export type GamePanelRow =
   | Readonly<{ actions: readonly GamePanelAction[]; id: string; label: string; type: "actions" }>
-  | Readonly<{ color?: TeamType; id: string; label: string; type: "text"; value: string }>;
-
-export type GamePanelOccupant = Readonly<{
-  boosted?: boolean;
-  damage?: number;
-  moved?: boolean;
-  team?: TeamType;
-  unit: UnitTypes;
-}>;
+  | Readonly<{ color?: string; id: string; label: string; type: "text"; value: string }>;
 
 export type GamePanelState = Readonly<{
   coords: Coords;
   focus: "actor" | "cell";
-  occupant: GamePanelOccupant | null;
   rows: readonly GamePanelRow[];
-  terrain: TerrainType;
   transportRows?: readonly GamePanelRow[];
-}>;
-
-export type GameGridInteractionProps = Readonly<{
-  interactive: boolean;
-  menu: GameActionMenuState | null;
-  onCellClick: (mapItem: MapItem, position: MenuPosition) => void;
-  onMenuAction: (action: GameMenuActionId) => void;
-  targetedCellIndexes: readonly number[];
-  targetType: GameCellTargetType | null;
 }>;
 
 export type CellProps = RowCol & Readonly<{
   callback?: (row: number, column: number, mapItem: EditableCell) => void;
-  boosted?: boolean;
-  damage?: number;
   editing?: boolean;
-  gameMenu?: GameCellMenu;
-  isActive: boolean;
   index: number;
-  loadedUnit?: LoadedUnit;
-  onGameCellClick?: (mapItem: MapItem, position: MenuPosition) => void;
   setEdit?: (editing: boolean) => void;
-  mode: ModeType;
-  moved?: boolean;
-  neighbors?: number[];
   team?: TeamType;
   terrain: TerrainType;
-  targetType?: GameCellTargetType | null;
   unit?: UnitTypes;
   width?: number;
   height?: number;
 }>;
 
 export type TerrainProps = RowCol & Readonly<{
-  boosted?: boolean;
-  damage?: number;
   height: number;
-  loadedUnit?: LoadedUnit;
-  moved?: boolean;
   team?: TeamType;
   type: TerrainType;
   unit?: ReactNode;
@@ -202,16 +149,15 @@ export type MapEditorProps = Readonly<{ config: MapEditorConfig }>;
 
 export type ActiveMapProps = Readonly<{
   active?: boolean;
-  events?: readonly DomainEvent[];
-  onAction?: (action: GameAction) => void;
+  events?: StandardAppliedAction["events"];
+  onAction?: (action: StandardActionDraft) => void;
   onPanelStateChange?: (state: GamePanelState | null) => void;
-  perspective: TeamOption;
-  state: GameState;
+  perspective: Exclude<SessionRole, "spectator">;
+  state: StandardGameSnapshot["state"];
 }>;
 
 export type {
   GameActionMenuState,
-  GameCellTargetType,
   GameInteractionMode,
   GameInteractionState,
   GameMenuActionId,

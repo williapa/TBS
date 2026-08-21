@@ -6,6 +6,7 @@ import type {
   JoinIntent,
   PresenceInput,
   PresenceState,
+  StandardProtocolCodec,
   SubmitActionInput,
   Unsubscribe,
 } from "@TBS/application";
@@ -19,9 +20,13 @@ export class SupabaseGameClient implements GameClient {
   readonly sessions: SupabaseGameSessionAdapter;
   readonly realtime: SupabaseRealtimeAdapter;
 
-  constructor(client: SupabaseClient, identity: IdentityPort = new SupabaseIdentityAdapter(client.auth)) {
-    this.sessions = new SupabaseGameSessionAdapter(client, identity);
-    this.realtime = new SupabaseRealtimeAdapter(client, identity, this.sessions);
+  constructor(
+    client: SupabaseClient,
+    codec: StandardProtocolCodec,
+    identity: IdentityPort = new SupabaseIdentityAdapter(client.auth),
+  ) {
+    this.sessions = new SupabaseGameSessionAdapter(client, identity, codec);
+    this.realtime = new SupabaseRealtimeAdapter(client, identity, this.sessions, codec);
   }
 
   createGame(input: CreateGameInput) {

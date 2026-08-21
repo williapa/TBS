@@ -1,8 +1,7 @@
+import { currentStandardProtocolCodec } from "@TBS/application";
+import { actionId, CURRENT_PROTOCOL_VERSION } from "@TBS/protocol";
 import {
-  createActiveGameSnapshot,
-  CURRENT_GAME_PROTOCOL_VERSION,
-} from "@TBS/common";
-import {
+  createWaitingGameStateFixture,
   runGameClientActionFamiliesContract,
   runGameClientReadContract,
   runGameClientWriteContract,
@@ -37,7 +36,11 @@ const harness = (storagePrefix: string) => {
     createClient() {
       const client = rawClient(`${storagePrefix}-${clients.length}`);
       clients.push(client);
-      return new SupabaseGameClient(client, new SupabaseIdentityAdapter(client.auth));
+      return new SupabaseGameClient(
+        client,
+        currentStandardProtocolCodec,
+        new SupabaseIdentityAdapter(client.auth),
+      );
     },
     async cleanup() {
       await Promise.all(clients.map(async (client) => {
@@ -58,18 +61,19 @@ integrationDescribe("submit-action authority", () => {
     const purpleRaw = rawClient("authority-purple");
     const orange = new SupabaseGameClient(
       orangeRaw,
+      currentStandardProtocolCodec,
       new SupabaseIdentityAdapter(orangeRaw.auth),
     );
     const purple = new SupabaseGameClient(
       purpleRaw,
+      currentStandardProtocolCodec,
       new SupabaseIdentityAdapter(purpleRaw.auth),
     );
     try {
-      const fixture = createActiveGameSnapshot().state;
+      const initialState = createWaitingGameStateFixture();
       const created = await orange.createGame({
         displayName: "Authority orange",
-        initialPayload: { map: fixture.map, money: fixture.money },
-        winCondition: "combat-elimination",
+        initialState,
       });
       await purple.joinGame(created.inviteToken, "player", "Authority purple");
 
@@ -77,12 +81,13 @@ integrationDescribe("submit-action authority", () => {
         body: {
           gameId: created.gameId,
           envelope: {
-            protocolVersion: CURRENT_GAME_PROTOCOL_VERSION,
-            actionId: "32000000-0000-4000-8000-000000000001",
+            protocolVersion: CURRENT_PROTOCOL_VERSION,
+            actionId: actionId("32000000-0000-4000-8000-000000000001"),
             expectedRevision: 0,
-            action: { action: "end" },
+            rulesetVersion: initialState.rulesetVersion,
+            action: { type: "end-turn" },
           },
-          candidateGameplayPayload: { map: [], money: { orange: 0, purple: 0 } },
+          candidateState: { revision: 999 },
         },
       });
 

@@ -1,11 +1,20 @@
-import type { DomainEvent, GameState } from "@TBS/common";
-import { entityId, hexKey, legacyIndexToAxial, legacyOffsetToAxial } from "@TBS/game-core";
-import type { HexCoord } from "@TBS/game-core";
+import {
+  getHexNeighbors,
+  hexKey,
+  type EntityState,
+  type GameState,
+  type HexCoord,
+} from "@TBS/game-core";
+import {
+  getEntityCapabilities,
+  type StandardEvent,
+} from "@TBS/game-rules";
 
-import { createAnimationCues, entityIdForMapItem } from "../animation/cues";
+import { createAnimationCues } from "../animation/cues";
 import { identityAssetManifest } from "../assets/manifest";
 import type {
   BoardCameraBounds,
+  BoardEntityStatus,
   BoardInteractionView,
   BoardViewModel,
   PresentationAssetManifest,
@@ -13,13 +22,13 @@ import type {
 
 export type PresentBoardInput = Readonly<{
   state: GameState;
-  perspective?: string;
   interaction?: BoardInteractionView;
-  events?: readonly DomainEvent[];
+  events?: readonly StandardEvent[];
   assets?: PresentationAssetManifest;
 }>;
 
 const boundsFor = (coordinates: readonly HexCoord[]): BoardCameraBounds => {
+  if (coordinates.length === 0) throw new Error("Cannot present an empty board");
   const q = coordinates.map(({ q: value }) => value);
   const r = coordinates.map(({ r: value }) => value);
   const minimum = { q: Math.min(...q), r: Math.min(...r) };
@@ -31,87 +40,94 @@ const boundsFor = (coordinates: readonly HexCoord[]): BoardCameraBounds => {
   };
 };
 
+const statusesFor = (
+  entity: EntityState,
+): readonly BoardEntityStatus[] => [
+  ...(entity.statuses.some(({ type }) => type === "boosted") ? ["boosted" as const] : []),
+  ...(entity.actionBudget?.moved ? ["moved" as const] : []),
+];
+
 export const presentBoard = ({
   state,
   interaction = {},
   events = [],
   assets = identityAssetManifest,
 }: PresentBoardInput): BoardViewModel => {
-  const width = state.map[0]?.length;
-  if (!width) throw new Error("Cannot present an empty board");
-  const cells = state.map.flat();
-  const coordinates = new Map(cells.map((cell) => [
-    cell.index,
-    legacyOffsetToAxial(cell.row, cell.column, width),
-  ]));
+  const cells = Object.values(state.board.cells)
+    .sort((left, right) => hexKey(left.position).localeCompare(hexKey(right.position)));
   const targets = new Map(
-    (interaction.legalTargets ?? []).map(({ cellIndex, type }) => [cellIndex, type]),
+    (interaction.legalTargets ?? []).map(({ cellId, type }) => [cellId, type]),
   );
   const actionable = new Set(interaction.actionableEntityIds ?? []);
 
   const cellViews = cells.map((cell) => {
-    const coordinate = coordinates.get(cell.index);
-    if (!coordinate) throw new Error(`Missing coordinate for cell ${cell.index}`);
-    const id = hexKey(coordinate);
-    const terrain = assets.terrain(cell.terrain);
+    const id = hexKey(cell.position);
+    const terrain = assets.terrain(cell.terrainTypeId);
     return {
       id,
-      coordinate,
-      legacyIndex: cell.index,
-      neighborIds: (cell.neighbors ?? []).map((index) => hexKey(
-        coordinates.get(index) ?? legacyIndexToAxial(index, width),
-      )),
+      coordinate: cell.position,
+      neighborIds: getHexNeighbors(cell.position)
+        .map(hexKey)
+        .filter((candidate) => Boolean(state.board.cells[candidate]))
+        .sort((left, right) => left.localeCompare(right)),
       terrainAssetId: terrain.assetId,
-      selection: interaction.focusedCellId === id ? "focused" as const : "none" as const,
-      target: targets.get(cell.index) ?? null,
-      accessibleDescription: `${terrain.label} cell at q ${coordinate.q}, r ${coordinate.r}`,
+      selection: interaction.focusedCellId === id
+        ? "focused" as const
+        : interaction.selectedEntityId && cell.occupantEntityId === interaction.selectedEntityId
+          ? "selected" as const
+          : "none" as const,
+      target: targets.get(id) ?? null,
+      accessibleDescription: `${terrain.label} cell at q ${cell.position.q}, r ${cell.position.r}`,
     };
   });
 
-  const entities = cells.flatMap((cell) => {
-    const id = entityIdForMapItem(cell);
-    const coordinate = coordinates.get(cell.index);
-    if (!id || !coordinate) return [];
-    const unit = assets.unit(cell.unit);
-    const statuses = [
-      ...(cell.boosted ? ["boosted" as const] : []),
-      ...(cell.moved ? ["moved" as const] : []),
-    ];
-    const health = { current: 100 - (cell.damage ?? 0), maximum: 100 };
-    const statusText = statuses.length > 0 ? `, ${statuses.join(", ")}` : "";
-    return [{
-      id,
-      assetId: unit.assetId,
-      cellId: hexKey(coordinate),
-      coordinate,
-      orientation: 0 as const,
-      team: cell.team,
-      health,
-      statuses,
-      selected: interaction.selectedEntityId === id,
-      actionable: actionable.has(id),
-      cargo: cell.loadedUnit
-        ? [{
-            id: cell.loadedUnit.entityId ?? entityId(`legacy-cargo-${cell.index}-0`),
-            assetId: assets.unit(cell.loadedUnit.unit).assetId,
-            label: assets.unit(cell.loadedUnit.unit).label,
-            statuses: [
-              ...(cell.loadedUnit.boosted ? ["boosted" as const] : []),
-              ...(cell.loadedUnit.moved ? ["moved" as const] : []),
-            ],
-          }]
-        : [],
-      label: unit.label,
-      accessibleDescription: `${unit.label}, ${cell.team} team, ${health.current} health${statusText}`,
-    }];
-  });
+  const entities = Object.values(state.entities)
+    .filter((entity) => Boolean(entity.position))
+    .sort((left, right) => left.id.localeCompare(right.id))
+    .map((entity) => {
+      if (!entity.position) throw new Error(`Presented entity ${entity.id} has no position`);
+      const unit = assets.unit(entity.unitTypeId);
+      const statuses = statusesFor(entity);
+      const health = entity.health ?? null;
+      const statusText = statuses.length > 0 ? `, ${statuses.join(", ")}` : "";
+      const teamText = entity.ownerTeamId ? `${entity.ownerTeamId} team` : "neutral";
+      const healthText = health ? `, ${health.current} of ${health.maximum} health` : "";
+      return {
+        id: entity.id,
+        unitTypeId: entity.unitTypeId,
+        assetId: unit.assetId,
+        cellId: hexKey(entity.position),
+        coordinate: entity.position,
+        orientation: 0 as const,
+        teamId: entity.ownerTeamId ?? null,
+        health,
+        statuses,
+        capabilities: getEntityCapabilities(state, entity.id),
+        selected: interaction.selectedEntityId === entity.id,
+        actionable: actionable.has(entity.id),
+        cargo: (entity.cargo?.entityIds ?? []).flatMap((cargoId) => {
+          const cargoEntity = state.entities[cargoId];
+          if (!cargoEntity) return [];
+          const cargoUnit = assets.unit(cargoEntity.unitTypeId);
+          return [{
+            id: cargoEntity.id,
+            unitTypeId: cargoEntity.unitTypeId,
+            assetId: cargoUnit.assetId,
+            label: cargoUnit.label,
+            statuses: statusesFor(cargoEntity),
+          }];
+        }),
+        label: unit.label,
+        accessibleDescription: `${unit.label}, ${teamText}${healthText}${statusText}`,
+      };
+    });
 
   return {
     revision: state.revision,
     cells: cellViews,
     entities,
-    cameraBounds: boundsFor([...coordinates.values()]),
+    cameraBounds: boundsFor(cells.map(({ position }) => position)),
     focusRequest: interaction.focusRequest ?? null,
-    animationCues: createAnimationCues(state, events),
+    animationCues: createAnimationCues(state.revision, events),
   };
 };

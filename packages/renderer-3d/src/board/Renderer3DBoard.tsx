@@ -45,7 +45,12 @@ const targetColors: Readonly<Record<BoardTargetType, string>> = {
   attack: "#ff3f4e", boost: "#43dc84", construct: "#ffad33", heal: "#4cb7ff",
   load: "#c27bff", move: "#ffffff", spawn: "#ffe14d", unload: "#43e0cf",
 };
-const teamColors = { gray: "#8b929c", orange: "#ff8c00", purple: "#a855f7" } as const;
+const teamColors: Readonly<Record<string, string>> = {
+  orange: "#ff8c00",
+  purple: "#a855f7",
+};
+const teamColor = (teamId: BoardEntityViewModel["teamId"]): string =>
+  teamId ? teamColors[teamId] ?? "#8b929c" : "#8b929c";
 
 const StrategyCamera = ({ state }: Readonly<{ state: StrategyCameraState }>) => {
   const { camera, size } = useThree();
@@ -95,7 +100,7 @@ const TerrainInstances = ({ batch, onIntent }: Readonly<{ batch: TerrainBatch; o
 
 const PrimitiveModel = ({ entity }: Readonly<{ entity: BoardEntityViewModel }>) => {
   const model = getProceduralModel(entity.assetId);
-  const color = teamColors[entity.team];
+  const color = teamColor(entity.teamId);
   if (model.kind === "building") return (
     <group>
       <mesh castShadow position={[0, 0.48, 0]}><boxGeometry args={[0.72, 0.9, 0.72]} /><meshStandardMaterial color={color} roughness={0.7} /></mesh>
@@ -151,6 +156,9 @@ const Entity = ({ cue, entity, onIntent, reducedMotion }: Readonly<{
     );
   };
   const initial = entityWorldPosition(entity, cue, 0, reducedMotion);
+  const healthRatio = entity.health
+    ? entity.health.current / entity.health.maximum
+    : null;
   return (
     <group name={`entity:${entity.id}`} onClick={select} position={[initial.x, initial.y, initial.z]} ref={group}>
       {(entity.selected || entity.actionable) && (
@@ -160,13 +168,15 @@ const Entity = ({ cue, entity, onIntent, reducedMotion }: Readonly<{
         </mesh>
       )}
       <PrimitiveModel entity={entity} />
-      <group position={[0, 1.18, 0]}>
-        <mesh position={[-0.2, 0, 0]} scale={[0.6, 0.08, 0.08]}><boxGeometry /><meshBasicMaterial color="#2a1b1b" /></mesh>
-        <mesh position={[-0.2 + (0.3 * (entity.health.current / entity.health.maximum)), 0.012, 0.01]} scale={[0.6 * (entity.health.current / entity.health.maximum), 0.085, 0.085]}><boxGeometry /><meshBasicMaterial color={teamColors[entity.team]} /></mesh>
-      </group>
-      {entity.team === "purple" && <mesh position={[-0.42, 0.22, 0]}><sphereGeometry args={[0.1, 8, 6]} /><meshBasicMaterial color="#ffffff" /></mesh>}
-      {entity.team === "purple" && <mesh position={[0.42, 0.22, 0]}><sphereGeometry args={[0.1, 8, 6]} /><meshBasicMaterial color="#ffffff" /></mesh>}
-      {entity.team === "orange" && <mesh position={[0, 0.22, 0]}><sphereGeometry args={[0.12, 8, 6]} /><meshBasicMaterial color="#151515" /></mesh>}
+      {healthRatio !== null && (
+        <group position={[0, 1.18, 0]}>
+          <mesh position={[-0.2, 0, 0]} scale={[0.6, 0.08, 0.08]}><boxGeometry /><meshBasicMaterial color="#2a1b1b" /></mesh>
+          <mesh position={[-0.2 + (0.3 * healthRatio), 0.012, 0.01]} scale={[0.6 * healthRatio, 0.085, 0.085]}><boxGeometry /><meshBasicMaterial color={teamColor(entity.teamId)} /></mesh>
+        </group>
+      )}
+      {entity.teamId === "purple" && <mesh position={[-0.42, 0.22, 0]}><sphereGeometry args={[0.1, 8, 6]} /><meshBasicMaterial color="#ffffff" /></mesh>}
+      {entity.teamId === "purple" && <mesh position={[0.42, 0.22, 0]}><sphereGeometry args={[0.1, 8, 6]} /><meshBasicMaterial color="#ffffff" /></mesh>}
+      {entity.teamId === "orange" && <mesh position={[0, 0.22, 0]}><sphereGeometry args={[0.12, 8, 6]} /><meshBasicMaterial color="#151515" /></mesh>}
       {entity.cargo.length > 0 && <mesh position={[0.42, 0.72, 0.35]} rotation={[0, Math.PI / 4, 0]}><boxGeometry args={[0.22, 0.22, 0.22]} /><meshBasicMaterial color="#ffffff" /></mesh>}
     </group>
   );

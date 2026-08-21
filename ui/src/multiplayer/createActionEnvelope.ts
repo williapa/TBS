@@ -1,19 +1,40 @@
-import type { ActionEnvelope, GameAction } from "@TBS/common";
-import { CURRENT_GAME_PROTOCOL_VERSION } from "@TBS/common";
+import {
+  currentStandardProtocolCodec,
+  CURRENT_PROTOCOL_VERSION,
+  STANDARD_RULESET_VERSION,
+  type StandardActionEnvelope,
+} from "@TBS/application";
+import type { StandardActionDraft } from "@TBS/presentation";
 
-const fallbackUuid = () => "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (character) => {
-  const random = Math.floor(Math.random() * 16);
-  const value = character === "x" ? random : (random & 0x3) | 0x8;
-  return value.toString(16);
-});
+export type CreateIdentifier = () => string;
+
+const browserIdentifier: CreateIdentifier = () => {
+  const value = globalThis.crypto?.randomUUID?.();
+  if (!value) throw new Error("Secure UUID generation is unavailable");
+  return value;
+};
+
+const materializeAction = (
+  draft: StandardActionDraft,
+  createIdentifier: CreateIdentifier,
+): unknown => {
+  if (draft.type === "construct") {
+    return { ...draft, buildingEntityId: createIdentifier() };
+  }
+  if (draft.type === "spawn") {
+    return { ...draft, spawnedEntityId: createIdentifier() };
+  }
+  return draft;
+};
 
 export const createActionEnvelope = (
   expectedRevision: number,
-  action: GameAction,
-  actionId: string = globalThis.crypto?.randomUUID?.() ?? fallbackUuid()
-): ActionEnvelope => ({
-  protocolVersion: CURRENT_GAME_PROTOCOL_VERSION,
-  actionId,
+  action: StandardActionDraft,
+  createIdentifier: CreateIdentifier = browserIdentifier,
+): StandardActionEnvelope => currentStandardProtocolCodec.parseActionEnvelope({
+  protocolVersion: CURRENT_PROTOCOL_VERSION,
+  actionId: createIdentifier(),
   expectedRevision,
-  action,
+  rulesetVersion: STANDARD_RULESET_VERSION,
+  action: materializeAction(action, createIdentifier),
 });

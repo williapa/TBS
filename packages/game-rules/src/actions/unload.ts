@@ -45,7 +45,7 @@ export const unloadActionHandler: ActionHandler<GameState, TeamId, UnloadAction,
     const cellKey = hexKey(action.unloadPosition);
     const cell = movement.plan.state.board.cells[cellKey];
     if (!vehicle || !cargo || !cell) throw new Error("validated unload dependencies are missing");
-    const unloaded = { ...cargo, position: action.unloadPosition, actionBudget: { moved: true, acted: true } };
+    const unloaded = { ...cargo, position: action.unloadPosition };
     let state = markEntityActed(movement.plan.state, vehicle.id);
     state = {
       ...state,

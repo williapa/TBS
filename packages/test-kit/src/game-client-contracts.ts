@@ -1,24 +1,37 @@
 import type { GameClient, PresenceState } from "@TBS/application";
 import {
-  createActiveGameSnapshot,
-  CURRENT_GAME_PROTOCOL_VERSION,
-} from "@TBS/common";
-import type { GameAction, MapItem } from "@TBS/common";
+  entityId,
+  hexCoord,
+  hexKey,
+  teamId,
+  terrainTypeId,
+  unitTypeId,
+  type EntityState,
+  type GameState,
+  type HexCoord,
+} from "@TBS/game-core";
+import {
+  getUnitDefinition,
+  STANDARD_RULESET_VERSION,
+  type StandardAction,
+} from "@TBS/game-rules";
+import { actionId, CURRENT_PROTOCOL_VERSION } from "@TBS/protocol";
 import { describe, expect, test } from "vitest";
+
+import { createWaitingGameStateFixture } from "./canonical-fixtures";
 
 type Harness = {
   createClient(): Promise<GameClient> | GameClient;
   cleanup?(): Promise<void> | void;
 };
 
-const gameInput = () => {
-  const state = createActiveGameSnapshot().state;
-  return {
-    displayName: "Orange",
-    initialPayload: { map: state.map, money: state.money },
-    winCondition: "combat-elimination" as const,
-  };
-};
+const orangeTeamId = teamId("orange");
+const purpleTeamId = teamId("purple");
+
+const gameInput = () => ({
+  displayName: "Orange",
+  initialState: createWaitingGameStateFixture(),
+});
 
 const waitFor = async (condition: () => boolean) => {
   const deadline = Date.now() + 5_000;
@@ -29,7 +42,11 @@ const waitFor = async (condition: () => boolean) => {
 };
 
 const contractDescribe = (enabled: boolean) => enabled ? describe : describe.skip;
-const last = <T>(values: readonly T[]): T => values[values.length - 1];
+const last = <T>(values: readonly T[]): T => {
+  const value = values[values.length - 1];
+  if (!value) throw new Error("expected a non-empty collection");
+  return value;
+};
 
 export const runGameClientReadContract = (
   name: string,
@@ -42,24 +59,27 @@ export const runGameClientReadContract = (
       try {
         const orange = await harness.createClient();
         const created = await orange.createGame(gameInput());
-        expect(created.role).toBe("orange");
-        expect(created.snapshot.state.status).toBe("waiting");
+        expect(created.role).toBe(orangeTeamId);
+        expect(created.snapshot.state.lifecycle).toEqual({ phase: "waiting" });
 
         const purple = await harness.createClient();
         const joined = await purple.joinGame(created.inviteToken, "player", "Purple");
-        expect(joined.role).toBe("purple");
-        expect(joined.snapshot.state.activeTeam).toBe("purple");
+        expect(joined.role).toBe(purpleTeamId);
+        expect(joined.snapshot.state.lifecycle).toEqual({
+          phase: "active",
+          activeTeamId: purpleTeamId,
+        });
 
         const watcher = await harness.createClient();
         expect((await watcher.joinGame(created.inviteToken, "player", "Watcher")).role)
           .toBe("spectator");
         expect((await purple.joinGame(created.inviteToken, "spectator", "Changed")).role)
-          .toBe("purple");
+          .toBe(purpleTeamId);
 
         const snapshot = await orange.getSnapshot(created.gameId);
         expect(snapshot.spectatorCount).toBe(1);
-        expect(snapshot.players.orange?.displayName).toBe("Orange");
-        expect(snapshot.players.purple?.displayName).toBe("Purple");
+        expect(snapshot.players[orangeTeamId]?.displayName).toBe("Orange");
+        expect(snapshot.players[purpleTeamId]?.displayName).toBe("Purple");
         expect(await watcher.getActions(created.gameId, 0)).toEqual([]);
       } finally {
         await harness.cleanup?.();
@@ -99,24 +119,25 @@ export const runGameClientWriteContract = (
         await orange.updatePresence({
           gameId: created.gameId,
           displayName: "Orange",
-          role: "orange",
-          onlineAt: new Date().toISOString(),
+          role: orangeTeamId,
+          onlineAt: "2026-08-18T12:00:00.000Z",
         });
         await watcher.updatePresence({
           gameId: created.gameId,
           displayName: "Watcher",
-          role: "orange",
-          onlineAt: new Date().toISOString(),
+          role: orangeTeamId,
+          onlineAt: "2026-08-18T12:00:00.000Z",
         });
         await waitFor(() => orangePresence.some(({ length }) => length === 2));
         expect(last(orangePresence).map(({ role }) => role).sort())
-          .toEqual(["orange", "spectator"]);
+          .toEqual([orangeTeamId, "spectator"]);
 
         const envelope = {
-          protocolVersion: CURRENT_GAME_PROTOCOL_VERSION,
-          actionId: "26000000-0000-0000-0000-000000000001",
+          protocolVersion: CURRENT_PROTOCOL_VERSION,
+          actionId: actionId("26000000-0000-4000-8000-000000000001"),
           expectedRevision: 0,
-          action: { action: "end" as const },
+          rulesetVersion: STANDARD_RULESET_VERSION,
+          action: { type: "end-turn" as const },
         };
         expect((await purple.submitAction({ gameId: created.gameId, envelope })).ok).toBe(true);
         await waitFor(() => orangeNotices.length === 1 && watcherNotices.length === 1);
@@ -127,7 +148,10 @@ export const runGameClientWriteContract = (
 
         const stale = await orange.submitAction({
           gameId: created.gameId,
-          envelope: { ...envelope, actionId: "26000000-0000-0000-0000-000000000002" },
+          envelope: {
+            ...envelope,
+            actionId: actionId("26000000-0000-4000-8000-000000000002"),
+          },
         });
         expect(stale.ok).toBe(false);
         if (!stale.ok) expect(stale.error.code).toBe("stale-revision");
@@ -136,7 +160,7 @@ export const runGameClientWriteContract = (
           gameId: created.gameId,
           envelope: {
             ...envelope,
-            actionId: "26000000-0000-0000-0000-000000000003",
+            actionId: actionId("26000000-0000-4000-8000-000000000003"),
             expectedRevision: 1,
           },
         });
@@ -157,57 +181,167 @@ export const runGameClientWriteContract = (
   });
 };
 
-const cell = (
-  row: number,
-  column: number,
-  index: number,
-  neighbors: number[],
-  unit: MapItem["unit"],
-  team: MapItem["team"],
-): MapItem => ({ row, column, index, neighbors, terrain: "plains", unit, team });
+const positions = [
+  hexCoord(0, 0),
+  hexCoord(1, 0),
+  hexCoord(2, 0),
+  hexCoord(0, 1),
+] as const;
 
-const baseMap = (): MapItem[][] => [[
-  cell(0, 0, 0, [1, 2], "soldier", "purple"),
-  cell(0, 1, 1, [0, 2, 3], "none", "gray"),
-], [
-  cell(1, 0, 2, [0, 1, 3, 5], "soldier", "orange"),
-  cell(1, 1, 3, [1, 2, 4, 5, 6], "soldier", "orange"),
-  cell(1, 2, 4, [3, 6], "soldier", "orange"),
-], [
-  cell(2, 0, 5, [2, 3, 6], "soldier", "purple"),
-  cell(2, 1, 6, [3, 4, 5], "none", "gray"),
-]];
-
-const scenario = (action: GameAction, configure: (map: MapItem[][]) => void = () => {}) => {
-  const map = baseMap();
-  configure(map);
-  return { action, map };
+const unit = (
+  idValue: string,
+  typeValue: string,
+  ownerTeamId: typeof purpleTeamId | typeof orangeTeamId | undefined,
+  position: HexCoord | undefined,
+  options: Readonly<{
+    currentHealth?: number;
+    cargoIds?: readonly string[];
+  }> = {},
+): EntityState => {
+  const id = entityId(idValue);
+  const type = unitTypeId(typeValue);
+  const definition = getUnitDefinition(type);
+  const maximumHealth = definition?.base.maximumHealth;
+  return {
+    id,
+    unitTypeId: type,
+    ...(ownerTeamId ? { ownerTeamId } : {}),
+    ...(position ? { position } : {}),
+    ...(maximumHealth ? {
+      health: {
+        current: options.currentHealth ?? maximumHealth,
+        maximum: maximumHealth,
+      },
+    } : {}),
+    actionBudget: { moved: false, acted: false },
+    ...(options.cargoIds ? {
+      cargo: { capacity: 1, entityIds: options.cargoIds.map(entityId) },
+    } : {}),
+    statuses: [],
+  };
 };
 
-const actionScenarios = () => [
-  scenario({ action: "end" }),
-  scenario({ action: "move", start: { x: 0, y: 0 }, end: { x: 0, y: 1 } }),
-  scenario({ action: "attack", attacker: { x: 0, y: 0 }, end: { x: 0, y: 1 }, defender: { x: 1, y: 1 } }),
-  scenario({ action: "boost", start: { x: 0, y: 0 }, end: { x: 0, y: 1 }, target: { x: 1, y: 1 } }, (map) => {
-    map[0][0].unit = "bluesMusician"; map[1][1].team = "purple";
-  }),
-  scenario({ action: "heal", start: { x: 0, y: 0 }, end: { x: 0, y: 1 }, target: { x: 1, y: 1 } }, (map) => {
-    map[0][0].unit = "doctor"; map[1][1].team = "purple"; map[1][1].damage = 10;
-  }),
-  scenario({ action: "spawn", building: { x: 0, y: 0 }, end: { x: 0, y: 1 }, unit: "soldier" }, (map) => {
-    map[0][0].unit = "capital";
-  }),
-  scenario({ action: "construct", worker: { x: 0, y: 0 }, end: { x: 0, y: 1 }, cell: { x: 1, y: 1 }, building: "office" }, (map) => {
-    map[0][0].unit = "constructionWorker"; map[1][1].unit = "none"; map[1][1].team = "gray";
-  }),
-  scenario({ action: "load", start: { x: 0, y: 0 }, end: { x: 0, y: 1 }, vehicle: { x: 1, y: 1 } }, (map) => {
-    map[1][1].unit = "truck"; map[1][1].team = "purple";
-  }),
-  scenario({ action: "unload", start: { x: 0, y: 0 }, end: { x: 0, y: 0 }, cell: { x: 0, y: 1 } }, (map) => {
-    map[0][0].unit = "truck";
-    map[0][0].loadedUnit = { team: "purple", unit: "soldier" };
-  }),
-];
+const scenarioState = (entities: readonly EntityState[]): GameState => {
+  const cells = Object.fromEntries(positions.map((position) => [
+    hexKey(position),
+    {
+      position,
+      terrainTypeId: terrainTypeId("plains"),
+      ...(() => {
+        const occupant = entities.find((entity) =>
+          entity.position && hexKey(entity.position) === hexKey(position));
+        return occupant ? { occupantEntityId: occupant.id } : {};
+      })(),
+    },
+  ]));
+  return {
+    ...createWaitingGameStateFixture(),
+    board: { cells },
+    entities: Object.fromEntries(entities.map((entity) => [entity.id, entity])),
+    teams: {
+      [orangeTeamId]: { id: orangeTeamId, money: 20_000 },
+      [purpleTeamId]: { id: purpleTeamId, money: 20_000 },
+    },
+    objectives: [],
+  };
+};
+
+type ActionScenario = Readonly<{
+  name: StandardAction["type"];
+  state: GameState;
+  action: StandardAction;
+}>;
+
+const actionScenarios = (): readonly ActionScenario[] => {
+  const actorId = entityId("actor");
+  const targetId = entityId("target");
+  const cargoId = entityId("cargo");
+  return [
+    {
+      name: "end-turn",
+      state: scenarioState([unit("actor", "soldier", purpleTeamId, positions[0])]),
+      action: { type: "end-turn" },
+    },
+    {
+      name: "move",
+      state: scenarioState([unit("actor", "soldier", purpleTeamId, positions[0])]),
+      action: { type: "move", actorId, destination: positions[1] },
+    },
+    {
+      name: "attack",
+      state: scenarioState([
+        unit("actor", "soldier", purpleTeamId, positions[0]),
+        unit("target", "soldier", orangeTeamId, positions[2]),
+      ]),
+      action: {
+        type: "attack",
+        actorId,
+        destination: positions[1],
+        defenderId: targetId,
+      },
+    },
+    {
+      name: "boost",
+      state: scenarioState([
+        unit("actor", "bluesMusician", purpleTeamId, positions[0]),
+        unit("target", "soldier", purpleTeamId, positions[2]),
+      ]),
+      action: { type: "boost", actorId, destination: positions[1], targetId },
+    },
+    {
+      name: "heal",
+      state: scenarioState([
+        unit("actor", "doctor", purpleTeamId, positions[0]),
+        unit("target", "soldier", purpleTeamId, positions[2], { currentHealth: 50 }),
+      ]),
+      action: { type: "heal", actorId, destination: positions[1], targetId },
+    },
+    {
+      name: "construct",
+      state: scenarioState([unit("actor", "constructionWorker", purpleTeamId, positions[0])]),
+      action: {
+        type: "construct",
+        actorId,
+        destination: positions[1],
+        constructionPosition: positions[2],
+        buildingEntityId: entityId("constructed"),
+        buildingUnitTypeId: unitTypeId("office"),
+      },
+    },
+    {
+      name: "spawn",
+      state: scenarioState([unit("actor", "capital", purpleTeamId, positions[0])]),
+      action: {
+        type: "spawn",
+        actorId,
+        destination: positions[1],
+        spawnedEntityId: entityId("spawned"),
+        unitTypeId: unitTypeId("soldier"),
+      },
+    },
+    {
+      name: "load",
+      state: scenarioState([
+        unit("actor", "soldier", purpleTeamId, positions[0]),
+        unit("target", "truck", purpleTeamId, positions[2]),
+      ]),
+      action: { type: "load", actorId, destination: positions[1], vehicleId: targetId },
+    },
+    {
+      name: "unload",
+      state: scenarioState([
+        unit("actor", "truck", purpleTeamId, positions[0], { cargoIds: [cargoId] }),
+        unit("cargo", "soldier", purpleTeamId, undefined),
+      ]),
+      action: {
+        type: "unload",
+        actorId,
+        destination: positions[0],
+        unloadPosition: positions[1],
+      },
+    },
+  ];
+};
 
 export const runGameClientActionFamiliesContract = (
   name: string,
@@ -215,33 +349,34 @@ export const runGameClientActionFamiliesContract = (
   enabled = true,
 ) => {
   contractDescribe(enabled)(`${name} action families contract`, () => {
-    test("accepts all nine compatibility action families", async () => {
+    test("accepts all nine current standard action families", async () => {
       const harness = createHarness();
       const clients: GameClient[] = [];
       try {
-        for (const [index, { action, map }] of actionScenarios().entries()) {
+        for (const [index, scenario] of actionScenarios().entries()) {
           const orange = await harness.createClient();
           const purple = await harness.createClient();
           clients.push(orange, purple);
-          const fixture = createActiveGameSnapshot().state;
           const created = await orange.createGame({
             displayName: `Orange ${index}`,
-            initialPayload: { map, money: fixture.money },
-            winCondition: "combat-elimination",
+            initialState: scenario.state,
           });
           await purple.joinGame(created.inviteToken, "player", `Purple ${index}`);
           const result = await purple.submitAction({
             gameId: created.gameId,
             envelope: {
-              protocolVersion: CURRENT_GAME_PROTOCOL_VERSION,
-              actionId: `31000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+              protocolVersion: CURRENT_PROTOCOL_VERSION,
+              actionId: actionId(
+                `31000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+              ),
               expectedRevision: 0,
-              action,
+              rulesetVersion: STANDARD_RULESET_VERSION,
+              action: scenario.action,
             },
           });
-          expect(result.ok).toBe(true);
+          expect(result.ok, scenario.name).toBe(true);
           if (result.ok) {
-            expect(result.appliedAction.action.action).toBe(action.action);
+            expect(result.appliedAction.action.type).toBe(scenario.name);
             expect(result.snapshot.state.revision).toBe(1);
           }
         }

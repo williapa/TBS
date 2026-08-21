@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { createActiveGameSnapshot } from "@TBS/common";
+import { createDefaultBattlefield } from "@TBS/game-setup";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import type { MapRepository} from "../../maps";
 import { MapRepositoryProvider } from "../../maps";
@@ -24,7 +24,7 @@ describe("map editor persistence", () => {
           <Routes>
             <Route
               path="/mapEditor"
-              element={<Map name="Tiny" initialMap={createActiveGameSnapshot().state.map} />}
+              element={<Map name="Tiny" initialMap={createDefaultBattlefield().map} />}
             />
             <Route path="/" element={<h1>Start a game</h1>} />
           </Routes>

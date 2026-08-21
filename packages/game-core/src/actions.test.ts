@@ -35,12 +35,22 @@ describe("ActionRegistry", () => {
       code: "invalid-action",
       violations: [{ code: "invalid-amount" }],
     });
+    expect(registry.validate(context, { type: "add", amount: 3 })).toEqual({ ok: true });
+    expect(registry.validate(context, { type: "add", amount: 0 })).toMatchObject({
+      ok: false,
+      code: "invalid-action",
+      violations: [{ code: "invalid-amount" }],
+    });
   });
 
   it("reports missing handlers and rejects duplicate discriminants at construction", () => {
     const builder = new ActionRegistryBuilder<number, string, CounterAction, CounterEvent, undefined>()
       .register(addHandler);
     expect(builder.build().execute(
+      { state: 2, actor: "player", services: undefined },
+      { type: "subtract", amount: 1 },
+    )).toMatchObject({ ok: false, code: "unsupported-action" });
+    expect(builder.build().validate(
       { state: 2, actor: "player", services: undefined },
       { type: "subtract", amount: 1 },
     )).toMatchObject({ ok: false, code: "unsupported-action" });

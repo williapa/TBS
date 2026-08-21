@@ -1,4 +1,5 @@
 import type { EntityId, HexCoord } from "@TBS/game-core";
+
 import type { GameMenuActionId } from "./contracts";
 
 export type BoardActionType = GameMenuActionId;

@@ -48,7 +48,7 @@ export const AccessibleBoardNavigator = ({ board, onIntent }: Readonly<{
         }}
         type="button"
       >
-        Cell {cell.legacyIndex}: {cell.accessibleDescription}{cell.target ? ` — ${cell.target} target` : ""}
+        Cell {cell.id}: {cell.accessibleDescription}{cell.target ? ` — ${cell.target} target` : ""}
       </button>
       {entity && (
         <button onClick={() => onIntent({ type: "select-entity", entityId: entity.id })} type="button">

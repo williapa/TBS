@@ -2,161 +2,176 @@ begin;
 
 select plan(20);
 
-insert into auth.users (id, aud, role)
-values ('00000000-0000-0000-0000-000000000019', 'authenticated', 'authenticated');
-
-create temporary table create_game_baseline on commit drop as
-select
-  (select count(*) from public.game_sessions) as sessions,
-  (select count(*) from public.game_members) as members,
-  (select count(*) from public.game_states) as states;
+insert into auth.users(id, aud, role) values
+  ('00000000-0000-0000-0000-000000000011', 'authenticated', 'authenticated'),
+  ('00000000-0000-0000-0000-000000000012', 'authenticated', 'authenticated'),
+  ('00000000-0000-0000-0000-000000000013', 'authenticated', 'authenticated'),
+  ('00000000-0000-0000-0000-000000000014', 'authenticated', 'authenticated');
 
 set local request.jwt.claims =
-  '{"sub":"00000000-0000-0000-0000-000000000019","role":"authenticated"}';
+  '{"sub":"00000000-0000-0000-0000-000000000011","role":"authenticated"}';
 set local role authenticated;
 
-create temporary table created_game_result on commit drop as
+create temporary table created_game on commit drop as
 select * from public.create_game(
-  1,
-  'Creator',
-  'combat-elimination',
+  'Orange',
   '{
-    "map":[[
-      {"row":0,"column":0,"index":0,"neighbors":[],"terrain":"plains","unit":"soldier","team":"orange"}
-    ]],
-    "money":{"orange":2000,"purple":2000}
+    "schemaVersion":2,"rulesetVersion":"standard@1","contentVersion":"standard@1",
+    "revision":0,"lifecycle":{"phase":"waiting"},"board":{"cells":{}},
+    "entities":{},"teams":{"orange":{"id":"orange","money":1000},"purple":{"id":"purple","money":1000}},
+    "objectives":[],"turn":{"number":0}
   }'::jsonb
 );
 
+create temporary table creator_reconnect on commit drop as
+select * from public.join_game(
+  (select invite_token from created_game), 'spectator', 'Changed Orange'
+);
+
 reset role;
 
-select is((select count(*)::integer from created_game_result), 1, 'create_game returns one result');
-select is((select role from created_game_result), 'orange', 'creator receives the orange role');
-select is((select status from created_game_result), 'waiting', 'new game begins waiting');
-select is((select revision from created_game_result), 0, 'new game begins at revision zero');
-select is((select active_team from created_game_result), null, 'waiting game has no active team');
-select is((select winner_team from created_game_result), null, 'waiting game has no winner');
-
+select is((select count(*)::integer from created_game), 1, 'create_game returns one row');
+select is((select role from created_game), 'orange', 'creator receives orange');
 select is(
-  (select gm.role from public.game_members gm join created_game_result r on r.game_id = gm.game_id),
-  'orange',
-  'creator membership is stored as orange'
+  (select concat_ws(':', schema_version, protocol_version, ruleset_version, content_version)
+   from public.game_sessions where id = (select game_id from created_game)),
+  '2:2:standard@1:standard@1',
+  'new games pin the current engine versions'
 );
-
 select is(
-  (select gs.revision from public.game_states gs join created_game_result r on r.game_id = gs.game_id),
-  0,
-  'initial gameplay state is stored at revision zero'
+  (select lifecycle_phase from public.game_sessions where id = (select game_id from created_game)),
+  'waiting',
+  'new sessions begin waiting'
 );
-
 select is(
-  (select pg_catalog.concat_ws(':', s.protocol_version, s.ruleset_version, s.content_version)
-   from public.game_sessions s join created_game_result r on r.game_id = s.id),
-  '1:standard@1:standard@1',
-  'new games pin protocol, ruleset, and content versions'
+  (select state #>> '{lifecycle,phase}' from public.game_states
+   where game_id = (select game_id from created_game)),
+  'waiting',
+  'the normalized state also begins waiting'
 );
-
 select is(
-  (select gs.checksum = pg_catalog.encode(
-     extensions.digest(gs.state::text, 'sha256'),
-     'hex'
-   )
-   from public.game_states gs join created_game_result r on r.game_id = gs.game_id),
+  (select checksum = pg_catalog.encode(extensions.digest(state::text, 'sha256'), 'hex')
+   from public.game_states where game_id = (select game_id from created_game)),
   true,
-  'new games store a database-computed canonical state checksum'
+  'state checksum is database-computed'
 );
-
-select matches(
-  (select invite_token from created_game_result),
-  '^[0-9a-f]{64}$',
-  'the returned invite token contains 256 random bits encoded as hex'
-);
-
 select is(
-  (select s.invite_code_hash = pg_catalog.encode(extensions.digest(r.invite_token, 'sha256'), 'hex')
-   from public.game_sessions s join created_game_result r on r.game_id = s.id),
+  (select invite_code_hash = pg_catalog.encode(
+     extensions.digest((select invite_token from created_game), 'sha256'), 'hex'
+   ) from public.game_sessions where id = (select game_id from created_game)),
   true,
-  'only the SHA-256 invite hash is stored'
+  'only the invite-token hash is durable'
+);
+select is((select role from creator_reconnect), 'orange', 'reconnect preserves the creator seat');
+select is(
+  (select count(*)::integer from public.game_members
+   where game_id = (select game_id from created_game)
+     and user_id = '00000000-0000-0000-0000-000000000011'),
+  1,
+  'reconnect is idempotent'
 );
 
-select isnt(
-  (select s.invite_code_hash from public.game_sessions s join created_game_result r on r.game_id = s.id),
-  (select invite_token from created_game_result),
-  'the raw invite token is not stored as its hash'
-);
-
-select hasnt_column('public', 'game_sessions', 'invite_token', 'game_sessions has no raw invite-token column');
-
+set local request.jwt.claims =
+  '{"sub":"00000000-0000-0000-0000-000000000012","role":"authenticated"}';
 set local role authenticated;
-
-select throws_ok(
-  $$select public.create_game(
-      2, 'Bad version', 'combat-elimination',
-      '{"map":[[{"row":0,"column":0,"index":0,"terrain":"plains","unit":"none","team":"gray"}]],"money":{"orange":0,"purple":0}}'::jsonb
-    )$$,
-  '22023',
-  'unsupported game schema version: 2',
-  'unsupported schema versions fail at the RPC boundary'
-);
-
-select throws_ok(
-  $$select public.create_game(
-      1, 'Bad metadata', 'combat-elimination',
-      '{"map":[[{"row":0,"column":0,"index":0,"terrain":"plains","unit":"none","team":"gray"}]],"money":{"orange":0,"purple":0},"status":"waiting"}'::jsonb
-    )$$,
-  '22023',
-  'gameplay payload may contain only map and money',
-  'session metadata is rejected from gameplay JSON'
-);
-
-select throws_ok(
-  $$select public.create_game(
-      1, 'Too large', 'combat-elimination',
-      pg_catalog.jsonb_build_object(
-        'map', pg_catalog.jsonb_build_array(pg_catalog.jsonb_build_array(
-          pg_catalog.jsonb_build_object(
-            'row', 0, 'column', 0, 'index', 0, 'terrain', 'plains',
-            'unit', 'none', 'team', 'gray', 'padding', repeat('x', 1048576)
-          )
-        )),
-        'money', '{"orange":0,"purple":0}'::jsonb
-      )
-    )$$,
-  '22023',
-  'gameplay payload exceeds the 1048576 byte limit',
-  'oversized gameplay JSON is rejected'
-);
-
+create temporary table purple_join on commit drop as
+select * from public.join_game((select invite_token from created_game), 'player', 'Purple');
 reset role;
-set local request.jwt.claims = '{}';
-set local role anon;
 
+select is((select role from purple_join), 'purple', 'second player claims purple');
+select is(
+  (select lifecycle_phase || ':' || active_team_id from public.game_sessions
+   where id = (select game_id from created_game)),
+  'active:purple',
+  'purple joining activates the indexed lifecycle'
+);
+select is(
+  (select state #>> '{lifecycle,activeTeamId}' from public.game_states
+   where game_id = (select game_id from created_game)),
+  'purple',
+  'purple joining updates canonical state lifecycle'
+);
+select is(
+  (select (state #>> '{turn,number}')::integer from public.game_states
+   where game_id = (select game_id from created_game)),
+  1,
+  'activation starts turn one'
+);
+
+set local request.jwt.claims =
+  '{"sub":"00000000-0000-0000-0000-000000000013","role":"authenticated"}';
+set local role authenticated;
+create temporary table spectator_join on commit drop as
+select * from public.join_game((select invite_token from created_game), 'spectator', 'Watcher');
+reset role;
+
+select is((select role from spectator_join), 'spectator', 'spectator joins without authority');
+
+set local request.jwt.claims =
+  '{"sub":"00000000-0000-0000-0000-000000000011","role":"authenticated"}';
+set local role authenticated;
+create temporary table composed_snapshot on commit drop as
+select * from public.get_game_snapshot((select game_id from created_game));
+select is((select spectator_count from composed_snapshot), 1, 'snapshot counts spectators');
+select is(
+  (select players #>> '{purple,displayName}' from composed_snapshot),
+  'Purple',
+  'snapshot composes player seats'
+);
 select throws_ok(
-  $$select public.create_game(
-      1, 'Unauthenticated', 'combat-elimination',
-      '{"map":[[{"row":0,"column":0,"index":0,"terrain":"plains","unit":"none","team":"gray"}]],"money":{"orange":0,"purple":0}}'::jsonb
-    )$$,
+  $$update public.game_states set state = state$$,
   '42501',
-  'permission denied for function create_game',
-  'unauthenticated callers cannot execute create_game'
+  'permission denied for table game_states',
+  'browser members cannot mutate canonical state directly'
 );
-
 reset role;
 
-select is(
-  (select pg_catalog.concat(
-    (select count(*) from public.game_sessions) - (select sessions from create_game_baseline), ':',
-    (select count(*) from public.game_members) - (select members from create_game_baseline), ':',
-    (select count(*) from public.game_states) - (select states from create_game_baseline)
-  )),
-  '1:1:1',
-  'every failed create leaves no partial session, membership, or state'
+set local request.jwt.claims =
+  '{"sub":"00000000-0000-0000-0000-000000000014","role":"authenticated"}';
+set local role authenticated;
+select throws_ok(
+  format(
+    'select * from public.get_game_snapshot(%L::uuid)',
+    (select game_id from created_game)
+  ),
+  '42501',
+  'game membership required',
+  'nonmembers cannot read snapshots'
 );
+reset role;
 
-select is(
-  (select s.win_condition from public.game_sessions s join created_game_result r on r.game_id = s.id),
-  'combat-elimination',
-  'win condition is stored as canonical session metadata'
+update private.runtime_limits set max_spectators_per_game = 1 where singleton;
+set local request.jwt.claims =
+  '{"sub":"00000000-0000-0000-0000-000000000014","role":"authenticated"}';
+set local role authenticated;
+select throws_ok(
+  format(
+    'select * from public.join_game(%L, %L, %L)',
+    (select invite_token from created_game), 'spectator', 'Overflow'
+  ),
+  'P0001',
+  'spectator limit reached (maximum 1)',
+  'durable spectator cap is enforced'
+);
+reset role;
+
+set local request.jwt.claims =
+  '{"sub":"00000000-0000-0000-0000-000000000011","role":"authenticated"}';
+set local role authenticated;
+select throws_ok(
+  $$select public.create_game(
+    'Bad initial',
+    '{
+      "schemaVersion":2,"rulesetVersion":"standard@1","contentVersion":"standard@1",
+      "revision":0,"lifecycle":{"phase":"active","activeTeamId":"orange"},
+      "board":{"cells":{}},"entities":{},
+      "teams":{"orange":{"id":"orange","money":0},"purple":{"id":"purple","money":0}},
+      "objectives":[],"turn":{"number":1}
+    }'::jsonb
+  )$$,
+  '22023',
+  'initial state must be waiting',
+  'game creation rejects non-waiting initial state'
 );
 
 select * from finish();

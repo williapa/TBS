@@ -4,20 +4,22 @@ Run commands from the repository root.
 
 ## Fast suites
 
-- `pnpm common:test`: v1 compatibility contracts, parsers, and deterministic reducer.
 - `pnpm test`: all Nx unit and shared adapter-contract projects.
-- `pnpm --filter @TBS/application test`: session lifecycle and revision reconciliation.
-- `pnpm --filter @TBS/game-setup test`: map documents, limits, topology, playable placement, axial-backed generation, editor immutability, presets, and initial objective/state derivation.
-- `pnpm --filter @TBS/presentation test`: renderer-neutral board projection, stable/legacy entity identity, semantic overlays and accessibility descriptions, movement-cue derivation, adjacent revision ordering, queue limits, replay-gap settling, and reduced motion.
-- `pnpm --filter @TBS/renderer-2d test`: SVG projection, accessible semantic cell/entity controls, legal-target overlays, team and health indicators, and movement animation markup.
-- `pnpm --filter @TBS/renderer-3d test`: axial world projection, instanced-terrain lookup, bounded camera transitions, procedural asset fallbacks, and deterministic movement interpolation/reduced-motion settling.
-- `pnpm --filter @TBS/adapter-memory test`: shared provider-neutral contracts against the deterministic adapter.
-- `pnpm --filter @TBS/adapter-supabase test`: provider mapping, identity, realtime lifecycle, and shared contracts. Live Supabase cases are skipped unless explicitly enabled.
+- `pnpm nx run @TBS/game-core:test`: normalized-state invariants, immutable primitives, registries, and mechanic ordering.
+- `pnpm nx run @TBS/game-rules:test`: all standard action families, rejection/immutability/event order, deterministic replay, codecs, content registries, and extension seams.
+- `pnpm nx run @TBS/protocol:test`: current transport schemas, size limits, round trips, and injected rules-codec composition.
+- `pnpm nx run @TBS/application:test`: session lifecycle and revision reconciliation.
+- `pnpm nx run @TBS/game-setup:test`: map documents, limits, topology, playable placement, axial-backed generation, editor immutability, presets, and initial objective/state derivation.
+- `pnpm nx run @TBS/presentation:test`: renderer-neutral board projection, stable entity identity, semantic overlays and accessibility descriptions, movement-cue derivation, adjacent revision ordering, queue limits, replay-gap settling, and reduced motion.
+- `pnpm nx run @TBS/renderer-2d:test`: SVG projection, accessible semantic cell/entity controls, legal-target overlays, team and health indicators, and movement animation markup.
+- `pnpm nx run @TBS/renderer-3d:test`: axial world projection, instanced-terrain lookup, bounded camera transitions, procedural asset fallbacks, and deterministic movement interpolation/reduced-motion settling.
+- `pnpm nx run @TBS/adapter-memory:test`: shared provider-neutral contracts against the deterministic adapter.
+- `pnpm nx run @TBS/adapter-supabase:test`: provider mapping, identity, realtime lifecycle, and shared contracts. Live Supabase cases are skipped unless explicitly enabled.
 - `pnpm ui:test`: React bindings, map repository/import/export, routes, and interactions.
 - `pnpm build`: strict TypeScript checks and production bundles.
 - `pnpm lint`: zero-warning static analysis.
 - `pnpm architecture:check`: dependency-boundary enforcement.
-- `pnpm edge:build`: deterministic trusted-action bundle generation for the Edge runtime.
+- `pnpm edge:build`: deterministic trusted-action bundle generation directly from current workspace sources for the Edge runtime.
 - `pnpm performance:check`: maximum-size board batching p95, instanced terrain count, lazy 3D splitting, and production gzip budgets.
 - `pnpm portability:check`: shared read, write, and all-nine-action-family contracts against the provider-independent in-memory adapter; CI runs this as a named alternate-provider rehearsal.
 

@@ -15,7 +15,7 @@ const jsonValueSchema: z.ZodType<JsonValue> = z.lazy(() => z.union([
 
 export const actionEnvelopeSchema = z.object({
   protocolVersion: z.literal(CURRENT_PROTOCOL_VERSION),
-  actionId: z.string().trim().min(1).max(128),
+  actionId: z.string().uuid(),
   expectedRevision: z.number().int().nonnegative(),
   rulesetVersion: z.string().trim().min(1),
   action: z.record(z.string(), jsonValueSchema),

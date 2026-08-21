@@ -1,8 +1,6 @@
 import {
+  currentStandardProtocolCodec,
   evaluateTrustedAction,
-  parseActionEnvelope,
-  parseAppliedAction,
-  parseGameSnapshot,
 } from "./generated/trusted-action-runtime.js";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
@@ -18,37 +16,34 @@ type UnknownRecord = Readonly<Record<string, unknown>>;
 type GatewayErrorCode =
   | "auth-unavailable"
   | "game-not-found"
-  | "invalid-invite"
   | "not-a-member"
   | "spectator-read-only"
-  | "spectator-limit"
   | "wrong-team"
   | "stale-revision"
   | "duplicate-action"
   | "incompatible-data"
   | "invalid-action"
-  | "network"
   | "unknown";
 type GameSnapshot = Readonly<{
   gameId: string;
   players: UnknownRecord;
   spectatorCount: number;
-  state: Readonly<{
-    schemaVersion: number;
-    revision: number;
-    status: "waiting" | "active" | "finished";
-    activeTeam?: "orange" | "purple";
-    winner?: "orange" | "purple";
-    winCondition?: string;
-    map: unknown;
-    money: unknown;
-  }>;
+  state: UnknownRecord & Readonly<{ revision: number }>;
 }>;
 type ActionEnvelope = Readonly<{
   protocolVersion: number;
   actionId: string;
   expectedRevision: number;
+  rulesetVersion: string;
   action: unknown;
+}>;
+type AppliedAction = Readonly<{
+  protocolVersion: number;
+  actionId: string;
+  revision: number;
+  actorTeamId: string;
+  action: unknown;
+  events: readonly unknown[];
 }>;
 type PinnedGameVersions = Readonly<{
   protocolVersion: number;
@@ -65,16 +60,14 @@ type TrustedCommitProposal = Readonly<{
   expectedRevision: number;
   action: unknown;
   events: readonly unknown[];
-  gameplayPayload: unknown;
-  status: "waiting" | "active" | "finished";
-  activeTeam: "orange" | "purple" | null;
-  winnerTeam: "orange" | "purple" | null;
-  snapshot: GameSnapshot;
+  state: UnknownRecord;
 }>;
 
-const parseEnvelope = parseActionEnvelope as (value: unknown) => ActionEnvelope;
-const parseApplied = parseAppliedAction as (value: unknown) => unknown;
-const parseSnapshot = parseGameSnapshot as (value: unknown) => GameSnapshot;
+const codec = currentStandardProtocolCodec as Readonly<{
+  parseActionEnvelope(value: unknown): ActionEnvelope;
+  parseAppliedAction(value: unknown): AppliedAction;
+  parseGameSnapshot(value: unknown): GameSnapshot;
+}>;
 const evaluate = evaluateTrustedAction as (input: Readonly<{
   snapshot: unknown;
   callerId: string;
@@ -145,28 +138,28 @@ const providerFailure = (value: unknown, snapshot?: GameSnapshot): Response => {
     if (lower.includes("active turn")) return failure("wrong-team", message, false, snapshot);
     return failure("not-a-member", message, false, snapshot);
   }
-  if (code === "22023") return failure("invalid-action", message, false, snapshot);
-  if (code === "55000") return failure("invalid-action", message, false, snapshot);
+  if (code === "P0002") return failure("game-not-found", message, false, snapshot);
+  if (code === "22023" || code === "55000") {
+    return failure("invalid-action", message, false, snapshot);
+  }
   return failure("unknown", "Trusted action submission failed", false, snapshot);
 };
 
-const snapshotFromRow = (row: UnknownRecord): GameSnapshot => {
-  const payload = record(row.gameplay_payload, "snapshot.gameplayPayload");
-  return parseSnapshot({
-    gameId: row.game_id,
-    players: row.players,
-    spectatorCount: row.spectator_count,
-    state: {
-      ...payload,
-      schemaVersion: row.schema_version,
-      revision: row.revision,
-      status: row.status,
-      activeTeam: row.active_team === null ? undefined : row.active_team,
-      winner: row.winner_team === null ? undefined : row.winner_team,
-      winCondition: row.win_condition,
-    },
-  });
-};
+const snapshotFromRow = (row: UnknownRecord): GameSnapshot => codec.parseGameSnapshot({
+  gameId: row.game_id,
+  players: row.players,
+  spectatorCount: row.spectator_count,
+  state: row.state,
+});
+
+const appliedActionFromRow = (row: UnknownRecord): AppliedAction => codec.parseAppliedAction({
+  protocolVersion: row.protocol_version,
+  actionId: row.action_id,
+  revision: row.committed_action_revision,
+  actorTeamId: row.actor_team_id,
+  action: row.action,
+  events: row.events,
+});
 
 const readCanonicalContext = async (
   client: SupabaseClient,
@@ -206,10 +199,7 @@ const commit = async (
   expected_revision: proposal.expectedRevision,
   submitted_action: proposal.action,
   submitted_events: proposal.events,
-  candidate_gameplay_payload: proposal.gameplayPayload,
-  proposed_status: proposal.status,
-  proposed_active_team: proposal.activeTeam,
-  proposed_winner_team: proposal.winnerTeam,
+  proposed_state: proposal.state,
 });
 
 const retryCommittedAction = async (
@@ -241,26 +231,12 @@ const retryCommittedAction = async (
     expected_revision: envelope.expectedRevision,
     submitted_action: envelope.action,
     submitted_events: prior.events,
-    candidate_gameplay_payload: {
-      map: snapshot.state.map,
-      money: snapshot.state.money,
-    },
-    proposed_status: snapshot.state.status,
-    proposed_active_team: snapshot.state.activeTeam ?? null,
-    proposed_winner_team: snapshot.state.winner ?? null,
+    proposed_state: snapshot.state,
   });
   if (retry.error) return providerFailure(retry.error, snapshot);
-  const row = firstRow(retry.data, "retry.rows");
   return response({
     ok: true,
-    appliedAction: parseApplied({
-      protocolVersion: row.protocol_version,
-      actionId: row.action_id,
-      revision: row.committed_action_revision,
-      actorTeam: row.actor_team,
-      action: row.action,
-      events: row.events,
-    }),
+    appliedAction: appliedActionFromRow(firstRow(retry.data, "retry.rows")),
     snapshot,
   });
 };
@@ -327,9 +303,9 @@ Deno.serve(async (request) => {
       if (evaluation.error.code === "stale-revision") {
         let parsedEnvelope: ActionEnvelope | undefined;
         try {
-          parsedEnvelope = parseEnvelope(body.envelope);
+          parsedEnvelope = codec.parseActionEnvelope(body.envelope);
         } catch {
-          // Preserve the evaluator's validation result below.
+          // Preserve the evaluator's typed validation result below.
         }
         if (parsedEnvelope) {
           const retry = await retryCommittedAction(
@@ -353,17 +329,14 @@ Deno.serve(async (request) => {
     const committed = await commit(serviceClient, evaluation.proposal);
     if (committed.error) return providerFailure(committed.error, canonical.snapshot);
     const row = firstRow(committed.data, "commit.rows");
+    const snapshot = codec.parseGameSnapshot({
+      ...canonical.snapshot,
+      state: row.state,
+    });
     return response({
       ok: true,
-      appliedAction: parseApplied({
-        protocolVersion: row.protocol_version,
-        actionId: row.action_id,
-        revision: row.committed_action_revision,
-        actorTeam: row.actor_team,
-        action: row.action,
-        events: row.events,
-      }),
-      snapshot: evaluation.proposal.snapshot,
+      appliedAction: appliedActionFromRow(row),
+      snapshot,
     });
   } catch (error) {
     return providerFailure(error);

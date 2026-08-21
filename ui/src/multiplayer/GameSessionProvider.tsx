@@ -8,10 +8,12 @@ import type {
   JoinIntent,
   PresenceState,
   SessionRole,
+  StandardActionEnvelope,
+  StandardAppliedAction,
+  StandardGameSnapshot,
   SubmitActionResult,
 } from "@TBS/application";
 import { GameSessionModel } from "@TBS/application";
-import type { ActionEnvelope, AppliedAction, GameSnapshot } from "@TBS/common";
 import type { ReactNode } from "react";
 import {
   createContext,
@@ -26,15 +28,15 @@ import { useGameSessionGateway } from "./GameSessionGatewayContext";
 export type GameSessionContextValue = {
   session: GameSession | null;
   role: SessionRole | null;
-  snapshot: GameSnapshot | null;
-  actions: readonly AppliedAction[];
+  snapshot: StandardGameSnapshot | null;
+  actions: readonly StandardAppliedAction[];
   presence: readonly PresenceState[];
   connectionState: GameConnectionState;
   submitState: GameSubmitState;
   error: GatewayError | null;
   createGame(input: CreateGameInput): Promise<CreatedGame>;
   joinGame(inviteToken: string, intent: JoinIntent, displayName: string): Promise<GameSession>;
-  submitAction(envelope: ActionEnvelope): Promise<SubmitActionResult>;
+  submitAction(envelope: StandardActionEnvelope): Promise<SubmitActionResult>;
   clearError(): void;
   leave(): Promise<void>;
 };

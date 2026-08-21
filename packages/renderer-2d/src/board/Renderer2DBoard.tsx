@@ -40,7 +40,12 @@ const targetColors: Readonly<Record<BoardTargetType, string>> = {
   unload: "#48c9b0",
 };
 
-const teamColors = { gray: "#6f7782", orange: "#ff8c00", purple: "#a855f7" } as const;
+const teamColors: Readonly<Record<string, string>> = {
+  orange: "#ff8c00",
+  purple: "#a855f7",
+};
+const teamColor = (teamId: BoardEntityViewModel["teamId"]): string =>
+  teamId ? teamColors[teamId] ?? "#6f7782" : "#6f7782";
 
 const dispatchOnKeyboard = (
   intent: BoardIntent,
@@ -86,7 +91,9 @@ const Entity = ({
 }>) => {
   const point = projectHexTo2D(entity.coordinate);
   const intent: BoardIntent = { type: "select-entity", entityId: entity.id };
-  const healthWidth = 44 * (entity.health.current / entity.health.maximum);
+  const healthWidth = entity.health
+    ? 44 * (entity.health.current / entity.health.maximum)
+    : null;
   const stopAndSelect = (event: MouseEvent<SVGGElement>) => {
     event.stopPropagation();
     onIntent(intent, pointerAnchor(event));
@@ -108,7 +115,7 @@ const Entity = ({
           cy={0}
           fill="rgba(8, 12, 18, 0.82)"
           r={28}
-          stroke={entity.selected ? "#ffffff" : teamColors[entity.team]}
+          stroke={entity.selected ? "#ffffff" : teamColor(entity.teamId)}
           strokeWidth={entity.selected ? 5 : entity.actionable ? 4 : 3}
         />
         <text dominantBaseline="central" fontSize={30} textAnchor="middle" y={-2}>
@@ -122,12 +129,16 @@ const Entity = ({
         {entity.statuses.includes("moved") && (
           <text fill="#ffffff" fontSize={15} fontWeight="bold" x={-27} y={-18}>✓</text>
         )}
-        <rect fill="#321" height={5} rx={2} width={44} x={-22} y={15} />
-        <rect fill={teamColors[entity.team]} height={5} rx={2} width={healthWidth} x={-22} y={15} />
-        <rect data-health-bar-outline fill="none" height={5} rx={2} stroke="#111" strokeWidth={1} width={44} x={-22} y={15} />
-        <circle cx={24} cy={-22} fill={teamColors[entity.team]} r={10} stroke="#111" />
-        <text fill={entity.team === "orange" ? "#111" : "#fff"} fontSize={11} fontWeight="bold" textAnchor="middle" x={24} y={-18}>
-          {entity.team === "orange" ? "O" : entity.team === "purple" ? "P" : "–"}
+        {healthWidth !== null && (
+          <g data-health-bar>
+            <rect fill="#321" height={5} rx={2} width={44} x={-22} y={15} />
+            <rect fill={teamColor(entity.teamId)} height={5} rx={2} width={healthWidth} x={-22} y={15} />
+            <rect data-health-bar-outline fill="none" height={5} rx={2} stroke="#111" strokeWidth={1} width={44} x={-22} y={15} />
+          </g>
+        )}
+        <circle cx={24} cy={-22} fill={teamColor(entity.teamId)} r={10} stroke="#111" />
+        <text fill={entity.teamId === "orange" ? "#111" : "#fff"} fontSize={11} fontWeight="bold" textAnchor="middle" x={24} y={-18}>
+          {entity.teamId === "orange" ? "O" : entity.teamId === "purple" ? "P" : "–"}
         </text>
       </g>
     </g>
@@ -165,7 +176,7 @@ export const Renderer2DBoard = ({
         return (
           <g
             aria-label={cell.accessibleDescription}
-            data-cell-id={cell.legacyIndex}
+            data-cell-id={cell.id}
             key={cell.id}
             onClick={(event) => onIntent(intent, pointerAnchor(event))}
             onKeyDown={dispatchOnKeyboard(intent, onIntent)}
@@ -194,7 +205,7 @@ export const Renderer2DBoard = ({
             : undefined;
         return (
           <polygon
-            data-cell-highlight={cell.legacyIndex}
+            data-cell-highlight={cell.id}
             data-highlight-kind={focused ? "selection" : cell.target}
             fill="none"
             key={cell.id}

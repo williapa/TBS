@@ -1,8 +1,5 @@
-import {
-  applyGameAction,
-  createActiveGameSnapshot,
-  type MapItem,
-} from "@TBS/common";
+import { entityId, hexKey, teamId, terrainTypeId, unitTypeId, validateGameState } from "@TBS/game-core";
+import { applyStandardAction } from "@TBS/game-rules";
 import { describe, expect, test } from "vitest";
 
 import {
@@ -10,21 +7,29 @@ import {
   createHexMap,
   createInitialGameSetup,
   CURRENT_MAP_SCHEMA_VERSION,
+  axialToMapIndex,
+  axialToMapOffset,
   exportMapDocument,
   generateHexagonalIndexGrid,
   importMapDocument,
+  mapIndexToAxial,
+  mapOffsetToAxial,
   MAX_MAP_COLUMNS,
   MAX_SERIALIZED_MAP_BYTES,
+  type MapGrid,
   updateMapCell,
   validatePlayableMap,
   validateSaveMapInput,
 } from "./index";
 
-const playableMap = (): MapItem[][] => structuredClone(
-  createActiveGameSnapshot().state.map,
-);
+const playableMap = (): MapGrid => {
+  const map = createHexMap(2, terrainTypeId("plains"));
+  map[0][0] = { ...map[0][0], team: teamId("orange"), unit: unitTypeId("soldier") };
+  map[2][1] = { ...map[2][1], team: teamId("purple"), unit: unitTypeId("soldier") };
+  return map;
+};
 
-const rectangularMap = (rows: number, columns: number): MapItem[][] => {
+const rectangularMap = (rows: number, columns: number): MapGrid => {
   let index = 0;
   return Array.from({ length: rows }, (_, row) => Array.from(
     { length: columns },
@@ -32,20 +37,20 @@ const rectangularMap = (rows: number, columns: number): MapItem[][] => {
       row,
       column,
       index: index++,
-      terrain: "plains" as const,
-      unit: column === 0 && row === 0 ? "soldier" as const : "none" as const,
-      team: column === 0 && row === 0 ? "orange" as const : "gray" as const,
+      terrain: terrainTypeId("plains"),
+      unit: column === 0 && row === 0 ? unitTypeId("soldier") : "none" as const,
+      team: column === 0 && row === 0 ? teamId("orange") : "gray" as const,
     }),
   )).map((row, rowIndex) => row.map((cell, columnIndex) => {
     if (rowIndex === 0 && columnIndex === 1) {
-      return { ...cell, unit: "soldier" as const, team: "purple" as const };
+      return { ...cell, unit: unitTypeId("soldier"), team: teamId("purple") };
     }
     return cell;
   }));
 };
 
 describe("map generation", () => {
-  test("preserves the legacy hexagonal index shape through axial geometry", () => {
+  test("preserves the map-document index shape through axial geometry", () => {
     expect(generateHexagonalIndexGrid(5)).toEqual([
       [0, 1, 2, 3, 4],
       [5, 6, 7, 8, 9, 10],
@@ -60,7 +65,7 @@ describe("map generation", () => {
   });
 
   test("creates deterministic reciprocal neighbor relationships", () => {
-    const map = createHexMap(2, "forest");
+    const map = createHexMap(2, terrainTypeId("forest"));
     expect(map.flat()).toHaveLength(7);
     expect(map[1][1].neighbors).toEqual([0, 1, 2, 4, 5, 6]);
     for (const cell of map.flat()) {
@@ -69,6 +74,15 @@ describe("map generation", () => {
           .toContain(cell.index);
       }
     }
+  });
+
+  test("keeps offset/index conversion at the map-document boundary", () => {
+    for (let index = 0; index < 19; index += 1) {
+      expect(axialToMapIndex(mapIndexToAxial(index, 3), 3)).toBe(index);
+    }
+    expect(mapOffsetToAxial(0, 0, 3)).toEqual({ q: 0, r: -2 });
+    expect(axialToMapOffset({ q: -2, r: 2 }, 3)).toEqual({ row: 4, column: 0 });
+    expect(() => mapOffsetToAxial(0, 3, 3)).toThrow("outside");
   });
 });
 
@@ -96,49 +110,66 @@ describe("map documents and setup", () => {
 
   test("requires a movable combat unit for each player team", () => {
     const invalid = playableMap();
-    invalid[0][1] = { ...invalid[0][1], team: "gray", unit: "none" };
+    invalid[2][1] = { ...invalid[2][1], team: "gray", unit: "none" };
     expect(() => validatePlayableMap(invalid)).toThrow(
       "movable combat unit for purple",
     );
   });
 
   test("derives pinned initial state and the capital objective deterministically", () => {
-    const map = createHexMap(2, "plains");
-    map[0][0] = { ...map[0][0], team: "orange", unit: "soldier" };
-    map[0][1] = { ...map[0][1], team: "purple", unit: "soldier" };
-    map[1][0] = { ...map[1][0], team: "orange", unit: "capital" };
-    map[1][1] = { ...map[1][1], team: "purple", unit: "capital" };
-    const setup = createInitialGameSetup(map);
-    expect(setup).toMatchObject({
-      protocolVersion: 1,
+    const map = playableMap();
+    map[1][0] = { ...map[1][0], team: teamId("orange"), unit: unitTypeId("capital") };
+    map[1][1] = { ...map[1][1], team: teamId("purple"), unit: unitTypeId("capital") };
+    const state = createInitialGameSetup(map);
+    expect(state).toMatchObject({
+      schemaVersion: 2,
+      revision: 0,
+      lifecycle: { phase: "waiting" },
       rulesetVersion: "standard@1",
       contentVersion: "standard@1",
-      initialPayload: { money: { orange: 1_000, purple: 1_000 } },
-      winCondition: "capital-or-combat-elimination",
+      teams: { orange: { money: 1_000 }, purple: { money: 1_000 } },
+      turn: { number: 0 },
     });
-    expect(setup.initialPayload.map[0][0].entityId).toBe("initial-cell-0");
-    expect(setup.initialPayload.map[0][1].entityId).toBe("initial-cell-1");
+    expect(state.entities[entityId("initial-cell-0")]?.id).toBe("initial-cell-0");
+    expect(state.objectives.filter(({ type }) => type === "capital")).toHaveLength(2);
+    expect(validateGameState(state)).toEqual([]);
+  });
+
+  test("assigns deterministic stable cargo IDs without leaking editor sentinels", () => {
+    const map = playableMap();
+    map[1][1] = {
+      ...map[1][1],
+      team: teamId("orange"),
+      unit: unitTypeId("truck"),
+      loadedUnit: { team: teamId("orange"), unit: unitTypeId("worker") },
+    };
+    const state = createInitialGameSetup(map);
+    const vehicle = state.entities[entityId("initial-cell-3")];
+    expect(vehicle?.cargo?.entityIds).toEqual([entityId("initial-cargo-3-0")]);
+    expect(state.entities[entityId("initial-cargo-3-0")]?.position).toBeUndefined();
+    expect(JSON.stringify(state)).not.toContain('"none"');
+    expect(JSON.stringify(state)).not.toContain('"gray"');
+  });
+
+  test("rejects incompatible prototype documents instead of retaining another reader", () => {
+    const map = playableMap();
+    expect(() => validatePlayableMap(map.map((row) => row.map((cell) =>
+      cell.index === 0 ? { ...cell, entityId: "unsupported-id" } : cell))))
+      .toThrow();
   });
 
   test("preserves assigned entity identity through deterministic movement", () => {
-    const map = createHexMap(2, "plains");
-    map[0][0] = { ...map[0][0], team: "orange", unit: "soldier" };
-    map[2][1] = { ...map[2][1], team: "purple", unit: "soldier" };
-    const setup = createInitialGameSetup(map);
-    const result = applyGameAction({
-      schemaVersion: 1,
-      revision: 0,
-      status: "active",
-      activeTeam: "orange",
-      ...setup.initialPayload,
-    }, "orange", {
-      action: "move",
-      start: { x: 0, y: 0 },
-      end: { x: 0, y: 1 },
+    const state = createInitialGameSetup(playableMap());
+    const active = { ...state, lifecycle: { phase: "active" as const, activeTeamId: teamId("orange") } };
+    const destination = mapOffsetToAxial(0, 1, 2);
+    const result = applyStandardAction(active, teamId("orange"), {
+      type: "move",
+      actorId: entityId("initial-cell-0"),
+      destination,
     });
-    if (!result.ok) throw new Error(result.message);
-    expect(result.state.map[0][0].entityId).toBeUndefined();
-    expect(result.state.map[0][1].entityId).toBe("initial-cell-0");
+    if (!result.ok) throw new Error(result.violations[0]?.message);
+    expect(result.state.board.cells[hexKey(destination)]?.occupantEntityId).toBe("initial-cell-0");
+    expect(result.state.entities[entityId("initial-cell-0")]?.id).toBe("initial-cell-0");
   });
 
   test("owns the bundled default preset without depending on test fixtures", () => {
@@ -150,9 +181,9 @@ describe("editor operations", () => {
   test("updates one cell without mutating the source map", () => {
     const map = playableMap();
     const updated = updateMapCell(map, 0, 0, {
-      terrain: "forest",
-      team: "orange",
-      unit: "soldier",
+      terrain: terrainTypeId("forest"),
+      team: teamId("orange"),
+      unit: unitTypeId("soldier"),
     });
     expect(updated).not.toBe(map);
     expect(updated[0]).not.toBe(map[0]);

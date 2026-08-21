@@ -3,13 +3,14 @@ import {
   runGameClientReadContract,
   runGameClientWriteContract,
 } from "@TBS/test-kit";
-import { createActiveGameSnapshot } from "@TBS/common";
+import { applyStandardAction } from "@TBS/game-rules";
+import { createWaitingGameStateFixture } from "@TBS/test-kit";
 import { describe, expect, it } from "vitest";
 
 import { InMemoryGameSessionGateway, InMemoryGameSessionStore } from "./InMemoryGameClient";
 
 const harness = (prefix: string) => {
-  const store = new InMemoryGameSessionStore();
+  const store = new InMemoryGameSessionStore(applyStandardAction);
   let nextUser = 1;
   return {
     createClient: () => new InMemoryGameSessionGateway(store, `${prefix}-${nextUser++}`),
@@ -22,13 +23,11 @@ runGameClientActionFamiliesContract("InMemoryGameSessionGateway", () => harness(
 
 describe("InMemoryGameSessionGateway", () => {
   it("enforces a configurable spectator cap without blocking reconnect", async () => {
-    const store = new InMemoryGameSessionStore();
+    const store = new InMemoryGameSessionStore(applyStandardAction);
     const creator = new InMemoryGameSessionGateway(store, "creator", 1);
-    const fixture = createActiveGameSnapshot().state;
     const created = await creator.createGame({
       displayName: "Creator",
-      initialPayload: { map: fixture.map, money: fixture.money },
-      winCondition: "combat-elimination",
+      initialState: createWaitingGameStateFixture(),
     });
     await new InMemoryGameSessionGateway(store, "purple", 1)
       .joinGame(created.inviteToken, "player", "Purple");

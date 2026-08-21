@@ -1,4 +1,5 @@
-import { createActiveGameSnapshot } from "@TBS/common";
+import { currentStandardProtocolCodec } from "@TBS/application";
+import { createGameSnapshotFixture } from "@TBS/test-kit";
 import { expect, test, vi } from "vitest";
 
 import { SupabaseGameClient } from "../SupabaseGameClient";
@@ -28,10 +29,11 @@ test("keeps exactly one Realtime channel for a game in one client", async () => 
   };
   const gameClient = new SupabaseGameClient(
     client as never,
+    currentStandardProtocolCodec,
     { getIdentity: async () => ({ userId: "member" }) },
   );
   vi.spyOn(gameClient.sessions, "getSnapshot")
-    .mockResolvedValue({ ...createActiveGameSnapshot(), gameId: "game" });
+    .mockResolvedValue({ ...createGameSnapshotFixture(), gameId: "game" });
 
   const first = await gameClient.subscribe("game", vi.fn(), vi.fn());
   expect(channels.filter(({ removed }) => !removed)).toHaveLength(1);

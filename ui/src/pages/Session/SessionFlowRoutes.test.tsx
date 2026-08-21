@@ -1,4 +1,6 @@
-import { createActiveGameSnapshot } from "@TBS/common";
+import { applyStandardAction } from "@TBS/game-rules";
+import { createDefaultBattlefield, mapTerrainOptions } from "@TBS/game-setup";
+import { createWaitingGameStateFixture } from "@TBS/test-kit";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { MapRepository } from "../../maps";
@@ -6,6 +8,7 @@ import { LocalStorageMapRepository } from "../../maps";
 import { InMemoryGameSessionGateway, InMemoryGameSessionStore } from "@TBS/adapter-memory";
 import { GameSessionGatewayContext } from "../../multiplayer/GameSessionGatewayContext";
 import { GameSessionProvider } from "../../multiplayer/GameSessionProvider";
+import { createActionEnvelope } from "../../multiplayer/createActionEnvelope";
 import { SessionFlowRoutes } from "./SessionFlowRoutes";
 import { saveReconnectDetails } from "./sessionReconnect";
 
@@ -17,12 +20,14 @@ const renderFlow = (gateway: InMemoryGameSessionGateway, route = "/", mapReposit
   </MemoryRouter>
 );
 
+const createStore = () => new InMemoryGameSessionStore(applyStandardAction);
+const endTurnEnvelope = (revision: number, id: string) =>
+  createActionEnvelope(revision, { type: "end-turn" }, () => id);
+
 const createGame = async (store: InMemoryGameSessionStore) => {
-  const state = createActiveGameSnapshot().state;
   return new InMemoryGameSessionGateway(store, "orange").createGame({
     displayName: "Orange",
-    initialPayload: { map: state.map, money: state.money },
-    winCondition: "combat-elimination",
+    initialState: createWaitingGameStateFixture(),
   });
 };
 
@@ -32,10 +37,15 @@ describe("new session create and join flow", () => {
   test("creates a game from a selected local map, copies its payload, and produces a share link", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
-    const store = new InMemoryGameSessionStore();
+    const store = createStore();
     const repository = new LocalStorageMapRepository(window.localStorage, () => "custom-map");
-    const custom = createActiveGameSnapshot().state.map;
-    custom[0][0].terrain = "forest";
+    const forest = mapTerrainOptions.find((terrain) => terrain === "forest");
+    if (!forest) throw new Error("Forest terrain fixture is unavailable");
+    const custom = createDefaultBattlefield().map.map((row, rowIndex) => row.map(
+      (cell, columnIndex) => rowIndex === 0 && columnIndex === 0
+        ? { ...cell, terrain: forest }
+        : cell,
+    ));
     const savedMap = await repository.save({ name: "Forest crossing", map: custom });
     const customMapRepository: MapRepository = {
       list: async () => [savedMap],
@@ -57,15 +67,16 @@ describe("new session create and join flow", () => {
     expect(await screen.findByRole("button", { name: "Copied" })).toBeInTheDocument();
 
     const game = Array.from(store.games.values())[0];
-    expect(game.state.map[0][0].terrain).toBe("forest");
+    expect(Object.values(game.state.board.cells).some(({ terrainTypeId }) => terrainTypeId === "forest"))
+      .toBe(true);
     const purple = await new InMemoryGameSessionGateway(store, "purple-copy").joinGame("invite-1", "player", "Purple");
     const watcher = await new InMemoryGameSessionGateway(store, "watcher-copy").joinGame("invite-1", "spectator", "Watcher");
-    expect(purple.snapshot.state.map).toEqual(game.state.map);
-    expect(watcher.snapshot.state.map).toEqual(game.state.map);
+    expect(purple.snapshot.state.board).toEqual(game.state.board);
+    expect(watcher.snapshot.state.entities).toEqual(game.state.entities);
   });
 
   test("an invite can claim purple or explicitly choose spectator", async () => {
-    const playerStore = new InMemoryGameSessionStore();
+    const playerStore = createStore();
     const playerGame = await createGame(playerStore);
     renderFlow(new InMemoryGameSessionGateway(playerStore, "purple"), `/game/${playerGame.inviteToken}`);
     fireEvent.change(screen.getByLabelText("Display name"), { target: { value: "Purple" } });
@@ -73,7 +84,7 @@ describe("new session create and join flow", () => {
     expect(await screen.findByRole("heading", { name: "Game in progress" })).toBeInTheDocument();
 
     window.localStorage.clear();
-    const spectatorStore = new InMemoryGameSessionStore();
+    const spectatorStore = createStore();
     const spectatorGame = await createGame(spectatorStore);
     const secondView = renderFlow(new InMemoryGameSessionGateway(spectatorStore, "watcher"), `/game/${spectatorGame.inviteToken}`);
     const names = secondView.getAllByLabelText("Display name");
@@ -84,7 +95,7 @@ describe("new session create and join flow", () => {
   });
 
   test("an occupied game falls back to spectator-only mode", async () => {
-    const store = new InMemoryGameSessionStore();
+    const store = createStore();
     const created = await createGame(store);
     await new InMemoryGameSessionGateway(store, "purple").joinGame(created.inviteToken, "player", "Purple");
     renderFlow(new InMemoryGameSessionGateway(store, "third"), `/game/${created.inviteToken}`);
@@ -96,14 +107,14 @@ describe("new session create and join flow", () => {
   });
 
   test("reload reconnects and renders waiting, active, and finished snapshots without REST", async () => {
-    const waitingStore = new InMemoryGameSessionStore();
+    const waitingStore = createStore();
     const waiting = await createGame(waitingStore);
     saveReconnectDetails(waiting.inviteToken, { displayName: "Orange", intent: "player" });
     const waitingView = renderFlow(new InMemoryGameSessionGateway(waitingStore, "orange"), `/game/${waiting.inviteToken}`);
     expect(await waitingView.findByRole("heading", { name: "Waiting for an opponent" })).toBeInTheDocument();
     waitingView.unmount();
 
-    const activeStore = new InMemoryGameSessionStore();
+    const activeStore = createStore();
     const active = await createGame(activeStore);
     await new InMemoryGameSessionGateway(activeStore, "purple").joinGame(active.inviteToken, "player", "Purple");
     saveReconnectDetails(active.inviteToken, { displayName: "Purple", intent: "player" });
@@ -120,21 +131,27 @@ describe("new session create and join flow", () => {
 
     const finishedGame = activeStore.games.get(active.gameId);
     if (!finishedGame) throw new Error("active game fixture is missing");
-    finishedGame.state = { ...finishedGame.state, status: "finished", activeTeam: undefined, winner: "orange" };
+    const winnerTeamId = Object.values(finishedGame.state.teams)
+      .find(({ id }) => id === "orange")?.id;
+    if (!winnerTeamId) throw new Error("finished fixture requires an orange team");
+    finishedGame.state = {
+      ...finishedGame.state,
+      lifecycle: { phase: "finished", winnerTeamId },
+    };
     const finishedView = renderFlow(new InMemoryGameSessionGateway(activeStore, "purple"), `/game/${active.inviteToken}`);
     expect(await finishedView.findByRole("heading", { name: "Game finished" })).toBeInTheDocument();
     expect(finishedView.getByText("Winner").nextSibling).toHaveTextContent("orange");
   });
 
   test("renders an invalid invite state", async () => {
-    renderFlow(new InMemoryGameSessionGateway(new InMemoryGameSessionStore(), "visitor"), "/game/missing");
+    renderFlow(new InMemoryGameSessionGateway(createStore(), "visitor"), "/game/missing");
     fireEvent.change(screen.getByLabelText("Display name"), { target: { value: "Visitor" } });
     fireEvent.click(screen.getByRole("button", { name: "Join as player" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("This invite link is invalid.");
   });
 
   test("exposes only supported navigation and redirects or explains obsolete bookmarks", async () => {
-    const gateway = new InMemoryGameSessionGateway(new InMemoryGameSessionStore(), "visitor");
+    const gateway = new InMemoryGameSessionGateway(createStore(), "visitor");
     const mapsView = renderFlow(gateway, "/maps");
     expect(await mapsView.findByRole("heading", { name: "New Map Configuration" })).toBeInTheDocument();
     const navigation = mapsView.getByRole("navigation", { name: "Primary" });
@@ -158,7 +175,7 @@ describe("new session create and join flow", () => {
   });
 
   test("orders prior and live events and restores them on reconnect", async () => {
-    const store = new InMemoryGameSessionStore();
+    const store = createStore();
     const created = await createGame(store);
     const purpleGateway = new InMemoryGameSessionGateway(store, "purple");
     await purpleGateway.joinGame(created.inviteToken, "player", "Purple");
@@ -171,7 +188,7 @@ describe("new session create and join flow", () => {
     const orange = new InMemoryGameSessionGateway(store, "orange");
     await orange.submitAction({
       gameId: created.gameId,
-      envelope: { protocolVersion: 1, actionId: "live-history-2", expectedRevision: 1, action: { action: "end" } },
+      envelope: endTurnEnvelope(1, "44000000-0000-4000-8000-000000000002"),
     });
     await waitFor(() => expect(Array.from(view.container.querySelectorAll("[data-revision]")).map((node) => node.getAttribute("data-revision"))).toEqual(["1", "2"]));
     view.unmount();
@@ -181,7 +198,7 @@ describe("new session create and join flow", () => {
   });
 
   test("spectators can inspect the board without action controls", async () => {
-    const store = new InMemoryGameSessionStore();
+    const store = createStore();
     const created = await createGame(store);
     await new InMemoryGameSessionGateway(store, "purple").joinGame(created.inviteToken, "player", "Purple");
     const watcher = new InMemoryGameSessionGateway(store, "watcher");

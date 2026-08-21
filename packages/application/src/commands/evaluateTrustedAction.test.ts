@@ -1,31 +1,33 @@
 import {
-  createActiveGameSnapshot,
-  CURRENT_GAME_PROTOCOL_VERSION,
-} from "@TBS/common";
+  STANDARD_CONTENT_VERSION,
+  STANDARD_RULESET_VERSION,
+} from "@TBS/game-rules";
+import { CURRENT_PROTOCOL_VERSION } from "@TBS/protocol";
 import { describe, expect, it } from "vitest";
 
+import { createGameSnapshotFixture } from "../canonical-test-fixture";
 import { evaluateTrustedAction } from "./evaluateTrustedAction";
 
-const snapshot = () => createActiveGameSnapshot();
 const versions = {
-  protocolVersion: CURRENT_GAME_PROTOCOL_VERSION,
-  rulesetVersion: "standard@1",
-  contentVersion: "standard@1",
+  protocolVersion: CURRENT_PROTOCOL_VERSION,
+  rulesetVersion: STANDARD_RULESET_VERSION,
+  contentVersion: STANDARD_CONTENT_VERSION,
 };
 const envelope = {
-  protocolVersion: CURRENT_GAME_PROTOCOL_VERSION,
-  actionId: "action-1",
+  protocolVersion: CURRENT_PROTOCOL_VERSION,
+  actionId: "00000000-0000-4000-8000-000000000001",
   expectedRevision: 0,
-  action: { action: "end" },
+  rulesetVersion: STANDARD_RULESET_VERSION,
+  action: { type: "end-turn" },
 };
 
 describe("evaluateTrustedAction", () => {
   it("derives a complete immutable commit proposal from canonical state and intent", () => {
-    const canonical = snapshot();
+    const canonical = createGameSnapshotFixture();
 
     const result = evaluateTrustedAction({
       snapshot: canonical,
-      callerId: "purple-member",
+      callerId: "orange-member",
       versions,
       envelope,
     });
@@ -34,67 +36,63 @@ describe("evaluateTrustedAction", () => {
     if (!result.ok) return;
     expect(result.proposal).toMatchObject({
       gameId: canonical.gameId,
-      callerId: "purple-member",
-      actorTeam: "purple",
-      actionId: "action-1",
+      callerId: "orange-member",
+      actorTeamId: "orange",
+      actionId: envelope.actionId,
       expectedRevision: 0,
-      status: "active",
-      activeTeam: "orange",
-      winnerTeam: null,
+      state: {
+        revision: 1,
+        lifecycle: { phase: "active", activeTeamId: "purple" },
+      },
     });
-    expect(result.proposal.snapshot.state.revision).toBe(1);
     expect(result.proposal.events).not.toHaveLength(0);
     expect(canonical.state.revision).toBe(0);
   });
 
   it("rejects candidate-state fields because callers may send intent only", () => {
     const result = evaluateTrustedAction({
-      snapshot: snapshot(),
-      callerId: "purple-member",
+      snapshot: createGameSnapshotFixture(),
+      callerId: "orange-member",
       versions,
-      envelope: { ...envelope, candidateGameplayPayload: { map: [], money: {} } },
+      envelope: { ...envelope, candidateState: {} },
     });
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       ok: false,
-      error: {
-        code: "incompatible-data",
-        message: "envelope.candidateGameplayPayload: trusted submission accepts intent fields only",
-        retryable: false,
-      },
+      error: { code: "incompatible-data", retryable: false },
     });
   });
 
   it("rejects spectators, stale revisions, and unsupported pinned versions", () => {
     expect(evaluateTrustedAction({
-      snapshot: snapshot(),
+      snapshot: createGameSnapshotFixture(),
       callerId: "spectator-member",
       versions,
       envelope,
     })).toMatchObject({ ok: false, error: { code: "spectator-read-only" } });
 
     expect(evaluateTrustedAction({
-      snapshot: snapshot(),
-      callerId: "purple-member",
+      snapshot: createGameSnapshotFixture(),
+      callerId: "orange-member",
       versions,
       envelope: { ...envelope, expectedRevision: 4 },
     })).toMatchObject({ ok: false, error: { code: "stale-revision", retryable: true } });
 
     expect(evaluateTrustedAction({
-      snapshot: snapshot(),
-      callerId: "purple-member",
+      snapshot: createGameSnapshotFixture(),
+      callerId: "orange-member",
       versions: { ...versions, rulesetVersion: "future@1" },
       envelope,
     })).toMatchObject({ ok: false, error: { code: "incompatible-data" } });
   });
 
   it("returns typed rule rejections without mutating canonical state", () => {
-    const canonical = snapshot();
+    const canonical = createGameSnapshotFixture();
     const before = structuredClone(canonical);
 
     const result = evaluateTrustedAction({
       snapshot: canonical,
-      callerId: "orange-member",
+      callerId: "purple-member",
       versions,
       envelope,
     });

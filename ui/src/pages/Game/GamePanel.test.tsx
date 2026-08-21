@@ -12,12 +12,8 @@ describe("GamePanel", () => {
     render(
       <GamePanel
         state={{
-          coords: { x: 0, y: 0 },
+          coords: { q: 0, r: 0 },
           focus: "cell",
-          occupant: {
-            team: "orange",
-            unit: "soldier",
-          },
           rows: [
             { id: "occupant-type", label: "Occupant Type", type: "text", value: "Soldier (person)" },
             {
@@ -30,7 +26,6 @@ describe("GamePanel", () => {
               type: "actions",
             },
           ],
-          terrain: "plains",
           transportRows: [
             { id: "type", label: "Type", type: "text", value: "Carrying Doctor (person)" },
           ],

@@ -20,9 +20,9 @@
   },
   "dependencies": {
     "@TBS/application": "workspace:*",
-    "@TBS/common": "workspace:*",
     "@TBS/game-core": "workspace:*",
     "@TBS/game-rules": "workspace:*",
+    "@TBS/game-setup": "workspace:*",
     "@TBS/protocol": "workspace:*"
   },
   "devDependencies": {
