@@ -3,6 +3,7 @@ import {
   Button,
   Container,
   ContentLayout,
+  Flashbar,
   Form,
   FormField,
   Header,
@@ -29,6 +30,7 @@ export const InviteJoinPage = () => {
   const [displayName, setDisplayName] = useState("");
   const [invitePreview, setInvitePreview] = useState<InvitePreviewState>({ status: "idle" });
   const [requestedIntent, setRequestedIntent] = useState<JoinIntent>();
+  const [dismissedSpectatorNoticeGameId, setDismissedSpectatorNoticeGameId] = useState<string>();
   const reconnectAttempted = useRef(false);
 
   useEffect(() => {
@@ -81,9 +83,27 @@ export const InviteJoinPage = () => {
 
   if (session) {
     const fellBackToSpectator = requestedIntent === "player" && role === "spectator";
+    const showSpectatorNotice = role === "spectator"
+      && dismissedSpectatorNoticeGameId !== session.gameId;
     return (
       <>
-        {fellBackToSpectator && <p>Player seats are occupied. You joined as a spectator.</p>}
+        {showSpectatorNotice && (
+          <Flashbar
+            items={[{
+              ariaRole: "status",
+              content: fellBackToSpectator
+                ? "Player seats are occupied. You joined as a spectator."
+                : "You are watching as a spectator and cannot take game actions.",
+              dismissible: true,
+              dismissLabel: "Dismiss spectator notice",
+              header: "Spectating",
+              id: "spectator-notice",
+              onDismiss: () => setDismissedSpectatorNoticeGameId(session.gameId),
+              statusIconAriaLabel: "Information",
+              type: "info",
+            }]}
+          />
+        )}
         <SessionGamePage />
       </>
     );

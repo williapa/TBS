@@ -107,6 +107,9 @@ describe("new session create and join flow", () => {
     const watchButtons = secondView.getAllByRole("button", { name: "Watch as spectator" });
     fireEvent.click(watchButtons[watchButtons.length - 1]);
     expect(await secondView.findByRole("heading", { name: "Waiting for an opponent" })).toBeInTheDocument();
+    expect(await secondView.findByText("Spectating")).toBeInTheDocument();
+    expect(secondView.getByText("You are watching as a spectator and cannot take game actions."))
+      .toBeInTheDocument();
   });
 
   test("an occupied game falls back to spectator-only mode", async () => {
@@ -118,8 +121,11 @@ describe("new session create and join flow", () => {
     fireEvent.change(screen.getByLabelText("Display name"), { target: { value: "Third" } });
     fireEvent.click(screen.getByRole("button", { name: "Join as player" }));
 
-    expect(await screen.findByText("Player seats are occupied. You joined as a spectator.")).toBeInTheDocument();
+    expect(await screen.findByText("Spectating")).toBeInTheDocument();
+    expect(screen.getByText("Player seats are occupied. You joined as a spectator.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Join as player" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss spectator notice" }));
+    expect(screen.queryByText("Player seats are occupied. You joined as a spectator.")).not.toBeInTheDocument();
   });
 
   test("reload reconnects and renders waiting, active, and finished snapshots without REST", async () => {
@@ -222,6 +228,9 @@ describe("new session create and join flow", () => {
     const view = renderFlow(watcher, `/game/${created.inviteToken}`);
 
     expect(await view.findByRole("heading", { name: "Game in progress" })).toBeInTheDocument();
+    expect(await view.findByText("Spectating")).toBeInTheDocument();
+    expect(view.getByText("You are watching as a spectator and cannot take game actions."))
+      .toBeInTheDocument();
     expect(view.getByText("Viewers online").nextSibling).toHaveTextContent("1");
     expect(view.getByText("Spectators online").nextSibling).toHaveTextContent("1");
     expect(view.queryByRole("button", { name: "End turn" })).not.toBeInTheDocument();
