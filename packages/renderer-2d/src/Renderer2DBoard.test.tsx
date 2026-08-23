@@ -26,7 +26,7 @@ const board = (): BoardViewModel => ({
       terrainAssetId: "terrain:forest",
       selection: "none",
       target: "move",
-      accessibleDescription: "Forest cell at q 0, r 0",
+      accessibleDescription: "Forest cell at (0, 0)",
     },
     {
       id: cellId("1:0"),
@@ -35,7 +35,7 @@ const board = (): BoardViewModel => ({
       terrainAssetId: "terrain:plains",
       selection: "none",
       target: null,
-      accessibleDescription: "Plains cell at q 1, r 0",
+      accessibleDescription: "Plains cell at (1, 0)",
     },
   ],
   entities: [{
@@ -201,6 +201,21 @@ describe("Renderer2DBoard", () => {
     const healthBarOutline = entity.querySelector("[data-health-bar-outline]");
     expect(healthBarOutline?.getAttribute("stroke")).toBe("#111");
     expect(healthBarOutline?.getAttribute("stroke-width")).toBe("1");
+  });
+
+  test("shows occupied cell coordinates and an interactive cursor when hovering a unit", () => {
+    const { container } = render(
+      <Renderer2DBoard board={board()} onIntent={vi.fn()} />,
+    );
+
+    const entity = within(container).getByRole("button", { name: /Soldier, purple team/ });
+    const occupiedCell = container.querySelector("[data-cell-id='1:0']");
+
+    expect(entity.querySelector("title")?.textContent)
+      .toBe(occupiedCell?.querySelector("title")?.textContent);
+    expect(entity.querySelector("title")?.textContent)
+      .toBe("Plains cell at (1, 0)");
+    expect(entity.getAttribute("style")).toContain("cursor: pointer");
   });
 
   test("renders focused cell highlighting above every base cell without a rectangular outline", () => {

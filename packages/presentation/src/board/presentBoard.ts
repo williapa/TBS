@@ -77,7 +77,7 @@ export const presentBoard = ({
           ? "selected" as const
           : "none" as const,
       target: targets.get(id) ?? null,
-      accessibleDescription: `${terrain.label} cell at q ${cell.position.q}, r ${cell.position.r}`,
+      accessibleDescription: `${terrain.label} cell at (${cell.position.q}, ${cell.position.r})`,
     };
   });
 

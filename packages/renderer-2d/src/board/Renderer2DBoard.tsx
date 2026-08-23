@@ -52,6 +52,12 @@ const teamColors: Readonly<Record<string, string>> = {
 const teamColor = (teamId: BoardEntityViewModel["teamId"]): string =>
   teamId ? teamColors[teamId] ?? "#6f7782" : "#6f7782";
 
+const cellHoverDescription = (
+  cell: BoardViewModel["cells"][number],
+): string => cell.target
+  ? `${cell.accessibleDescription}; ${cell.target} target`
+  : cell.accessibleDescription;
+
 const dispatchOnKeyboard = (
   intent: BoardIntent,
   onIntent: BoardIntentHandler,
@@ -84,11 +90,13 @@ const entityMotionStyle = (
 };
 
 const Entity = ({
+  cellDescription,
   cue,
   entity,
   onIntent,
   reducedMotion,
 }: Readonly<{
+  cellDescription: string;
   cue?: MoveEntityCue;
   entity: BoardEntityViewModel;
   onIntent?: BoardIntentHandler;
@@ -109,7 +117,7 @@ const Entity = ({
     onClick: stopAndSelect,
     onKeyDown: dispatchOnKeyboard(intent, onIntent),
     role: "button",
-    style: { outline: "none" },
+    style: { cursor: "pointer", outline: "none" },
     tabIndex: 0,
   } as const : {};
   return (
@@ -118,6 +126,7 @@ const Entity = ({
       transform={`translate(${point.x} ${point.y})`}
       {...interactionProps}
     >
+      <title>{cellDescription}</title>
       <g key={cue?.id ?? "canonical"} style={entityMotionStyle(entity, cue, reducedMotion)}>
         <circle
           cx={0}
@@ -169,6 +178,7 @@ export const Renderer2DBoard = (props: Renderer2DBoardProps) => {
   const cueByEntity = new Map(
     board.animationCues.map((cue) => [cue.entityId, cue]),
   );
+  const cellById = new Map(board.cells.map((cell) => [cell.id, cell]));
 
   return (
     <svg
@@ -204,7 +214,7 @@ export const Renderer2DBoard = (props: Renderer2DBoardProps) => {
               stroke="rgba(8, 12, 18, 0.72)"
               strokeWidth={2}
             />
-            <title>{cell.target ? `${cell.accessibleDescription}; ${cell.target} target` : cell.accessibleDescription}</title>
+            <title>{cellHoverDescription(cell)}</title>
           </g>
         );
       })}
@@ -231,15 +241,21 @@ export const Renderer2DBoard = (props: Renderer2DBoardProps) => {
           />
         );
       })}
-      {board.entities.map((entity) => (
-        <Entity
-          cue={cueByEntity.get(entity.id)}
-          entity={entity}
-          key={entity.id}
-          onIntent={onIntent}
-          reducedMotion={reducedMotion}
-        />
-      ))}
+      {board.entities.map((entity) => {
+        const cell = cellById.get(entity.cellId);
+        return (
+          <Entity
+            cellDescription={cell
+              ? cellHoverDescription(cell)
+              : `Cell at (${entity.coordinate.q}, ${entity.coordinate.r})`}
+            cue={cueByEntity.get(entity.id)}
+            entity={entity}
+            key={entity.id}
+            onIntent={onIntent}
+            reducedMotion={reducedMotion}
+          />
+        );
+      })}
     </svg>
   );
 };

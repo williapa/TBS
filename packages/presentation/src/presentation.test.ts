@@ -109,6 +109,7 @@ describe("board presenter", () => {
     expect(board.revision).toBe(0);
     expect(board.cells).toHaveLength(3);
     expect(board.cells.find(({ id }) => id === focusedCellId)).toMatchObject({
+      accessibleDescription: "Plains cell at (1, 0)",
       selection: "focused",
       target: "move",
       terrainAssetId: "terrain:plains",
