@@ -93,6 +93,55 @@ describe("Renderer2DBoard", () => {
     expect(getEmojiForAsset("unit:pathfinder")).toBe("◉");
   });
 
+  test("shows the loaded unit icon in the top-right badge only while transporting cargo", () => {
+    const presented = board();
+    const cargoBoard: BoardViewModel = {
+      ...presented,
+      entities: presented.entities.flatMap((entity) => [
+        {
+          ...entity,
+          id: entityId("empty-transport"),
+          cellId: cellId("0:0"),
+          coordinate: { q: 0, r: 0 },
+        },
+        {
+          ...entity,
+          cargo: [{
+            id: entityId("cargo-1"),
+            unitTypeId: "soldier" as BoardEntityViewModel["unitTypeId"],
+            assetId: "unit:soldier",
+            label: "Soldier",
+            statuses: [],
+          }],
+        },
+      ]),
+    };
+    const carrying = render(
+      <Renderer2DBoard board={cargoBoard} onIntent={vi.fn()} />,
+    );
+    try {
+      const badge = carrying.container.querySelector(
+        "[data-entity-id='unit-1'] [data-cargo-badge]",
+      );
+      expect(carrying.container.querySelector(
+        "[data-entity-id='empty-transport'] [data-cargo-badge]",
+      )).toBeNull();
+      expect(Array.from(carrying.container.querySelectorAll("text"))
+        .some((text) => text.textContent === "P")).toBe(false);
+      expect(badge).not.toBeNull();
+      expect(badge?.querySelector("circle")?.getAttribute("cx")).toBe("24");
+      expect(badge?.querySelector("circle")?.getAttribute("cy")).toBe("-22");
+      const cargoIcon = badge?.querySelector("[data-cargo-icon]");
+      expect(cargoIcon?.getAttribute("x")).toBe("24");
+      expect(cargoIcon?.getAttribute("y")).toBe("-22");
+      expect(cargoIcon?.textContent).toBe(
+        getEmojiForAsset("unit:soldier"),
+      );
+    } finally {
+      carrying.unmount();
+    }
+  });
+
   test("omits health bars for healthless objects without invalid SVG attributes", () => {
     const presented = board();
     const healthlessBoard: BoardViewModel = {

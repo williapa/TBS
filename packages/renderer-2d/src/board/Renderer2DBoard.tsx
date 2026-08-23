@@ -130,11 +130,6 @@ const Entity = ({
         <text dominantBaseline="central" fontSize={30} textAnchor="middle" y={-2}>
           {getEmojiForAsset(entity.assetId)}
         </text>
-        {entity.cargo[0] && (
-          <text dominantBaseline="central" fontSize={17} textAnchor="middle" x={18} y={14}>
-            {getEmojiForAsset(entity.cargo[0].assetId)}
-          </text>
-        )}
         {entity.statuses.includes("moved") && (
           <text fill="#ffffff" fontSize={15} fontWeight="bold" x={-27} y={-18}>✓</text>
         )}
@@ -145,10 +140,14 @@ const Entity = ({
             <rect data-health-bar-outline fill="none" height={5} rx={2} stroke="#111" strokeWidth={1} width={44} x={-22} y={15} />
           </g>
         )}
-        <circle cx={24} cy={-22} fill={teamColor(entity.teamId)} r={10} stroke="#111" />
-        <text fill={entity.teamId === "orange" ? "#111" : "#fff"} fontSize={11} fontWeight="bold" textAnchor="middle" x={24} y={-18}>
-          {entity.teamId === "orange" ? "O" : entity.teamId === "purple" ? "P" : "–"}
-        </text>
+        {entity.cargo[0] && (
+          <g data-cargo-badge>
+            <circle cx={24} cy={-22} fill="rgba(8, 12, 18, 0.92)" r={11} stroke={teamColor(entity.teamId)} strokeWidth={2} />
+            <text data-cargo-icon dominantBaseline="central" fontSize={15} textAnchor="middle" x={24} y={-22}>
+              {getEmojiForAsset(entity.cargo[0].assetId)}
+            </text>
+          </g>
+        )}
       </g>
     </g>
   );
