@@ -72,3 +72,54 @@ describe("SupabaseGameSessionAdapter.submitAction", () => {
     });
   });
 });
+
+describe("SupabaseGameSessionAdapter.getInvitePreview", () => {
+  test("parses bounded canonical state without requesting membership data", async () => {
+    const snapshot = createGameSnapshotFixture();
+    const rpc = vi.fn().mockResolvedValue({
+      data: [{
+        creator_display_name: "Orange",
+        game_id: snapshot.gameId,
+        map_name: "Forest crossing",
+        state: snapshot.state,
+      }],
+      error: null,
+    });
+    const adapter = new SupabaseGameSessionAdapter(
+      { rpc } as never,
+      { getIdentity: vi.fn().mockResolvedValue({ userId: "preview-visitor" }) },
+      currentStandardProtocolCodec,
+    );
+
+    await expect(adapter.getInvitePreview("invite-token")).resolves.toEqual({
+      creatorDisplayName: "Orange",
+      gameId: snapshot.gameId,
+      mapName: "Forest crossing",
+      state: snapshot.state,
+    });
+    expect(rpc).toHaveBeenCalledWith("get_game_invite_preview", {
+      invite_token: "invite-token",
+    });
+  });
+
+  test("rejects malformed preview state at the adapter boundary", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: [{
+        creator_display_name: "Orange",
+        game_id: "preview-game",
+        map_name: "Forest crossing",
+        state: { revision: "invalid" },
+      }],
+      error: null,
+    });
+    const adapter = new SupabaseGameSessionAdapter(
+      { rpc } as never,
+      { getIdentity: vi.fn().mockResolvedValue({ userId: "preview-visitor" }) },
+      currentStandardProtocolCodec,
+    );
+
+    await expect(adapter.getInvitePreview("invite-token")).rejects.toMatchObject({
+      code: "incompatible-data",
+    });
+  });
+});

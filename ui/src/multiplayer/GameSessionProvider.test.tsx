@@ -8,7 +8,11 @@ import { GameSessionGatewayContext } from "./GameSessionGatewayContext";
 import { GameSessionProvider, useGameSession } from "./GameSessionProvider";
 import { createActionEnvelope } from "./createActionEnvelope";
 
-const input = () => ({ displayName: "Orange", initialState: createWaitingGameStateFixture() });
+const input = () => ({
+  displayName: "Orange",
+  initialState: createWaitingGameStateFixture(),
+  mapName: "Provider battlefield",
+});
 const createStore = () => new InMemoryGameSessionStore(applyStandardAction);
 const endTurnEnvelope = (revision: number, id: string) =>
   createActionEnvelope(revision, { type: "end-turn" }, () => id);

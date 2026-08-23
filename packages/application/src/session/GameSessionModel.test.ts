@@ -41,6 +41,12 @@ const clientFor = (
     inviteToken: "invite-token",
   })),
   joinGame: vi.fn(async () => sessionFor(snapshot)),
+  getInvitePreview: vi.fn(async () => ({
+    creatorDisplayName: "Orange",
+    gameId: snapshot.gameId,
+    mapName: "Model battlefield",
+    state: snapshot.state,
+  })),
   getSnapshot: vi.fn(async () => snapshot),
   getActions: vi.fn(async (_gameId, afterRevision) =>
     actions.filter((action) => action.revision > afterRevision)),
@@ -59,6 +65,23 @@ const clientFor = (
 });
 
 describe("GameSessionModel", () => {
+  it("loads an invite preview without connecting a session", async () => {
+    const snapshot = createGameSnapshotFixture();
+    const client = clientFor(snapshot);
+    const model = new GameSessionModel(client, { nowIso: () => "ignored" });
+
+    await expect(model.getInvitePreview("invite-token")).resolves.toEqual({
+      creatorDisplayName: "Orange",
+      gameId: snapshot.gameId,
+      mapName: "Model battlefield",
+      state: snapshot.state,
+    });
+    expect(model.getState()).toMatchObject({
+      connectionState: "idle",
+      session: null,
+    });
+  });
+
   it("owns connection state, bounded history, and presence publication", async () => {
     const first = createGameSnapshotFixture();
     const firstResult = applyStandardAction(first.state, orangeTeamId, envelope.action);

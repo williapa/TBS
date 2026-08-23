@@ -73,8 +73,21 @@ fieldset legend {
   text-align: left;
 }
 
+.game-map-preview {
+  background: #0f141a;
+  border-radius: 8px;
+  height: clamp(260px, 55vw, 620px);
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
 @media (max-width: 600px) {
   .cloudscape-form-page {
     width: calc(100% - 24px);
+  }
+
+  .game-map-preview {
+    height: clamp(220px, 75vw, 420px);
   }
 }

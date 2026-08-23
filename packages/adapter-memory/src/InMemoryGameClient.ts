@@ -2,6 +2,7 @@ import type {
   CreatedGame,
   CreateGameInput,
   GameClient,
+  GameInvitePreview,
   GameRevisionNotice,
   GameSession,
   GatewayError,
@@ -27,6 +28,7 @@ type RecordState = {
   listeners: Set<(notice: GameRevisionNotice) => void>;
   presenceListeners: Set<(presence: readonly PresenceState[]) => void>;
   members: Map<string, Member>;
+  mapName: string;
   presence: Map<string, PresenceState>;
   state: StandardGameSnapshot["state"];
   teamOrder: readonly Exclude<SessionRole, "spectator">[];
@@ -120,6 +122,9 @@ export class InMemoryGameSessionGateway implements GameClient {
         "new games require a waiting revision-zero initial state",
       );
     }
+    if (!input.mapName.trim() || input.mapName.trim().length > 120) {
+      throw gatewayError("invalid-action", "map name is invalid");
+    }
     const teamOrder = Object.values(input.initialState.teams).map(({ id }) => id);
     const creatorTeamId = teamOrder[0];
     if (!creatorTeamId || teamOrder.length < 2) {
@@ -137,6 +142,7 @@ export class InMemoryGameSessionGateway implements GameClient {
       listeners: new Set(),
       presenceListeners: new Set(),
       members: new Map([[this.userId, member]]),
+      mapName: input.mapName.trim(),
       presence: new Map(),
       state: structuredClone(input.initialState),
       teamOrder,
@@ -184,6 +190,19 @@ export class InMemoryGameSessionGateway implements GameClient {
       }
     }
     return this.session(found.gameId, found.game);
+  }
+
+  async getInvitePreview(inviteToken: string): Promise<GameInvitePreview> {
+    const found = this.store.findByInvite(inviteToken);
+    if (!found) throw gatewayError("invalid-invite", "invite token is invalid");
+    const creator = [...found.game.members.values()].find(({ role }) => role === found.game.teamOrder[0]);
+    if (!creator) throw gatewayError("incompatible-data", "game creator is missing");
+    return {
+      creatorDisplayName: creator.displayName,
+      gameId: found.gameId,
+      mapName: found.game.mapName,
+      state: structuredClone(found.game.state),
+    };
   }
 
   async getSnapshot(gameId: string) {

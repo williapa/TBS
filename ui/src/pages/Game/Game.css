@@ -53,7 +53,7 @@
 .game-renderer-toggle {
   background: rgba(12, 18, 28, 0.88);
   border-radius: 0 0 8px 8px;
-  display: flex;
+  display: none; /*flex;*/
   gap: 4px;
   left: 50%;
   padding: 5px;

@@ -1,6 +1,7 @@
 import type {
   CreatedGame,
   CreateGameInput,
+  GameInvitePreview,
   GameSession,
   GatewayError,
   GatewayErrorCode,
@@ -142,6 +143,9 @@ export class GameSessionModel {
     displayName,
     () => this.client.joinGame(inviteToken, intent, displayName),
   );
+
+  readonly getInvitePreview = (inviteToken: string): Promise<GameInvitePreview> =>
+    this.client.getInvitePreview(inviteToken);
 
   readonly submitAction = async (
     envelope: StandardActionEnvelope,

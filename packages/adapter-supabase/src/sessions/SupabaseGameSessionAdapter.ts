@@ -2,6 +2,7 @@ import type {
   CreatedGame,
   CreateGameInput,
   GameCommandPort,
+  GameInvitePreview,
   GameQueryPort,
   GameSession,
   GameSessionPort,
@@ -46,9 +47,10 @@ export class SupabaseGameSessionAdapter
   async createGame(input: CreateGameInput): Promise<CreatedGame> {
     try {
       const identity = await this.ready();
-      const response = await this.client.rpc("create_game", {
+      const response = await this.client.rpc("create_game_with_metadata", {
         display_name: input.displayName,
         initial_state: input.initialState,
+        map_name: input.mapName,
       });
       if (response.error) this.fail(response.error);
       const row = firstRow(response.data, "createGame.rows");
@@ -107,6 +109,32 @@ export class SupabaseGameSessionAdapter
       });
       if (response.error) this.fail(response.error);
       return snapshotFromRow(this.codec, firstRow(response.data, "getSnapshot.rows"));
+    } catch (error) {
+      this.fail(error);
+    }
+  }
+
+  async getInvitePreview(inviteToken: string): Promise<GameInvitePreview> {
+    try {
+      await this.ready();
+      const response = await this.client.rpc("get_game_invite_preview", {
+        invite_token: inviteToken,
+      });
+      if (response.error) this.fail(response.error);
+      const row = firstRow(response.data, "getInvitePreview.rows");
+      const gameId = nonEmptyString(row.game_id, "getInvitePreview.gameId");
+      const mapName = nonEmptyString(row.map_name, "getInvitePreview.mapName");
+      const creatorDisplayName = nonEmptyString(
+        row.creator_display_name,
+        "getInvitePreview.creatorDisplayName",
+      );
+      const state = this.codec.parseGameSnapshot({
+        gameId,
+        players: {},
+        spectatorCount: 0,
+        state: row.state,
+      }).state;
+      return { creatorDisplayName, gameId, mapName, state };
     } catch (error) {
       this.fail(error);
     }

@@ -74,6 +74,7 @@ integrationDescribe("submit-action authority", () => {
       const created = await orange.createGame({
         displayName: "Authority orange",
         initialState,
+        mapName: "Authority battlefield",
       });
       await purple.joinGame(created.inviteToken, "player", "Authority purple");
 

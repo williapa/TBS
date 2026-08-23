@@ -37,6 +37,10 @@ export class SupabaseGameClient implements GameClient {
     return this.sessions.joinGame(inviteToken, intent, displayName);
   }
 
+  getInvitePreview(inviteToken: string) {
+    return this.sessions.getInvitePreview(inviteToken);
+  }
+
   getSnapshot(gameId: string) {
     return this.sessions.getSnapshot(gameId);
   }

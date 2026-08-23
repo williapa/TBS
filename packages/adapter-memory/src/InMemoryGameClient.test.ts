@@ -22,12 +22,26 @@ runGameClientWriteContract("InMemoryGameSessionGateway", () => harness("write-us
 runGameClientActionFamiliesContract("InMemoryGameSessionGateway", () => harness("action-user"));
 
 describe("InMemoryGameSessionGateway", () => {
+  it("rejects invalid preview map metadata", async () => {
+    const gateway = new InMemoryGameSessionGateway(
+      new InMemoryGameSessionStore(applyStandardAction),
+      "creator",
+    );
+
+    await expect(gateway.createGame({
+      displayName: "Creator",
+      initialState: createWaitingGameStateFixture(),
+      mapName: " ",
+    })).rejects.toMatchObject({ code: "invalid-action" });
+  });
+
   it("enforces a configurable spectator cap without blocking reconnect", async () => {
     const store = new InMemoryGameSessionStore(applyStandardAction);
     const creator = new InMemoryGameSessionGateway(store, "creator", 1);
     const created = await creator.createGame({
       displayName: "Creator",
       initialState: createWaitingGameStateFixture(),
+      mapName: "Spectator cap battlefield",
     });
     await new InMemoryGameSessionGateway(store, "purple", 1)
       .joinGame(created.inviteToken, "player", "Purple");

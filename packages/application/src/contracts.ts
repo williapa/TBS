@@ -52,10 +52,18 @@ export type GameSession = Readonly<{
   snapshot: StandardGameSnapshot;
 }>;
 
+export type GameInvitePreview = Readonly<{
+  creatorDisplayName: string;
+  gameId: string;
+  mapName: string;
+  state: GameState;
+}>;
+
 export type CreatedGame = GameSession & Readonly<{ inviteToken: string }>;
 export type CreateGameInput = Readonly<{
   displayName: string;
   initialState: GameState;
+  mapName: string;
 }>;
 
 export type SubmitActionInput = Readonly<{

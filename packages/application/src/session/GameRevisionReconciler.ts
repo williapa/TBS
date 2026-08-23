@@ -11,7 +11,8 @@ import { MAX_REPLAY_GAP } from "../limits";
 import type { GameQueryPort } from "../ports/query";
 import type { GameRealtimePort } from "../ports/realtime";
 
-type ReconciliationPort = GameQueryPort & Pick<GameRealtimePort, "subscribe">;
+type ReconciliationPort = Pick<GameQueryPort, "getActions" | "getSnapshot">
+  & Pick<GameRealtimePort, "subscribe">;
 
 export type ReconciliationSource = "initial" | "replay" | "snapshot";
 export type ReconciliationListener = (

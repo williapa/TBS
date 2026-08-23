@@ -1,7 +1,7 @@
 import { applyStandardAction } from "@TBS/game-rules";
 import { createDefaultBattlefield, mapTerrainOptions } from "@TBS/game-setup";
 import { createWaitingGameStateFixture } from "@TBS/test-kit";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { MapRepository } from "../../maps";
 import { LocalStorageMapRepository } from "../../maps";
@@ -28,6 +28,7 @@ const createGame = async (store: InMemoryGameSessionStore) => {
   return new InMemoryGameSessionGateway(store, "orange").createGame({
     displayName: "Orange",
     initialState: createWaitingGameStateFixture(),
+    mapName: "Route battlefield",
   });
 };
 
@@ -56,12 +57,21 @@ describe("new session create and join flow", () => {
     };
     renderFlow(new InMemoryGameSessionGateway(store, "creator"), "/", customMapRepository);
 
-    expect(await screen.findByText("Forest crossing")).toBeInTheDocument();
+    expect(await screen.findAllByText("Forest crossing")).not.toHaveLength(0);
+    expect(screen.getByRole("img", { name: "Map preview" })).toBeInTheDocument();
+    const previewDetails = within(screen.getByLabelText("Game preview details"));
+    expect(previewDetails.getByText("Forest crossing")).toBeInTheDocument();
+    expect(previewDetails.getByText("Enter a display name")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Display name"), { target: { value: "Ada" } });
+    expect(previewDetails.getByText("Ada")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Create game" }));
     const link = await screen.findByLabelText("Share link");
     expect(link).toHaveValue("http://localhost/game/invite-1");
     expect(screen.getByRole("button", { name: "Open game" })).toBeInTheDocument();
+    expect(
+      link.compareDocumentPosition(screen.getByRole("img", { name: "Map preview" }))
+      & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
     await waitFor(() => expect(writeText).toHaveBeenCalledWith("http://localhost/game/invite-1"));
     expect(await screen.findByRole("button", { name: "Copied" })).toBeInTheDocument();
@@ -79,6 +89,10 @@ describe("new session create and join flow", () => {
     const playerStore = createStore();
     const playerGame = await createGame(playerStore);
     renderFlow(new InMemoryGameSessionGateway(playerStore, "purple"), `/game/${playerGame.inviteToken}`);
+    await screen.findByRole("img", { name: "Battlefield preview" });
+    const joinPreviewDetails = within(screen.getByLabelText("Game preview details"));
+    expect(joinPreviewDetails.getByText("Route battlefield")).toBeInTheDocument();
+    expect(joinPreviewDetails.getByText("Orange")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Display name"), { target: { value: "Purple" } });
     fireEvent.click(screen.getByRole("button", { name: "Join as player" }));
     expect(await screen.findByRole("heading", { name: "Game in progress" })).toBeInTheDocument();
@@ -87,6 +101,7 @@ describe("new session create and join flow", () => {
     const spectatorStore = createStore();
     const spectatorGame = await createGame(spectatorStore);
     const secondView = renderFlow(new InMemoryGameSessionGateway(spectatorStore, "watcher"), `/game/${spectatorGame.inviteToken}`);
+    await secondView.findByRole("img", { name: "Battlefield preview" });
     const names = secondView.getAllByLabelText("Display name");
     fireEvent.change(names[names.length - 1], { target: { value: "Watcher" } });
     const watchButtons = secondView.getAllByRole("button", { name: "Watch as spectator" });
@@ -99,6 +114,7 @@ describe("new session create and join flow", () => {
     const created = await createGame(store);
     await new InMemoryGameSessionGateway(store, "purple").joinGame(created.inviteToken, "player", "Purple");
     renderFlow(new InMemoryGameSessionGateway(store, "third"), `/game/${created.inviteToken}`);
+    await screen.findByRole("img", { name: "Battlefield preview" });
     fireEvent.change(screen.getByLabelText("Display name"), { target: { value: "Third" } });
     fireEvent.click(screen.getByRole("button", { name: "Join as player" }));
 
@@ -145,9 +161,8 @@ describe("new session create and join flow", () => {
 
   test("renders an invalid invite state", async () => {
     renderFlow(new InMemoryGameSessionGateway(createStore(), "visitor"), "/game/missing");
-    fireEvent.change(screen.getByLabelText("Display name"), { target: { value: "Visitor" } });
-    fireEvent.click(screen.getByRole("button", { name: "Join as player" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("This invite link is invalid.");
+    expect(screen.getByRole("button", { name: "Join as player" })).toBeDisabled();
   });
 
   test("exposes only supported navigation and redirects or explains obsolete bookmarks", async () => {

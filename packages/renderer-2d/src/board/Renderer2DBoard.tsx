@@ -12,12 +12,17 @@ import type {
 import { getEmojiForAsset } from "../assets/emojiManifest";
 import { HEX_SIZE, hexPolygonPoints, projectHexTo2D } from "./projection";
 
-export type Renderer2DBoardProps = Readonly<{
+type Renderer2DBoardCommonProps = Readonly<{
+  ariaLabel?: string;
   board: BoardViewModel;
-  onIntent: BoardIntentHandler;
   reducedMotion?: boolean;
   className?: string;
 }>;
+
+export type Renderer2DBoardProps = Renderer2DBoardCommonProps & (
+  | Readonly<{ interactionMode?: "interactive"; onIntent: BoardIntentHandler }>
+  | Readonly<{ interactionMode: "static"; onIntent?: never }>
+);
 
 const terrainColors: Readonly<Record<string, string>> = {
   "terrain:beach": "#f4d35e",
@@ -86,7 +91,7 @@ const Entity = ({
 }: Readonly<{
   cue?: MoveEntityCue;
   entity: BoardEntityViewModel;
-  onIntent: BoardIntentHandler;
+  onIntent?: BoardIntentHandler;
   reducedMotion: boolean;
 }>) => {
   const point = projectHexTo2D(entity.coordinate);
@@ -95,19 +100,23 @@ const Entity = ({
     ? 44 * (entity.health.current / entity.health.maximum)
     : null;
   const stopAndSelect = (event: MouseEvent<SVGGElement>) => {
+    if (!onIntent) return;
     event.stopPropagation();
     onIntent(intent, pointerAnchor(event));
   };
+  const interactionProps = onIntent ? {
+    "aria-label": entity.accessibleDescription,
+    onClick: stopAndSelect,
+    onKeyDown: dispatchOnKeyboard(intent, onIntent),
+    role: "button",
+    style: { outline: "none" },
+    tabIndex: 0,
+  } as const : {};
   return (
     <g
-      aria-label={entity.accessibleDescription}
       data-entity-id={entity.id}
-      onClick={stopAndSelect}
-      onKeyDown={dispatchOnKeyboard(intent, onIntent)}
-      role="button"
-      style={{ outline: "none" }}
-      tabIndex={0}
       transform={`translate(${point.x} ${point.y})`}
+      {...interactionProps}
     >
       <g key={cue?.id ?? "canonical"} style={entityMotionStyle(entity, cue, reducedMotion)}>
         <circle
@@ -145,12 +154,14 @@ const Entity = ({
   );
 };
 
-export const Renderer2DBoard = ({
-  board,
-  className,
-  onIntent,
-  reducedMotion = false,
-}: Renderer2DBoardProps) => {
+export const Renderer2DBoard = (props: Renderer2DBoardProps) => {
+  const {
+    ariaLabel,
+    board,
+    className,
+    reducedMotion = false,
+  } = props;
+  const onIntent = props.interactionMode === "static" ? undefined : props.onIntent;
   const projected = board.cells.map(({ coordinate }) => projectHexTo2D(coordinate));
   const minimumX = Math.min(...projected.map(({ x }) => x)) - HEX_SIZE - 10;
   const maximumX = Math.max(...projected.map(({ x }) => x)) + HEX_SIZE + 10;
@@ -162,28 +173,31 @@ export const Renderer2DBoard = ({
 
   return (
     <svg
-      aria-label={`Two-dimensional game board, revision ${board.revision}`}
+      aria-label={ariaLabel ?? `Two-dimensional game board, revision ${board.revision}`}
       className={className}
       preserveAspectRatio="xMidYMid meet"
-      role="grid"
-      style={{ display: "block", height: "100%", touchAction: "manipulation", width: "100%" }}
+      role={onIntent ? "grid" : "img"}
+      style={{ display: "block", height: "100%", touchAction: onIntent ? "manipulation" : "none", width: "100%" }}
       viewBox={`${minimumX} ${minimumY} ${maximumX - minimumX} ${maximumY - minimumY}`}
     >
       <style>{`@keyframes tbs-renderer-2d-move { from { transform: translate(var(--tbs-move-x), var(--tbs-move-y)); } to { transform: translate(0, 0); } }`}</style>
       {board.cells.map((cell) => {
         const point = projectHexTo2D(cell.coordinate);
         const intent: BoardIntent = { type: "select-cell", cell: cell.coordinate };
+        const interactionProps = onIntent ? {
+          "aria-label": cell.accessibleDescription,
+          onClick: (event: MouseEvent<SVGGElement>) => onIntent(intent, pointerAnchor(event)),
+          onKeyDown: dispatchOnKeyboard(intent, onIntent),
+          role: "gridcell",
+          style: { outline: "none" },
+          tabIndex: 0,
+        } as const : {};
         return (
           <g
-            aria-label={cell.accessibleDescription}
             data-cell-id={cell.id}
             key={cell.id}
-            onClick={(event) => onIntent(intent, pointerAnchor(event))}
-            onKeyDown={dispatchOnKeyboard(intent, onIntent)}
-            role="gridcell"
-            style={{ outline: "none" }}
-            tabIndex={0}
             transform={`translate(${point.x} ${point.y})`}
+            {...interactionProps}
           >
             <polygon
               fill={terrainColors[cell.terrainAssetId] ?? "#77808d"}

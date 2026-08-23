@@ -31,6 +31,7 @@ const purpleTeamId = teamId("purple");
 const gameInput = () => ({
   displayName: "Orange",
   initialState: createWaitingGameStateFixture(),
+  mapName: "Contract battlefield",
 });
 
 const waitFor = async (condition: () => boolean) => {
@@ -63,6 +64,11 @@ export const runGameClientReadContract = (
         expect(created.snapshot.state.lifecycle).toEqual({ phase: "waiting" });
 
         const purple = await harness.createClient();
+        const preview = await purple.getInvitePreview(created.inviteToken);
+        expect(preview.gameId).toBe(created.gameId);
+        expect(preview.mapName).toBe("Contract battlefield");
+        expect(preview.creatorDisplayName).toBe("Orange");
+        expect(preview.state).toEqual(created.snapshot.state);
         const joined = await purple.joinGame(created.inviteToken, "player", "Purple");
         expect(joined.role).toBe(purpleTeamId);
         expect(joined.snapshot.state.lifecycle).toEqual({
@@ -360,6 +366,7 @@ export const runGameClientActionFamiliesContract = (
           const created = await orange.createGame({
             displayName: `Orange ${index}`,
             initialState: scenario.state,
+            mapName: `Action battlefield ${index}`,
           });
           await purple.joinGame(created.inviteToken, "player", `Purple ${index}`);
           const result = await purple.submitAction({

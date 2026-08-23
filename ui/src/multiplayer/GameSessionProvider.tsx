@@ -2,6 +2,7 @@ import type {
   CreatedGame,
   CreateGameInput,
   GameConnectionState,
+  GameInvitePreview,
   GameSession,
   GameSubmitState,
   GatewayError,
@@ -35,6 +36,7 @@ export type GameSessionContextValue = {
   submitState: GameSubmitState;
   error: GatewayError | null;
   createGame(input: CreateGameInput): Promise<CreatedGame>;
+  getInvitePreview(inviteToken: string): Promise<GameInvitePreview>;
   joinGame(inviteToken: string, intent: JoinIntent, displayName: string): Promise<GameSession>;
   submitAction(envelope: StandardActionEnvelope): Promise<SubmitActionResult>;
   clearError(): void;
@@ -64,6 +66,7 @@ export const GameSessionProvider = ({ children }: { children: ReactNode }) => {
   const value = useMemo<GameSessionContextValue>(() => ({
     ...state,
     createGame: model.createGame,
+    getInvitePreview: model.getInvitePreview,
     joinGame: model.joinGame,
     submitAction: model.submitAction,
     clearError: model.clearError,

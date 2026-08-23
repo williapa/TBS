@@ -11,12 +11,13 @@ import {
   Select,
   SpaceBetween,
 } from "@cloudscape-design/components";
-import type { FormEvent} from "react";
-import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { SavedMap} from "../../maps";
 import { useMapRepository } from "../../maps";
 import { useGameSession } from "../../multiplayer";
+import { GameMapPreview } from "./GameMapPreview";
 import { saveReconnectDetails } from "./sessionReconnect";
 
 export const SessionHomePage = () => {
@@ -45,15 +46,26 @@ export const SessionHomePage = () => {
     return () => { active = false; };
   }, [mapRepository]);
 
+  const selectedMap = maps.find((map) => map.id === mapId);
+  const selectedSetup = useMemo(() => {
+    if (!selectedMap) return {};
+    try {
+      return { state: createInitialGameSetup(selectedMap.map) };
+    } catch (value) {
+      return {
+        error: value instanceof Error ? value.message : "The selected map could not be previewed",
+      };
+    }
+  }, [selectedMap]);
+
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    const selected = maps.find((map) => map.id === mapId);
-    if (!selected) return;
+    if (!selectedMap || !selectedSetup.state) return;
     try {
-      const setup = createInitialGameSetup(selected.map);
       const created = await createGame({
         displayName: displayName.trim(),
-        initialState: setup,
+        initialState: selectedSetup.state,
+        mapName: selectedMap.name,
       });
       saveReconnectDetails(created.inviteToken, { displayName: displayName.trim(), intent: "player" });
       setShareUrl(`${window.location.origin}/game/${created.inviteToken}`);
@@ -67,8 +79,6 @@ export const SessionHomePage = () => {
     await navigator.clipboard.writeText(shareUrl);
     setCopied(true);
   };
-
-  const selectedMap = maps.find((map) => map.id === mapId);
 
   return (
     <main className="cloudscape-form-page">
@@ -90,7 +100,7 @@ export const SessionHomePage = () => {
                   variant="primary"
                   formAction="submit"
                   loading={connectionState === "loading"}
-                  disabled={!displayName.trim() || !mapId}
+                  disabled={!displayName.trim() || !selectedSetup.state}
                 >
                   Create game
                 </Button>
@@ -113,7 +123,7 @@ export const SessionHomePage = () => {
                   <FormField
                     label="Map"
                     description={selectedMap ? `Selected battlefield: ${selectedMap.name}.` : "Choose the battlefield for this match."}
-                    errorText={mapError}
+                    errorText={mapError ?? selectedSetup.error}
                     secondaryControl={(
                       <Button variant="link" formAction="none" onClick={() => navigate("/maps/new")}>Create a new map</Button>
                     )}
@@ -150,6 +160,15 @@ export const SessionHomePage = () => {
                 </SpaceBetween>
               </SpaceBetween>
             </Container>
+          )}
+          {selectedMap && selectedSetup.state && (
+            <GameMapPreview
+              creatorDisplayName={displayName.trim() || "Enter a display name"}
+              mapName={selectedMap.name}
+              state={selectedSetup.state}
+              status="ready"
+              title="Map preview"
+            />
           )}
         </SpaceBetween>
       </ContentLayout>

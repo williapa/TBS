@@ -20,17 +20,17 @@ The browser does not call an Express server, Socket.IO, DynamoDB, or map REST en
 
 ## Product routes
 
-- `/` creates a game from a bundled or local map and produces an invite URL.
+- `/` previews the selected bundled or local map with the read-only 2D renderer, creates a game from that exact setup, and produces an invite URL.
 - `/maps/new` and `/maps/:mapId/edit` create and edit versioned maps in browser local storage. `/maps` currently redirects to the new-map flow; import/export remains a setup/repository API rather than a shipped screen.
-- `/game/:inviteToken` joins or reconnects a player or spectator and renders waiting, active, or finished state.
+- `/game/:inviteToken` previews the current battlefield for a fresh invite visitor, then joins a player or spectator; saved members reconnect directly and render waiting, active, or finished state.
 
 Old signup, profile, lobby, create-game, and map-editor bookmarks redirect intentionally into this supported surface.
 
 ## Data and action flow
 
 1. The root identity gate restores or creates a Supabase anonymous Auth user.
-2. `game-setup` validates the selected map, derives objectives, initial money, and pinned versions, and produces normalized revision-zero `GameState`. Creating a game sends that state to `create_game`. Postgres stores session metadata, the canonical snapshot, orange membership, and only a hash of the returned bearer invite token.
-3. `join_game` reconnects existing membership, atomically claims the one purple seat, or adds a bounded spectator membership. Purple moves first.
+2. `game-setup` validates the selected map, derives objectives, initial money, and pinned versions, and produces normalized revision-zero `GameState`. Creating a game sends that state and the validated map name to `create_game_with_metadata`. Postgres stores the map name as session metadata, the canonical snapshot, orange membership, and only a hash of the returned bearer invite token; the legacy `create_game` RPC remains available for older clients and assigns a generic map name.
+3. Before a fresh visitor joins, the bearer invite token can read the current canonical battlefield, persisted map name, and creator display name through `get_game_invite_preview`. The creator name is derived from authoritative orange-seat membership. This read-only operation creates no membership and the UI renders it through the click-disabled 2D renderer. `join_game` then reconnects existing membership, atomically claims the one purple seat, or adds a bounded spectator membership. Purple moves first.
 4. A renderer emits a semantic board intent and may separately report the screen-space anchor of a pointer interaction. The presentation interaction controller advances transient selection/menu state and emits a typed action draft only after the player confirms a terminal choice. Choosing an ordinary move from a selected destination is terminal; actions that still require a target expose an explicit confirmation after target selection. React renders one renderer-independent DOM action surface: it is placed next to the pointer anchor when space permits and becomes a docked tray for keyboard, touch, and narrow-screen interaction. The UI composition boundary injects action and entity IDs, creates the current action envelope from canonical state, and sends only the game ID and envelope to the authenticated `submit-action` Edge Function.
 5. The function resolves the authenticated member and pinned protocol/ruleset/content versions, reads canonical state, and runs the shared deterministic evaluator. A service-only RPC then locks the game, rechecks caller membership, turn, versions, revision, and action ID, and atomically commits the resulting state, action, and ordered domain events. Exact action-ID retries are idempotent.
 6. One private `game:<uuid>` channel per active tab carries small revision notices and Presence. The application session model replays bounded action gaps and falls back to the canonical snapshot when a notice is missed, malformed, or too far ahead.
@@ -44,7 +44,7 @@ Postgres is always the durable authority. Presence never controls seats, turns, 
 
 ## Security boundary
 
-Supabase enforces authentication, invite lookup, membership reads, player-seat uniqueness, active-turn ownership, pinned engine versions, revision compare-and-swap, spectator read-only behavior, action-ID uniqueness, payload limits, state checksums, and private Realtime authorization. Browsers cannot call the service-only commit RPC and never submit candidate state or domain events. The authenticated Edge Function is the trusted game-rule boundary; Postgres independently rechecks durable authorization and concurrency invariants before commit.
+Supabase enforces authentication, bearer-token invite preview and lookup, membership reads, player-seat uniqueness, active-turn ownership, pinned engine versions, revision compare-and-swap, spectator read-only behavior, action-ID uniqueness, payload limits, state checksums, and private Realtime authorization. Invite preview returns only the current canonical game state and never creates membership. Browsers cannot call the service-only commit RPC and never submit candidate state or domain events. The authenticated Edge Function is the trusted game-rule boundary; Postgres independently rechecks durable authorization and concurrency invariants before commit.
 
 ## Storage and operations
 

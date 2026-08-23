@@ -73,6 +73,22 @@ const board = (): BoardViewModel => ({
 });
 
 describe("Renderer2DBoard", () => {
+  test("renders a non-interactive preview without focusable board controls", () => {
+    const { container } = render(
+      <Renderer2DBoard
+        ariaLabel="Selected map preview"
+        board={board()}
+        interactionMode="static"
+        reducedMotion
+      />,
+    );
+
+    expect(screen.getByRole("img", { name: "Selected map preview" })).toBeTruthy();
+    expect(screen.queryByRole("gridcell")).toBeNull();
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(container.querySelector("[tabindex]")).toBeNull();
+  });
+
   test("renders an extension unit through the generic asset fallback", () => {
     expect(getEmojiForAsset("unit:pathfinder")).toBe("◉");
   });
