@@ -40,7 +40,7 @@ const targetColors: Readonly<Record<BoardTargetType, string>> = {
   construct: "#f5b041",
   heal: "#5dade2",
   load: "#af7ac5",
-  move: "#ffffff",
+  move: "#22d3ee",
   spawn: "#f4d03f",
   unload: "#48c9b0",
 };
@@ -218,29 +218,6 @@ export const Renderer2DBoard = (props: Renderer2DBoardProps) => {
           </g>
         );
       })}
-      {board.cells.filter((cell) => cell.selection === "focused" || cell.target).map((cell) => {
-        const point = projectHexTo2D(cell.coordinate);
-        const focused = cell.selection === "focused";
-        const stroke = focused
-          ? "#ffffff"
-          : cell.target
-            ? targetColors[cell.target]
-            : undefined;
-        return (
-          <polygon
-            data-cell-highlight={cell.id}
-            data-highlight-kind={focused ? "selection" : cell.target}
-            fill="none"
-            key={cell.id}
-            points={hexPolygonPoints()}
-            pointerEvents="none"
-            stroke={stroke}
-            strokeDasharray={focused ? undefined : "7 4"}
-            strokeWidth={5}
-            transform={`translate(${point.x} ${point.y})`}
-          />
-        );
-      })}
       {board.entities.map((entity) => {
         const cell = cellById.get(entity.cellId);
         return (
@@ -253,6 +230,28 @@ export const Renderer2DBoard = (props: Renderer2DBoardProps) => {
             key={entity.id}
             onIntent={onIntent}
             reducedMotion={reducedMotion}
+          />
+        );
+      })}
+      {board.cells.filter((cell) => cell.selection !== "none" || cell.target).map((cell) => {
+        const point = projectHexTo2D(cell.coordinate);
+        const selected = cell.selection !== "none";
+        const stroke = selected
+          ? "#ffffff"
+          : cell.target
+            ? targetColors[cell.target]
+            : undefined;
+        return (
+          <polygon
+            data-cell-highlight={cell.id}
+            data-highlight-kind={selected ? "selection" : cell.target}
+            fill="none"
+            key={cell.id}
+            points={hexPolygonPoints()}
+            pointerEvents="none"
+            stroke={stroke}
+            strokeWidth={5}
+            transform={`translate(${point.x} ${point.y})`}
           />
         );
       })}

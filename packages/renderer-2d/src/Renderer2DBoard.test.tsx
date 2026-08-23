@@ -6,6 +6,7 @@ import type {
   BoardEntityViewModel,
   BoardInteractionAnchor,
   BoardIntent,
+  BoardTargetType,
   BoardViewModel,
 } from "@TBS/presentation";
 import { describe, expect, test, vi } from "vitest";
@@ -218,7 +219,7 @@ describe("Renderer2DBoard", () => {
     expect(entity.getAttribute("style")).toContain("cursor: pointer");
   });
 
-  test("renders focused cell highlighting above every base cell without a rectangular outline", () => {
+  test("renders solid selection and target borders above every cell and entity", () => {
     const presented = board();
     const focusedBoard = {
       ...presented,
@@ -240,8 +241,8 @@ describe("Renderer2DBoard", () => {
     expect(entity.getAttribute("style")).toContain("outline: none");
     expect(basePolygon?.getAttribute("stroke")).toBe("rgba(8, 12, 18, 0.72)");
     expect(targetOverlay?.getAttribute("data-highlight-kind")).toBe("move");
-    expect(targetOverlay?.getAttribute("stroke")).toBe("#ffffff");
-    expect(targetOverlay?.getAttribute("stroke-dasharray")).toBe("7 4");
+    expect(targetOverlay?.getAttribute("stroke")).toBe("#22d3ee");
+    expect(targetOverlay?.getAttribute("stroke-dasharray")).toBeNull();
     expect(targetOverlay?.getAttribute("pointer-events")).toBe("none");
     expect(selectionOverlay?.getAttribute("data-highlight-kind")).toBe("selection");
     expect(selectionOverlay?.getAttribute("fill")).toBe("none");
@@ -251,6 +252,50 @@ describe("Renderer2DBoard", () => {
     expect(selectionOverlay?.getAttribute("stroke-width")).toBe("5");
     expect((cells.at(-1)?.compareDocumentPosition(selectionOverlay as Node) ?? 0)
       & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect((entity.compareDocumentPosition(selectionOverlay as Node) ?? 0)
+      & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  test("uses a distinct solid border color for every target action", () => {
+    const targets = [
+      ["attack", "#ff5d5d"],
+      ["boost", "#58d68d"],
+      ["construct", "#f5b041"],
+      ["heal", "#5dade2"],
+      ["load", "#af7ac5"],
+      ["move", "#22d3ee"],
+      ["spawn", "#f4d03f"],
+      ["unload", "#48c9b0"],
+    ] as const satisfies readonly (readonly [BoardTargetType, string])[];
+    const presented = board();
+    const targetBoard: BoardViewModel = {
+      ...presented,
+      cells: targets.map(([target], q) => ({
+        ...presented.cells[0],
+        id: cellId(`${q}:0`),
+        coordinate: { q, r: 0 },
+        neighborIds: [],
+        selection: "none",
+        target,
+      })),
+      entities: [],
+      animationCues: [],
+      cameraBounds: {
+        minimum: { q: 0, r: 0 },
+        maximum: { q: targets.length - 1, r: 0 },
+        center: { q: (targets.length - 1) / 2, r: 0 },
+      },
+    };
+    const { container } = render(
+      <Renderer2DBoard board={targetBoard} onIntent={vi.fn()} />,
+    );
+
+    targets.forEach(([target, color], q) => {
+      const overlay = container.querySelector(`[data-cell-highlight='${q}:0']`);
+      expect(overlay?.getAttribute("data-highlight-kind")).toBe(target);
+      expect(overlay?.getAttribute("stroke")).toBe(color);
+      expect(overlay?.getAttribute("stroke-dasharray")).toBeNull();
+    });
   });
 
   test("animates accepted movement and skips it for reduced motion", () => {

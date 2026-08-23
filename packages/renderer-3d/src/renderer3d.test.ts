@@ -3,6 +3,7 @@ import type { BoardCellViewModel, BoardEntityViewModel, BoardViewModel, MoveEnti
 
 import { entityWorldPosition } from "./animation/entityMotion.js";
 import { getProceduralModel } from "./assets/modelManifest.js";
+import { cellHighlightColor } from "./board/highlightColor.js";
 import { HEX_WORLD_ORIENTATION, projectHexToWorld } from "./board/projection.js";
 import { cellForTerrainInstance, createTerrainBatches } from "./board/terrainBatches.js";
 import { initialCameraState, updateCameraState } from "./camera/cameraState.js";
@@ -79,6 +80,14 @@ describe("renderer-3d presentation behavior", () => {
   it("provides project-owned procedural fallbacks for known and future assets", () => {
     expect(getProceduralModel("unit:capital").kind).toBe("building");
     expect(getProceduralModel("unit:pathfinder")).toEqual({ assetId: "unit:pathfinder", kind: "person", source: "project-owned-procedural" });
+  });
+
+  it("uses solid action colors for targets while selection stays white", () => {
+    expect(cellHighlightColor({ selection: "none", target: "move" })).toBe("#22d3ee");
+    expect(cellHighlightColor({ selection: "none", target: "attack" })).toBe("#ff5d5d");
+    expect(cellHighlightColor({ selection: "none", target: "load" })).toBe("#af7ac5");
+    expect(cellHighlightColor({ selection: "selected", target: "attack" })).toBe("#ffffff");
+    expect(cellHighlightColor({ selection: "none", target: null })).toBeNull();
   });
 
   it("keeps camera changes bounded and rotation discrete", () => {

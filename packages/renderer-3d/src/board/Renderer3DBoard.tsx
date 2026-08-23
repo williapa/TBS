@@ -6,7 +6,6 @@ import type {
   BoardEntityViewModel,
   BoardInteractionAnchor,
   BoardIntentHandler,
-  BoardTargetType,
   BoardViewModel,
   MoveEntityCue,
 } from "@TBS/presentation";
@@ -14,6 +13,7 @@ import type {
 import { entityWorldPosition } from "../animation/entityMotion.js";
 import { getProceduralModel } from "../assets/modelManifest.js";
 import { initialCameraState, type CameraIntent, type StrategyCameraState, updateCameraState } from "../camera/cameraState.js";
+import { cellHighlightColor } from "./highlightColor.js";
 import { HEX_WORLD_ORIENTATION, projectHexToWorld } from "./projection.js";
 import { cellForTerrainInstance, createTerrainBatches, type TerrainBatch } from "./terrainBatches.js";
 
@@ -40,10 +40,6 @@ const terrainColors: Readonly<Record<string, string>> = {
   "terrain:plains": "#739e46",
   "terrain:road": "#735d56",
   "terrain:water": "#245c91",
-};
-const targetColors: Readonly<Record<BoardTargetType, string>> = {
-  attack: "#ff3f4e", boost: "#43dc84", construct: "#ffad33", heal: "#4cb7ff",
-  load: "#c27bff", move: "#ffffff", spawn: "#ffe14d", unload: "#43e0cf",
 };
 const teamColors: Readonly<Record<string, string>> = {
   orange: "#ff8c00",
@@ -199,10 +195,12 @@ const BoardScene = ({ board, camera, onIntent, reducedMotion }: Readonly<{
         {batches.map((batch) => <TerrainInstances batch={batch} key={batch.assetId} onIntent={onIntent} />)}
         {board.cells.filter((cell) => cell.target || cell.selection !== "none").map((cell) => {
           const position = projectHexToWorld(cell.coordinate);
+          const color = cellHighlightColor(cell);
+          if (!color) return null;
           return (
             <mesh key={cell.id} position={[position.x, 0.04, position.z]} rotation={[-Math.PI / 2, 0, 0]}>
               <ringGeometry args={[0.7, 0.91, 6, 1, HEX_WORLD_ORIENTATION.ringThetaStart]} />
-              <meshBasicMaterial color={cell.target ? targetColors[cell.target] : "#ffffff"} depthWrite={false} />
+              <meshBasicMaterial color={color} depthWrite={false} />
             </mesh>
           );
         })}
