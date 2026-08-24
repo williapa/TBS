@@ -6,6 +6,7 @@ type SessionPlayerPanelProps = {
   income: number;
   isLocalPlayer: boolean;
   isOnline: boolean;
+  isWinner: boolean;
   money: number;
   onEndTurn: () => void;
 };
@@ -18,6 +19,7 @@ export const SessionPlayerPanel = ({
   income,
   isLocalPlayer,
   isOnline,
+  isWinner,
   money,
   onEndTurn,
 }: SessionPlayerPanelProps) => {
@@ -28,12 +30,13 @@ export const SessionPlayerPanel = ({
   return (
     <aside
       aria-label={`${color} player`}
-      className={`player panel${activeTurn ? " panel--active" : ""}`}
+      className={`player panel${activeTurn ? " panel--active" : ""}${isWinner ? " panel--winner" : ""}`}
     >
       <div className={`player__identity player__identity--${color}`}>
         <p className="player__name">
           {name} {isLocalPlayer && "(you)"} {activeTurn && "(acting)"}
         </p>
+        {isWinner && <p className="player__winner"><span aria-hidden="true">★</span> Winner</p>}
         <img
           alt="avatar"
           className="player__avatar"

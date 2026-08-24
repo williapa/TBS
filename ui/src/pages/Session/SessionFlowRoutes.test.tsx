@@ -161,8 +161,17 @@ describe("new session create and join flow", () => {
       lifecycle: { phase: "finished", winnerTeamId },
     };
     const finishedView = renderFlow(new InMemoryGameSessionGateway(activeStore, "purple"), `/game/${active.inviteToken}`);
-    expect(await finishedView.findByRole("heading", { name: "Game finished" })).toBeInTheDocument();
-    expect(finishedView.getByText("Winner").nextSibling).toHaveTextContent("orange");
+    expect(await finishedView.findByRole("heading", {
+      name: "Orange team wins — Orange is the winner!",
+    })).toBeInTheDocument();
+    const metadata = finishedView.container.querySelector<HTMLElement>(".game-view__metadata");
+    if (!metadata) throw new Error("finished game metadata is missing");
+    expect(within(metadata).getByText("Winner").nextSibling).toHaveTextContent("orange");
+    const winningPanel = finishedView.getByRole("complementary", { name: "orange player" });
+    expect(winningPanel).toHaveClass("panel--winner");
+    expect(within(winningPanel).getByText("Winner")).toBeInTheDocument();
+    expect(finishedView.getByRole("complementary", { name: "purple player" }))
+      .not.toHaveClass("panel--winner");
   });
 
   test("renders an invalid invite state", async () => {

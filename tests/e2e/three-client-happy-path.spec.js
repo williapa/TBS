@@ -83,24 +83,20 @@ test("creator, challenger, and spectator complete a live game and all action fam
     await expect(spectator.getByRole("button", { name: "End turn" })).toHaveCount(0);
     await expect(spectator.getByText("Spectators online").locator("xpath=following-sibling::*[1]")).toHaveText("1");
 
-    await challenger.getByRole("button", { name: "Use 3D board" }).click();
-    await expect(challenger.getByRole("application", { name: /Three-dimensional game board/ })).toBeVisible();
-    const keyboardCell = challenger.getByRole("button", { name: /Current cell:/ });
-    await keyboardCell.press("ArrowRight");
-    await keyboardCell.press("ArrowRight");
-    const purpleAttacker = challenger.getByRole("button", { name: /Select Zuckerbird, purple team/ });
+    const purpleAttacker = challenger.getByRole("button", { name: /Zuckerbird, purple team/ });
     await purpleAttacker.click();
     await purpleAttacker.click();
     await challenger.getByRole("button", { name: "Attack" }).click();
-    await keyboardCell.press("ArrowRight");
-    await keyboardCell.press("ArrowRight");
-    await keyboardCell.press("ArrowRight");
-    await keyboardCell.press("Enter");
+    await challenger.getByRole("button", { name: /Capital, orange team/ }).click();
     await challenger.getByRole("button", { name: "Confirm attack" }).click();
-    await expect(challenger.getByRole("heading", { name: "Game finished" })).toBeVisible();
-    await expect(creator.getByRole("heading", { name: "Game finished" })).toBeVisible();
-    await expect(spectator.getByRole("heading", { name: "Game finished" })).toBeVisible();
-    await expect(spectator.getByText("Winner").locator("xpath=following-sibling::*[1]")).toHaveText("purple");
+    const winnerStatus = "Purple team wins — Challenger is the winner!";
+    await expect(challenger.getByRole("heading", { name: winnerStatus })).toBeVisible();
+    await expect(creator.getByRole("heading", { name: winnerStatus })).toBeVisible();
+    await expect(spectator.getByRole("heading", { name: winnerStatus })).toBeVisible();
+    await expect(spectator.locator(".game-view__metadata").getByText("Winner")
+      .locator("xpath=following-sibling::*[1]")).toHaveText("purple");
+    await expect(spectator.getByRole("complementary", { name: "purple player" }))
+      .toContainText("Winner");
     for (const page of [creator, challenger, spectator]) {
       const committedEvents = page.locator('[data-revision="1"]');
       await expect(committedEvents).toHaveCount(2);
@@ -135,6 +131,7 @@ test("creator, challenger, and spectator complete a live game and all action fam
       const created = await gatewayCall(creator, "createGame", {
         displayName: `Creator ${index}`,
         initialState: entry.state,
+        mapName: `Action scenario ${index + 1}`,
       });
       await gatewayCall(challenger, "joinGame", created.inviteToken, "player", `Challenger ${index}`);
       const result = await gatewayCall(challenger, "submitAction", {

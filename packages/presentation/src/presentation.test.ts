@@ -182,7 +182,12 @@ describe("board presenter", () => {
       money: 1_000,
       income: 0,
       active: true,
+      winner: false,
     });
+    expect(presentTeamPanel({
+      ...createState(),
+      lifecycle: { phase: "finished", winnerTeamId: orange },
+    }, orange)).toMatchObject({ active: false, winner: true });
   });
 
   test("presents detailed action copy and unit-specific valid targets", () => {

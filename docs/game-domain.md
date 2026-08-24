@@ -63,6 +63,8 @@ Consumable objects may award money or supply projectile effects when collected a
 
 Every game has elimination objectives: a team loses when it no longer has an on-board unit with both movement and attack capability. When setup added capital objectives, losing the team's capital is also a loss condition. A winning transition emits `game-over` and sets the canonical lifecycle to `finished` with the winner team.
 
+Finished-game views announce the winning team and seated player's display name in the persistent game status, and mark the winning player panel independently of the transient event history.
+
 ## Extension path
 
 Add a unit through one content definition and any required presentation asset mapping. Add an action through a focused action module, runtime codec, registry composition, shared legality selector, semantic presentation wiring, and focused tests. Add post-action behavior through an explicitly ordered mechanic hook. None of these extension paths require a second reducer, protocol-version dispatch, persistence candidate-state change, or renderer-owned rule.

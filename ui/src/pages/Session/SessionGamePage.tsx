@@ -41,11 +41,17 @@ export const SessionGamePage = () => {
   if (!orangePanel || !purplePanel) {
     return <p role="alert">The game team state is incomplete.</p>;
   }
+  const winnerTeamName = winnerTeamId === orangeTeamId
+    ? "Orange"
+    : winnerTeamId === purpleTeamId
+      ? "Purple"
+      : undefined;
+  const winnerDisplayName = winnerTeamId ? players[winnerTeamId]?.displayName : undefined;
   const statusLabel = state.lifecycle.phase === "waiting"
     ? "Waiting for an opponent"
     : state.lifecycle.phase === "active"
       ? "Game in progress"
-      : "Game finished";
+      : `${winnerTeamName} team wins${winnerDisplayName ? ` — ${winnerDisplayName} is the winner!` : "!"}`;
   const latestEvents = actions.at(-1)?.revision === state.revision
     ? actions.at(-1)?.events ?? []
     : [];
@@ -73,6 +79,7 @@ export const SessionGamePage = () => {
           income={orangePanel.income}
           isLocalPlayer={role === orangeTeamId}
           isOnline={Boolean(players[orangeTeamId] && onlineMembers.has(players[orangeTeamId].memberId))}
+          isWinner={orangePanel.winner}
           money={orangePanel.money}
           onEndTurn={() => send({ type: "end-turn" })}
         />
@@ -92,6 +99,7 @@ export const SessionGamePage = () => {
           income={purplePanel.income}
           isLocalPlayer={role === purpleTeamId}
           isOnline={Boolean(players[purpleTeamId] && onlineMembers.has(players[purpleTeamId].memberId))}
+          isWinner={purplePanel.winner}
           money={purplePanel.money}
           onEndTurn={() => send({ type: "end-turn" })}
         />

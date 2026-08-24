@@ -48,6 +48,7 @@ export type TeamPanelViewModel = Readonly<{
   money: number;
   income: number;
   active: boolean;
+  winner: boolean;
 }>;
 
 export const presentUnitPanel = (
@@ -104,5 +105,6 @@ export const presentTeamPanel = (
     money: team.money,
     income: getTeamIncome(state, teamId),
     active: state.lifecycle.phase === "active" && state.lifecycle.activeTeamId === teamId,
+    winner: state.lifecycle.phase === "finished" && state.lifecycle.winnerTeamId === teamId,
   };
 };
