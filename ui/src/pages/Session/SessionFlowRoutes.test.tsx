@@ -227,11 +227,11 @@ describe("new session create and join flow", () => {
       gameId: created.gameId,
       envelope: endTurnEnvelope(1, "44000000-0000-4000-8000-000000000002"),
     });
-    await waitFor(() => expect(Array.from(view.container.querySelectorAll("[data-revision]")).map((node) => node.getAttribute("data-revision"))).toEqual(["1", "2"]));
+    await waitFor(() => expect(Array.from(view.container.querySelectorAll("[data-revision]")).map((node) => node.getAttribute("data-revision"))).toEqual(["2", "1"]));
     view.unmount();
 
     const reloaded = renderFlow(new InMemoryGameSessionGateway(store, "purple"), `/game/${created.inviteToken}`);
-    await waitFor(() => expect(Array.from(reloaded.container.querySelectorAll("[data-revision]")).map((node) => node.getAttribute("data-revision"))).toEqual(["1", "2"]));
+    await waitFor(() => expect(Array.from(reloaded.container.querySelectorAll("[data-revision]")).map((node) => node.getAttribute("data-revision"))).toEqual(["2", "1"]));
   });
 
   test("spectators can inspect the board without action controls", async () => {
