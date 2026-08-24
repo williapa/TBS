@@ -11,10 +11,12 @@ import {
 } from "@cloudscape-design/components";
 import type { FormEvent} from "react";
 import { useState } from "react";
-import { mapTerrainOptions, MAX_MAP_SIDE, MIN_MAP_SIDE } from "@TBS/game-setup";
+import { mapTerrainOptions, MIN_MAP_SIDE } from "@TBS/game-setup";
 import type { MapEditorFormProps, TerrainType } from "../../types";
 
 type TerrainSelectOption = Readonly<{ label: string; value: TerrainType }>;
+
+export const CLIENT_MAX_MAP_SIDE = 10;
 
 const terrainSelectOptions: readonly TerrainSelectOption[] = mapTerrainOptions.map((terrain) => ({
   label: terrain[0].toUpperCase() + terrain.slice(1),
@@ -32,9 +34,9 @@ const MapEditorForm = ({ submit }: MapEditorFormProps) => {
   const dimensionError = submitted && (
     !Number.isInteger(parsedDimension)
     || parsedDimension < MIN_MAP_SIDE
-    || parsedDimension > MAX_MAP_SIDE
+    || parsedDimension > CLIENT_MAX_MAP_SIDE
   )
-    ? `Enter a whole number between ${MIN_MAP_SIDE} and ${MAX_MAP_SIDE}.`
+    ? `Enter a whole number between ${MIN_MAP_SIDE} and ${CLIENT_MAX_MAP_SIDE}.`
     : undefined;
 
   const onSubmit = (event: FormEvent) => {
@@ -44,7 +46,7 @@ const MapEditorForm = ({ submit }: MapEditorFormProps) => {
       !name.trim()
       || !Number.isInteger(parsedDimension)
       || parsedDimension < MIN_MAP_SIDE
-      || parsedDimension > MAX_MAP_SIDE
+      || parsedDimension > CLIENT_MAX_MAP_SIDE
     ) return;
     submit({
       submitted: true,
@@ -88,7 +90,7 @@ const MapEditorForm = ({ submit }: MapEditorFormProps) => {
                 <FormField
                   label="Hexagon side width"
                   description="The map will use this many hexes along each side. Larger maps take longer to play."
-                  constraintText={`Use a whole number from ${MIN_MAP_SIDE} to ${MAX_MAP_SIDE}.`}
+                  constraintText={`Use a whole number from ${MIN_MAP_SIDE} to ${CLIENT_MAX_MAP_SIDE}.`}
                   errorText={dimensionError}
                 >
                   <Input

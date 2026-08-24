@@ -12,6 +12,8 @@ Two durable player seats exist: the creator is orange and the challenger is purp
 
 The editor uses the versioned `MapDocument` contract owned by `@TBS/game-setup`. Its row, column, cell index, neighbor index, and empty-cell sentinel fields exist only at the map-document boundary. Setup validates map size, topology, identifiers, cargo, and the requirement that each player team has at least one movable combat unit. Unsupported prototype map documents are rejected or cleared.
 
+The new-map form limits hexagon side width to 10 in the browser. The setup contract retains its broader compatibility limit so previously saved or imported maps are not reinterpreted by this UI constraint.
+
 Game creation converts a validated map exactly once into revision-zero normalized state:
 
 - map cells become axial board cells keyed by coordinate;
