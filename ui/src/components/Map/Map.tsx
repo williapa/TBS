@@ -1,6 +1,12 @@
-import { createHexMap, mapTerrainOptions, updateMapCell } from "@TBS/game-setup";
+import {
+  createHexMap,
+  deriveInitialObjectives,
+  mapTerrainOptions,
+  updateMapCell,
+} from "@TBS/game-setup";
 import type { MapGrid } from "@TBS/game-setup";
-import { useState } from "react";
+import { presentWinCondition } from "@TBS/presentation";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import HexGrid from "../../components/HexGrid/HexGrid";
 import useWindowDimensions from "../../hooks/useWindowDimensions";
@@ -32,6 +38,14 @@ const Map = ({ name, dimension = 16, defaultTerrain, mapId, initialMap }: MapPro
   const [editing, setEditing] = useState(false);
   const [saveError, setSaveError] = useState<string>();
   const [saving, setSaving] = useState(false);
+  const winCondition = useMemo(
+    () => presentWinCondition(deriveInitialObjectives(mapData)),
+    [mapData],
+  );
+  const hasIncompleteCapitalSetup = useMemo(() => (
+    !winCondition.includesCapitalVictory
+    && mapData.flat().some((cell) => cell.unit === "capital" && cell.team !== "gray")
+  ), [mapData, winCondition.includesCapitalVictory]);
 
   const create = async () => {
     setSaving(true);
@@ -61,7 +75,15 @@ const Map = ({ name, dimension = 16, defaultTerrain, mapId, initialMap }: MapPro
           alignItems: "center"
         }}
       > 
-        <p> Maps must contain at least one movable combat unit per team. </p>
+        <div>
+          <p aria-label="Map win condition">
+            <strong>Win condition:</strong> {winCondition.description}
+          </p>
+          {hasIncompleteCapitalSetup && (
+            <p>Capital victory requires at least one capital for each team.</p>
+          )}
+          <p>Maps must contain at least one movable combat unit per team.</p>
+        </div>
         <button disabled={saving} onClick={create} style={{ maxWidth: "200px", marginLeft: "8px" }}>
           {saving ? "Saving…" : `${mapId ? "Save" : "Create"} map "${name}"`}
         </button>

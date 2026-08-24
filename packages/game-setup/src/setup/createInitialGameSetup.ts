@@ -47,7 +47,7 @@ const initialEntity = (
   };
 };
 
-const initialObjectives = (map: MapGrid): readonly ObjectiveState[] => {
+export const deriveInitialObjectives = (map: MapGrid): readonly ObjectiveState[] => {
   const capitals = map.flat().filter((cell) => cell.unit === "capital" && cell.team !== "gray");
   const hasCapitalForEveryTeam = standardTeamIds.every((team) =>
     capitals.some((cell) => cell.team === team));
@@ -105,7 +105,7 @@ export const createInitialGameState = (value: unknown): GameState => {
     board: { cells },
     entities,
     teams,
-    objectives: initialObjectives(map),
+    objectives: deriveInitialObjectives(map),
     turn: { number: 0 },
   };
   const violations = validateGameState(state);

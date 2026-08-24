@@ -24,6 +24,7 @@ import {
   presentTeamPanel,
   presentUnitActions,
   presentUnitPanel,
+  presentWinCondition,
   type AnimationCue,
   type AnimationDriver,
 } from "./index";
@@ -216,6 +217,23 @@ describe("board presenter", () => {
       },
     };
     expect(presentUnitPanel(bankState, orangeSoldier)?.movementCosts).toEqual([]);
+  });
+
+  test("presents elimination and capital win conditions from authoritative objectives", () => {
+    expect(presentWinCondition(createState().objectives)).toEqual({
+      description: "Eliminate every enemy unit that can move and attack.",
+      includesCapitalVictory: false,
+      includesEliminationVictory: true,
+    });
+    expect(presentWinCondition([
+      ...createState().objectives,
+      { type: "capital", position: origin, controllingTeamId: orange },
+      { type: "capital", position: enemyPosition, controllingTeamId: purple },
+    ])).toEqual({
+      description: "Eliminate every enemy unit that can move and attack, or destroy every enemy capital.",
+      includesCapitalVictory: true,
+      includesEliminationVictory: true,
+    });
   });
 
   test("preserves healthless objects without inventing zero health", () => {

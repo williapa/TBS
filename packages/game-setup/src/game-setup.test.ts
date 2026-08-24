@@ -7,6 +7,7 @@ import {
   createHexMap,
   createInitialGameSetup,
   CURRENT_MAP_SCHEMA_VERSION,
+  deriveInitialObjectives,
   axialToMapIndex,
   axialToMapOffset,
   exportMapDocument,
@@ -133,6 +134,36 @@ describe("map documents and setup", () => {
     expect(state.entities[entityId("initial-cell-0")]?.id).toBe("initial-cell-0");
     expect(state.objectives.filter(({ type }) => type === "capital")).toHaveLength(2);
     expect(validateGameState(state)).toEqual([]);
+  });
+
+  test("derives capital victory only when every team starts with a capital", () => {
+    const eliminationOnly = playableMap();
+    eliminationOnly[1][0] = {
+      ...eliminationOnly[1][0],
+      team: teamId("orange"),
+      unit: unitTypeId("capital"),
+    };
+    expect(deriveInitialObjectives(eliminationOnly).filter(({ type }) => type === "capital"))
+      .toEqual([]);
+
+    const capitalMap = playableMap();
+    capitalMap[1][0] = {
+      ...capitalMap[1][0],
+      team: teamId("orange"),
+      unit: unitTypeId("capital"),
+    };
+    capitalMap[1][1] = {
+      ...capitalMap[1][1],
+      team: teamId("purple"),
+      unit: unitTypeId("capital"),
+    };
+    capitalMap[0][1] = {
+      ...capitalMap[0][1],
+      team: teamId("orange"),
+      unit: unitTypeId("capital"),
+    };
+    expect(deriveInitialObjectives(capitalMap).filter(({ type }) => type === "capital"))
+      .toHaveLength(3);
   });
 
   test("assigns deterministic stable cargo IDs without leaking editor sentinels", () => {

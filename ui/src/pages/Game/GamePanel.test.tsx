@@ -1,16 +1,25 @@
 import { render, screen } from "@testing-library/react";
 import GamePanel from "./GamePanel";
 
-describe("GamePanel", () => {
-  test("renders the empty prompt when no state is selected", () => {
-    render(<GamePanel state={null} />);
+const winCondition = {
+  description: "Eliminate every enemy unit that can move and attack.",
+  includesCapitalVictory: false,
+  includesEliminationVictory: true,
+} as const;
 
-    expect(screen.getByText("Click a cell to see game information.")).toBeInTheDocument();
+describe("GamePanel", () => {
+  test("renders the win condition when no cell is selected", () => {
+    render(<GamePanel state={null} winCondition={winCondition} />);
+
+    expect(screen.getByText("Win condition")).toBeInTheDocument();
+    expect(screen.getByText(winCondition.description)).toBeInTheDocument();
+    expect(screen.getByText("Select a cell to see its details.")).toBeInTheDocument();
   });
 
   test("renders rows, section headers, and action descriptions", () => {
     render(
       <GamePanel
+        winCondition={winCondition}
         state={{
           coords: { q: 0, r: 0 },
           focus: "cell",
@@ -41,5 +50,6 @@ describe("GamePanel", () => {
     expect(screen.getByText("Initiate combat.")).toBeInTheDocument();
     expect(screen.getByText("Traverse empty map cells.")).toBeInTheDocument();
     expect(screen.getByText("Carrying Doctor (person)")).toBeInTheDocument();
+    expect(screen.queryByText(winCondition.description)).not.toBeInTheDocument();
   });
 });

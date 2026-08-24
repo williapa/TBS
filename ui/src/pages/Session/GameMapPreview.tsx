@@ -1,5 +1,5 @@
 import type { GameInvitePreview } from "@TBS/application";
-import { presentBoard } from "@TBS/presentation";
+import { presentBoard, presentWinCondition } from "@TBS/presentation";
 import { Renderer2DBoard } from "@TBS/renderer-2d";
 import {
   Alert,
@@ -28,6 +28,10 @@ export const GameMapPreview = (props: GameMapPreviewProps) => {
     () => previewState ? presentBoard({ state: previewState }) : undefined,
     [previewState],
   );
+  const winCondition = useMemo(
+    () => previewState ? presentWinCondition(previewState.objectives) : undefined,
+    [previewState],
+  );
 
   return (
     <Container header={<Header variant="h2">{props.title}</Header>}>
@@ -50,6 +54,7 @@ export const GameMapPreview = (props: GameMapPreviewProps) => {
                 label: "Created by",
                 value: props.status === "ready" ? props.creatorDisplayName : "",
               },
+              { label: "Win condition", value: winCondition?.description ?? "" },
             ]}
           />
           <div className="game-map-preview">

@@ -62,6 +62,8 @@ describe("new session create and join flow", () => {
     const previewDetails = within(screen.getByLabelText("Game preview details"));
     expect(previewDetails.getByText("Forest crossing")).toBeInTheDocument();
     expect(previewDetails.getByText("Enter a display name")).toBeInTheDocument();
+    expect(previewDetails.getByText("Eliminate every enemy unit that can move and attack."))
+      .toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Display name"), { target: { value: "Ada" } });
     expect(previewDetails.getByText("Ada")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Create game" }));
@@ -93,9 +95,14 @@ describe("new session create and join flow", () => {
     const joinPreviewDetails = within(screen.getByLabelText("Game preview details"));
     expect(joinPreviewDetails.getByText("Route battlefield")).toBeInTheDocument();
     expect(joinPreviewDetails.getByText("Orange")).toBeInTheDocument();
+    expect(joinPreviewDetails.getByText("Eliminate every enemy unit that can move and attack."))
+      .toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Display name"), { target: { value: "Purple" } });
     fireEvent.click(screen.getByRole("button", { name: "Join as player" }));
     expect(await screen.findByRole("heading", { name: "Game in progress" })).toBeInTheDocument();
+    expect(screen.getByText("Win condition")).toBeInTheDocument();
+    expect(screen.getByText("Eliminate every enemy unit that can move and attack."))
+      .toBeInTheDocument();
 
     window.localStorage.clear();
     const spectatorStore = createStore();

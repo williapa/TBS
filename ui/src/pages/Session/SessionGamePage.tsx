@@ -1,4 +1,8 @@
-import { presentTeamPanel, type StandardActionDraft } from "@TBS/presentation";
+import {
+  presentTeamPanel,
+  presentWinCondition,
+  type StandardActionDraft,
+} from "@TBS/presentation";
 import { useCallback, useState } from "react";
 
 import "../Game/Game.css";
@@ -55,6 +59,7 @@ export const SessionGamePage = () => {
   const latestEvents = actions.at(-1)?.revision === state.revision
     ? actions.at(-1)?.events ?? []
     : [];
+  const winCondition = presentWinCondition(state.objectives);
 
   return (
     <main className="game-view" aria-labelledby="game-state-title">
@@ -105,7 +110,7 @@ export const SessionGamePage = () => {
         />
       </div>
       <div className="r2">
-        <GamePanel state={panelState} />
+        <GamePanel state={panelState} winCondition={winCondition} />
         <SessionEventsPanel actions={actions} />
       </div>
     </main>

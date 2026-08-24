@@ -63,6 +63,8 @@ Consumable objects may award money or supply projectile effects when collected a
 
 Every game has elimination objectives: a team loses when it no longer has an on-board unit with both movement and attack capability. When setup added capital objectives, losing the team's capital is also a loss condition. A winning transition emits `game-over` and sets the canonical lifecycle to `finished` with the winner team.
 
+The map editor shows the win condition derived from its current unit placement. Game creation and invite previews show the same condition from the revision-zero objectives, and the active game shows it in the details panel whenever no cell or actor is selected. These views present the canonical objectives rather than storing a separate win-condition setting.
+
 Finished-game views announce the winning team and seated player's display name in the persistent game status, and mark the winning player panel independently of the transient event history.
 
 ## Extension path
