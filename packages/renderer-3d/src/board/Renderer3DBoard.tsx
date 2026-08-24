@@ -13,7 +13,7 @@ import type {
 import { entityWorldPosition } from "../animation/entityMotion.js";
 import { getProceduralModel } from "../assets/modelManifest.js";
 import { initialCameraState, type CameraIntent, type StrategyCameraState, updateCameraState } from "../camera/cameraState.js";
-import { cellHighlightColor } from "./highlightColor.js";
+import { cellHighlightRenderOrder, targetHighlightColor, targetHighlightContrastColor } from "./highlightColor.js";
 import { HEX_WORLD_ORIENTATION, projectHexToWorld } from "./projection.js";
 import { cellForTerrainInstance, createTerrainBatches, type TerrainBatch } from "./terrainBatches.js";
 
@@ -178,6 +178,56 @@ const Entity = ({ cue, entity, onIntent, reducedMotion }: Readonly<{
   );
 };
 
+type CellHighlight = Readonly<{
+  cell: BoardViewModel["cells"][number];
+  color: string;
+}>;
+
+const CellHighlightLayer = ({
+  highlights,
+  kind,
+}: Readonly<{
+  highlights: readonly CellHighlight[];
+  kind: "selection" | "target";
+}>) => {
+  const isSelection = kind === "selection";
+  const contrastHeight = isSelection ? 0.055 : 0.035;
+  const colorHeight = isSelection ? 0.065 : 0.045;
+  const renderOrder = cellHighlightRenderOrder[kind];
+  return (
+    <group name={`${kind}-highlights`}>
+      {highlights.map(({ cell }) => {
+        const position = projectHexToWorld(cell.coordinate);
+        return (
+          <mesh
+            key={cell.id}
+            position={[position.x, contrastHeight, position.z]}
+            renderOrder={renderOrder.contrast}
+            rotation={[-Math.PI / 2, 0, 0]}
+          >
+            <ringGeometry args={[0.66, 0.95, 6, 1, HEX_WORLD_ORIENTATION.ringThetaStart]} />
+            <meshBasicMaterial color={targetHighlightContrastColor} depthWrite={false} />
+          </mesh>
+        );
+      })}
+      {highlights.map(({ cell, color }) => {
+        const position = projectHexToWorld(cell.coordinate);
+        return (
+          <mesh
+            key={cell.id}
+            position={[position.x, colorHeight, position.z]}
+            renderOrder={renderOrder.color}
+            rotation={[-Math.PI / 2, 0, 0]}
+          >
+            <ringGeometry args={[0.7, 0.91, 6, 1, HEX_WORLD_ORIENTATION.ringThetaStart]} />
+            <meshBasicMaterial color={color} depthWrite={false} />
+          </mesh>
+        );
+      })}
+    </group>
+  );
+};
+
 const BoardScene = ({ board, camera, onIntent, reducedMotion }: Readonly<{
   board: BoardViewModel;
   camera: StrategyCameraState;
@@ -186,6 +236,12 @@ const BoardScene = ({ board, camera, onIntent, reducedMotion }: Readonly<{
 }>) => {
   const batches = useMemo(() => createTerrainBatches(board), [board]);
   const cueByEntity = useMemo(() => new Map(board.animationCues.map((cue) => [cue.entityId, cue])), [board.animationCues]);
+  const targetHighlights = board.cells.flatMap((cell): readonly CellHighlight[] => cell.target
+    ? [{ cell, color: targetHighlightColor(cell.target) }]
+    : []);
+  const selectionHighlights = board.cells.flatMap((cell): readonly CellHighlight[] => cell.selection !== "none"
+    ? [{ cell, color: "#ffffff" }]
+    : []);
   return (
     <>
       <StrategyCamera state={camera} />
@@ -193,17 +249,8 @@ const BoardScene = ({ board, camera, onIntent, reducedMotion }: Readonly<{
       <directionalLight castShadow intensity={2.2} position={[5, 12, 7]} />
       <group name="board-root">
         {batches.map((batch) => <TerrainInstances batch={batch} key={batch.assetId} onIntent={onIntent} />)}
-        {board.cells.filter((cell) => cell.target || cell.selection !== "none").map((cell) => {
-          const position = projectHexToWorld(cell.coordinate);
-          const color = cellHighlightColor(cell);
-          if (!color) return null;
-          return (
-            <mesh key={cell.id} position={[position.x, 0.04, position.z]} rotation={[-Math.PI / 2, 0, 0]}>
-              <ringGeometry args={[0.7, 0.91, 6, 1, HEX_WORLD_ORIENTATION.ringThetaStart]} />
-              <meshBasicMaterial color={color} depthWrite={false} />
-            </mesh>
-          );
-        })}
+        <CellHighlightLayer highlights={targetHighlights} kind="target" />
+        <CellHighlightLayer highlights={selectionHighlights} kind="selection" />
         {board.entities.map((entity) => (
           <Entity cue={cueByEntity.get(entity.id)} entity={entity} key={entity.id} onIntent={onIntent} reducedMotion={reducedMotion} />
         ))}

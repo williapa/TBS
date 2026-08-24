@@ -225,7 +225,7 @@ describe("Renderer2DBoard", () => {
       ...presented,
       cells: presented.cells.map((cell, index) => index === 1
         ? { ...cell, selection: "focused" as const, target: "attack" as const }
-        : cell),
+        : cell).reverse(),
     };
     const { container } = render(
       <Renderer2DBoard board={focusedBoard} onIntent={vi.fn()} />,
@@ -233,50 +233,69 @@ describe("Renderer2DBoard", () => {
 
     const cells = within(container).getAllByRole("gridcell");
     const entity = within(container).getByRole("button", { name: /Soldier, purple team/ });
-    const basePolygon = cells[1].querySelector("polygon");
-    const targetOverlay = container.querySelector("[data-cell-highlight='0:0']");
-    const selectionOverlay = container.querySelector("[data-cell-highlight='1:0']");
+    const basePolygon = container.querySelector("[data-cell-id='1:0'] polygon");
+    const targetLayer = container.querySelector("[data-cell-highlight-layer='target']");
+    const selectionLayer = container.querySelector("[data-cell-highlight-layer='selection']");
+    const targetContrast = container.querySelector("[data-cell-target-highlight-contrast='0:0']");
+    const targetOverlay = container.querySelector("[data-cell-target-highlight='0:0']");
+    const selectedTargetOverlay = container.querySelector("[data-cell-target-highlight='1:0']");
+    const selectionContrast = container.querySelector("[data-cell-selection-highlight-contrast='1:0']");
+    const selectionOverlay = container.querySelector("[data-cell-selection-highlight='1:0']");
 
-    expect(cells[1].getAttribute("style")).toContain("outline: none");
+    expect(cells[0].getAttribute("style")).toContain("outline: none");
     expect(entity.getAttribute("style")).toContain("outline: none");
     expect(basePolygon?.getAttribute("stroke")).toBe("rgba(8, 12, 18, 0.72)");
     expect(targetOverlay?.getAttribute("data-highlight-kind")).toBe("move");
     expect(targetOverlay?.getAttribute("stroke")).toBe("#22d3ee");
     expect(targetOverlay?.getAttribute("stroke-dasharray")).toBeNull();
     expect(targetOverlay?.getAttribute("pointer-events")).toBe("none");
+    expect(targetContrast?.getAttribute("stroke")).toBe("#111827");
     expect(selectionOverlay?.getAttribute("data-highlight-kind")).toBe("selection");
     expect(selectionOverlay?.getAttribute("fill")).toBe("none");
     expect(selectionOverlay?.getAttribute("pointer-events")).toBe("none");
     expect(selectionOverlay?.getAttribute("stroke")).toBe("#ffffff");
     expect(selectionOverlay?.getAttribute("stroke-dasharray")).toBeNull();
     expect(selectionOverlay?.getAttribute("stroke-width")).toBe("5");
+    expect(selectionContrast?.getAttribute("stroke")).toBe("#111827");
+    expect(selectionContrast?.getAttribute("stroke-width")).toBe("9");
     expect((cells.at(-1)?.compareDocumentPosition(selectionOverlay as Node) ?? 0)
       & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect((entity.compareDocumentPosition(selectionOverlay as Node) ?? 0)
+    expect((entity.compareDocumentPosition(targetLayer as Node) ?? 0)
+      & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect((targetLayer?.compareDocumentPosition(selectionLayer as Node) ?? 0)
+      & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect((targetContrast?.compareDocumentPosition(targetOverlay as Node) ?? 0)
+      & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect((selectedTargetOverlay?.compareDocumentPosition(selectionContrast as Node) ?? 0)
+      & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect((selectionContrast?.compareDocumentPosition(selectionOverlay as Node) ?? 0)
       & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  test("uses a distinct solid border color for every target action", () => {
+  test("uses terrain-safe solid borders for every target action", () => {
     const targets = [
-      ["attack", "#ff5d5d"],
-      ["boost", "#58d68d"],
-      ["construct", "#f5b041"],
-      ["heal", "#5dade2"],
-      ["load", "#af7ac5"],
-      ["move", "#22d3ee"],
-      ["spawn", "#f4d03f"],
-      ["unload", "#48c9b0"],
-    ] as const satisfies readonly (readonly [BoardTargetType, string])[];
+      ["attack", "#ff3b5c", "terrain:mountain", "#3d4652"],
+      ["boost", "#39ff88", "terrain:forest", "#5cab68"],
+      ["construct", "#ff8a1f", "terrain:road", "#82605c"],
+      ["heal", "#38bdf8", "terrain:water", "#3273dc"],
+      ["load", "#c084fc", "terrain:desert", "#fff3a3"],
+      ["move", "#22d3ee", "terrain:plains", "#9acd32"],
+      ["spawn", "#ff4fd8", "terrain:beach", "#f4d35e"],
+      ["unload", "#2dd4bf", "terrain:forest", "#5cab68"],
+    ] as const satisfies readonly (
+      readonly [BoardTargetType, string, string, string]
+    )[];
     const presented = board();
     const targetBoard: BoardViewModel = {
       ...presented,
-      cells: targets.map(([target], q) => ({
+      cells: targets.map(([target, , terrainAssetId], q) => ({
         ...presented.cells[0],
         id: cellId(`${q}:0`),
         coordinate: { q, r: 0 },
         neighborIds: [],
         selection: "none",
         target,
+        terrainAssetId,
       })),
       entities: [],
       animationCues: [],
@@ -290,11 +309,18 @@ describe("Renderer2DBoard", () => {
       <Renderer2DBoard board={targetBoard} onIntent={vi.fn()} />,
     );
 
-    targets.forEach(([target, color], q) => {
+    targets.forEach(([target, color, , terrainColor], q) => {
+      const cell = container.querySelector(`[data-cell-id='${q}:0']`);
       const overlay = container.querySelector(`[data-cell-highlight='${q}:0']`);
+      const contrast = container.querySelector(`[data-cell-highlight-contrast='${q}:0']`);
+      expect(cell?.querySelector("polygon")?.getAttribute("fill")).toBe(terrainColor);
       expect(overlay?.getAttribute("data-highlight-kind")).toBe(target);
       expect(overlay?.getAttribute("stroke")).toBe(color);
       expect(overlay?.getAttribute("stroke-dasharray")).toBeNull();
+      expect(contrast?.getAttribute("stroke")).toBe("#111827");
+      expect(contrast?.getAttribute("stroke-width")).toBe("9");
+      expect((contrast?.compareDocumentPosition(overlay as Node) ?? 0)
+        & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
   });
 

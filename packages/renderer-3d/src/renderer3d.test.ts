@@ -3,7 +3,7 @@ import type { BoardCellViewModel, BoardEntityViewModel, BoardViewModel, MoveEnti
 
 import { entityWorldPosition } from "./animation/entityMotion.js";
 import { getProceduralModel } from "./assets/modelManifest.js";
-import { cellHighlightColor } from "./board/highlightColor.js";
+import { cellHighlightColor, cellHighlightRenderOrder, targetHighlightContrastColor } from "./board/highlightColor.js";
 import { HEX_WORLD_ORIENTATION, projectHexToWorld } from "./board/projection.js";
 import { cellForTerrainInstance, createTerrainBatches } from "./board/terrainBatches.js";
 import { initialCameraState, updateCameraState } from "./camera/cameraState.js";
@@ -82,10 +82,24 @@ describe("renderer-3d presentation behavior", () => {
     expect(getProceduralModel("unit:pathfinder")).toEqual({ assetId: "unit:pathfinder", kind: "person", source: "project-owned-procedural" });
   });
 
-  it("uses solid action colors for targets while selection stays white", () => {
-    expect(cellHighlightColor({ selection: "none", target: "move" })).toBe("#22d3ee");
-    expect(cellHighlightColor({ selection: "none", target: "attack" })).toBe("#ff5d5d");
-    expect(cellHighlightColor({ selection: "none", target: "load" })).toBe("#af7ac5");
+  it("uses terrain-safe solid action colors while selection stays white", () => {
+    const targets = [
+      ["attack", "#ff3b5c"],
+      ["boost", "#39ff88"],
+      ["construct", "#ff8a1f"],
+      ["heal", "#38bdf8"],
+      ["load", "#c084fc"],
+      ["move", "#22d3ee"],
+      ["spawn", "#ff4fd8"],
+      ["unload", "#2dd4bf"],
+    ] as const;
+    targets.forEach(([target, color]) => {
+      expect(cellHighlightColor({ selection: "none", target })).toBe(color);
+    });
+    expect(targetHighlightContrastColor).toBe("#111827");
+    expect(cellHighlightRenderOrder.target.contrast).toBeLessThan(cellHighlightRenderOrder.target.color);
+    expect(cellHighlightRenderOrder.target.color).toBeLessThan(cellHighlightRenderOrder.selection.contrast);
+    expect(cellHighlightRenderOrder.selection.contrast).toBeLessThan(cellHighlightRenderOrder.selection.color);
     expect(cellHighlightColor({ selection: "selected", target: "attack" })).toBe("#ffffff");
     expect(cellHighlightColor({ selection: "none", target: null })).toBeNull();
   });

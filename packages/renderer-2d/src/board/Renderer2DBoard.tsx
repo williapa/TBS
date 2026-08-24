@@ -35,15 +35,17 @@ const terrainColors: Readonly<Record<string, string>> = {
 };
 
 const targetColors: Readonly<Record<BoardTargetType, string>> = {
-  attack: "#ff5d5d",
-  boost: "#58d68d",
-  construct: "#f5b041",
-  heal: "#5dade2",
-  load: "#af7ac5",
+  attack: "#ff3b5c",
+  boost: "#39ff88",
+  construct: "#ff8a1f",
+  heal: "#38bdf8",
+  load: "#c084fc",
   move: "#22d3ee",
-  spawn: "#f4d03f",
-  unload: "#48c9b0",
+  spawn: "#ff4fd8",
+  unload: "#2dd4bf",
 };
+
+const targetContrastColor = "#111827";
 
 const teamColors: Readonly<Record<string, string>> = {
   orange: "#ff8c00",
@@ -88,6 +90,63 @@ const entityMotionStyle = (
     "--tbs-move-y": `${from.y - to.y}px`,
   } as CSSProperties;
 };
+
+type CellHighlight = Readonly<{
+  cell: BoardViewModel["cells"][number];
+  color: string;
+}>;
+
+const CellHighlightLayer = ({
+  highlights,
+  kind,
+}: Readonly<{
+  highlights: readonly CellHighlight[];
+  kind: "selection" | "target";
+}>) => (
+  <g data-cell-highlight-layer={kind} pointerEvents="none">
+    <g data-highlight-part="contrast">
+      {highlights.map(({ cell }) => {
+        const point = projectHexTo2D(cell.coordinate);
+        const isEffectiveHighlight = kind === "selection" || cell.selection === "none";
+        return (
+          <polygon
+            data-cell-highlight-contrast={isEffectiveHighlight ? cell.id : undefined}
+            data-cell-selection-highlight-contrast={kind === "selection" ? cell.id : undefined}
+            data-cell-target-highlight-contrast={kind === "target" ? cell.id : undefined}
+            fill="none"
+            key={cell.id}
+            points={hexPolygonPoints()}
+            pointerEvents="none"
+            stroke={targetContrastColor}
+            strokeWidth={9}
+            transform={`translate(${point.x} ${point.y})`}
+          />
+        );
+      })}
+    </g>
+    <g data-highlight-part="color">
+      {highlights.map(({ cell, color }) => {
+        const point = projectHexTo2D(cell.coordinate);
+        const isEffectiveHighlight = kind === "selection" || cell.selection === "none";
+        return (
+          <polygon
+            data-cell-highlight={isEffectiveHighlight ? cell.id : undefined}
+            data-cell-selection-highlight={kind === "selection" ? cell.id : undefined}
+            data-cell-target-highlight={kind === "target" ? cell.id : undefined}
+            data-highlight-kind={kind === "selection" ? "selection" : cell.target}
+            fill="none"
+            key={cell.id}
+            points={hexPolygonPoints()}
+            pointerEvents="none"
+            stroke={color}
+            strokeWidth={5}
+            transform={`translate(${point.x} ${point.y})`}
+          />
+        );
+      })}
+    </g>
+  </g>
+);
 
 const Entity = ({
   cellDescription,
@@ -179,6 +238,12 @@ export const Renderer2DBoard = (props: Renderer2DBoardProps) => {
     board.animationCues.map((cue) => [cue.entityId, cue]),
   );
   const cellById = new Map(board.cells.map((cell) => [cell.id, cell]));
+  const targetHighlights = board.cells.flatMap((cell): readonly CellHighlight[] => cell.target
+    ? [{ cell, color: targetColors[cell.target] }]
+    : []);
+  const selectionHighlights = board.cells.flatMap((cell): readonly CellHighlight[] => cell.selection !== "none"
+    ? [{ cell, color: "#ffffff" }]
+    : []);
 
   return (
     <svg
@@ -233,28 +298,8 @@ export const Renderer2DBoard = (props: Renderer2DBoardProps) => {
           />
         );
       })}
-      {board.cells.filter((cell) => cell.selection !== "none" || cell.target).map((cell) => {
-        const point = projectHexTo2D(cell.coordinate);
-        const selected = cell.selection !== "none";
-        const stroke = selected
-          ? "#ffffff"
-          : cell.target
-            ? targetColors[cell.target]
-            : undefined;
-        return (
-          <polygon
-            data-cell-highlight={cell.id}
-            data-highlight-kind={selected ? "selection" : cell.target}
-            fill="none"
-            key={cell.id}
-            points={hexPolygonPoints()}
-            pointerEvents="none"
-            stroke={stroke}
-            strokeWidth={5}
-            transform={`translate(${point.x} ${point.y})`}
-          />
-        );
-      })}
+      <CellHighlightLayer highlights={targetHighlights} kind="target" />
+      <CellHighlightLayer highlights={selectionHighlights} kind="selection" />
     </svg>
   );
 };

@@ -11,8 +11,8 @@ Run commands from the repository root.
 - `pnpm nx run @TBS/application:test`: session lifecycle and revision reconciliation.
 - `pnpm nx run @TBS/game-setup:test`: map documents, limits, topology, playable placement, axial-backed generation, editor immutability, presets, and initial objective/state derivation.
 - `pnpm nx run @TBS/presentation:test`: renderer-neutral board projection, stable entity identity, semantic overlays and accessibility descriptions, movement-cue derivation, adjacent revision ordering, queue limits, replay-gap settling, and reduced motion.
-- `pnpm nx run @TBS/renderer-2d:test`: SVG projection, accessible semantic cell/entity controls, click-disabled preview mode, solid action-colored legal-target overlays and their stacking above entities, team and health indicators, and movement animation markup.
-- `pnpm nx run @TBS/renderer-3d:test`: axial world projection, instanced-terrain lookup, solid action-colored target and selection precedence, bounded camera transitions, procedural asset fallbacks, and deterministic movement interpolation/reduced-motion settling.
+- `pnpm nx run @TBS/renderer-2d:test`: SVG projection, accessible semantic cell/entity controls, click-disabled preview mode, terrain-safe action and selection border layers with selection precedence, stacking above entities, team and health indicators, and movement animation markup.
+- `pnpm nx run @TBS/renderer-3d:test`: axial world projection, instanced-terrain lookup, terrain-safe action and selection border layers with explicit selection render priority, bounded camera transitions, procedural asset fallbacks, and deterministic movement interpolation/reduced-motion settling.
 - `pnpm nx run @TBS/adapter-memory:test`: shared provider-neutral contracts against the deterministic adapter.
 - `pnpm nx run @TBS/adapter-supabase:test`: provider mapping, identity, realtime lifecycle, and shared contracts. Live Supabase cases are skipped unless explicitly enabled.
 - `pnpm ui:test`: React bindings, map repository/import/export, routes, and interactions.
