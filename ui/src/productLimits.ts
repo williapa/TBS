@@ -1,0 +1,3 @@
+export const MAX_ACTION_HISTORY = 100;
+export const MAX_REPLAY_GAP = 100;
+export const DEFAULT_MAX_SPECTATORS_PER_GAME = 20;

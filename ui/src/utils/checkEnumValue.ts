@@ -1,10 +1,8 @@
-const checkEnumValue = (value: string, enumType: any): boolean => {
-  for (const enumValue in enumType) {
-    if (enumType[enumValue] === value) {
-      return true;
-    }
-  }
-  return false;
+const checkEnumValue = (
+  value: string,
+  enumType: Readonly<Record<string, unknown>> | readonly unknown[]
+): boolean => {
+  return Object.values(enumType).some((enumValue) => enumValue === value);
 };
 
 export default checkEnumValue;

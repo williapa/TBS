@@ -16,12 +16,12 @@ This feature will grant special combat bonuses when specific units are attacking
 
 ## Special Combat Bonus Implementation Plan
 ### Summary
-Use a separate matchup-aware combat stat resolver rather than changing getCombatStats directly. common/src/combat/getCombatStats.ts is currently a baseline lookup for a single unit, while common/src/combat/calculateDamage.ts is the first point that has both combatants and is therefore the natural place to apply opponent-specific overrides.
+Use a matchup-aware combat stat resolver in `game-rules` rather than changing the base unit registry. The combat calculation is the first point that has both entities and is therefore the natural place to apply opponent-specific overrides.
 
 This keeps the existing API stable, isolates special-case combat logic from default unit definitions, and gives us a cleaner path if more matchup rules are added later.
 
 ### Key Changes
-Add a new combat helper such as getEffectiveCombatStats(unit, opponent) or getCombatStatsForMatchup(unit, opponent) in common/src/combat/.
+Add a focused combat helper such as `getEffectiveCombatStats(entity, opponent)` in `packages/game-rules/src/content/combat.ts`.
 Keep getCombatStats responsible only for default/base stats for one unit.
 Update calculateDamage to call the new matchup-aware helper for both attacker and defender before computing damage.
 Implement the current feature as explicit override rules:
@@ -51,7 +51,7 @@ zuckerbird gets boosted attack against capital
 zuckerbird gets boosted defense against dragon
 zuckerbird keeps base stats against unrelated units/buildings
 retaliation uses the same matchup rules when roles reverse
-If adding tests to common, also add a real test runner there or at the repo root, since common currently has no meaningful automated test setup.
+Add focused rules tests for both matchup directions and the unchanged baseline calculation.
 Assumptions
 “Against” means the override applies whenever that unit is in combat with the target type, whether attacking or defending.
 These overrides replace the unit’s normal [attack, defense] pair rather than adding deltas.

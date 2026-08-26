@@ -1,0 +1,338 @@
+// @vitest-environment jsdom
+
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import type {
+  BoardCellViewModel,
+  BoardEntityViewModel,
+  BoardInteractionAnchor,
+  BoardIntent,
+  BoardTargetType,
+  BoardViewModel,
+} from "@TBS/presentation";
+import { describe, expect, test, vi } from "vitest";
+
+import { Renderer2DBoard } from "./index";
+import { getEmojiForAsset } from "./assets/emojiManifest";
+
+const cellId = (value: string) => value as BoardCellViewModel["id"];
+const entityId = (value: string) => value as BoardEntityViewModel["id"];
+
+const board = (): BoardViewModel => ({
+  revision: 1,
+  cells: [
+    {
+      id: cellId("0:0"),
+      coordinate: { q: 0, r: 0 },
+      neighborIds: [cellId("1:0")],
+      terrainAssetId: "terrain:forest",
+      selection: "none",
+      target: "move",
+      accessibleDescription: "Forest cell at (0, 0)",
+    },
+    {
+      id: cellId("1:0"),
+      coordinate: { q: 1, r: 0 },
+      neighborIds: [cellId("0:0")],
+      terrainAssetId: "terrain:plains",
+      selection: "none",
+      target: null,
+      accessibleDescription: "Plains cell at (1, 0)",
+    },
+  ],
+  entities: [{
+    id: entityId("unit-1"),
+    unitTypeId: "soldier" as BoardEntityViewModel["unitTypeId"],
+    assetId: "unit:soldier",
+    cellId: cellId("1:0"),
+    coordinate: { q: 1, r: 0 },
+    orientation: 0,
+    teamId: "purple" as BoardEntityViewModel["teamId"],
+    health: { current: 75, maximum: 100 },
+    statuses: ["moved"],
+    capabilities: [],
+    selected: false,
+    actionable: true,
+    cargo: [],
+    label: "Soldier",
+    accessibleDescription: "Soldier, purple team, 75 of 100 health, moved",
+  }],
+  cameraBounds: {
+    minimum: { q: 0, r: 0 },
+    maximum: { q: 1, r: 0 },
+    center: { q: 0.5, r: 0 },
+  },
+  focusRequest: null,
+  animationCues: [{
+    type: "move-entity",
+    id: "1:0:unit-1",
+    revision: 1,
+    entityId: entityId("unit-1"),
+    from: { q: 0, r: 0 },
+    to: { q: 1, r: 0 },
+    durationMs: 260,
+  }],
+});
+
+describe("Renderer2DBoard", () => {
+  test("renders a non-interactive preview without focusable board controls", () => {
+    const { container } = render(
+      <Renderer2DBoard
+        ariaLabel="Selected map preview"
+        board={board()}
+        interactionMode="static"
+        reducedMotion
+      />,
+    );
+
+    expect(screen.getByRole("img", { name: "Selected map preview" })).toBeTruthy();
+    expect(screen.queryByRole("gridcell")).toBeNull();
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(container.querySelector("[tabindex]")).toBeNull();
+  });
+
+  test("renders an extension unit through the generic asset fallback", () => {
+    expect(getEmojiForAsset("unit:pathfinder")).toBe("◉");
+  });
+
+  test("shows the loaded unit icon in the top-right badge only while transporting cargo", () => {
+    const presented = board();
+    const cargoBoard: BoardViewModel = {
+      ...presented,
+      entities: presented.entities.flatMap((entity) => [
+        {
+          ...entity,
+          id: entityId("empty-transport"),
+          cellId: cellId("0:0"),
+          coordinate: { q: 0, r: 0 },
+        },
+        {
+          ...entity,
+          cargo: [{
+            id: entityId("cargo-1"),
+            unitTypeId: "soldier" as BoardEntityViewModel["unitTypeId"],
+            assetId: "unit:soldier",
+            label: "Soldier",
+            statuses: [],
+          }],
+        },
+      ]),
+    };
+    const carrying = render(
+      <Renderer2DBoard board={cargoBoard} onIntent={vi.fn()} />,
+    );
+    try {
+      const badge = carrying.container.querySelector(
+        "[data-entity-id='unit-1'] [data-cargo-badge]",
+      );
+      expect(carrying.container.querySelector(
+        "[data-entity-id='empty-transport'] [data-cargo-badge]",
+      )).toBeNull();
+      expect(Array.from(carrying.container.querySelectorAll("text"))
+        .some((text) => text.textContent === "P")).toBe(false);
+      expect(badge).not.toBeNull();
+      expect(badge?.querySelector("circle")?.getAttribute("cx")).toBe("24");
+      expect(badge?.querySelector("circle")?.getAttribute("cy")).toBe("-22");
+      const cargoIcon = badge?.querySelector("[data-cargo-icon]");
+      expect(cargoIcon?.getAttribute("x")).toBe("24");
+      expect(cargoIcon?.getAttribute("y")).toBe("-22");
+      expect(cargoIcon?.textContent).toBe(
+        getEmojiForAsset("unit:soldier"),
+      );
+    } finally {
+      carrying.unmount();
+    }
+  });
+
+  test("omits health bars for healthless objects without invalid SVG attributes", () => {
+    const presented = board();
+    const healthlessBoard: BoardViewModel = {
+      ...presented,
+      entities: presented.entities.map((entity) => ({
+        ...entity,
+        unitTypeId: "money" as BoardEntityViewModel["unitTypeId"],
+        assetId: "unit:money",
+        health: null,
+        label: "Money",
+        accessibleDescription: "Money, neutral",
+        teamId: null,
+      })),
+    };
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const { container, unmount } = render(
+      <Renderer2DBoard board={healthlessBoard} onIntent={vi.fn()} />,
+    );
+    try {
+      expect(screen.getByRole("button", { name: "Money, neutral" })).toBeTruthy();
+      expect(container.querySelector("[data-health-bar]")).toBeNull();
+      expect(container.querySelector('[width="NaN"]')).toBeNull();
+      expect(consoleError).not.toHaveBeenCalled();
+    } finally {
+      unmount();
+      consoleError.mockRestore();
+    }
+  });
+
+  test("renders the neutral view model and reports pointer anchors separately from semantic intents", () => {
+    const emissions: Readonly<{
+      anchor?: BoardInteractionAnchor;
+      intent: BoardIntent;
+    }>[] = [];
+    render(<Renderer2DBoard
+      board={board()}
+      onIntent={(intent, anchor) => {
+        emissions.push({ intent, ...(anchor ? { anchor } : {}) });
+      }}
+    />);
+
+    expect(screen.getByRole("grid", { name: /Two-dimensional game board, revision 1/ })).toBeTruthy();
+    const entity = screen.getByRole("button", { name: /Soldier, purple team, 75 of 100 health, moved/ });
+    fireEvent.click(entity, { clientX: 80, clientY: 90 });
+    const cells = screen.getAllByRole("gridcell");
+    fireEvent.keyDown(cells[0], { key: "Enter" });
+
+    expect(emissions).toEqual([
+      {
+        anchor: { clientX: 80, clientY: 90 },
+        intent: { type: "select-entity", entityId: "unit-1" },
+      },
+      { intent: { type: "select-cell", cell: { q: 0, r: 0 } } },
+    ]);
+    expect(cells[0].querySelector("polygon")?.getAttribute("stroke-dasharray")).toBeNull();
+    const healthBarOutline = entity.querySelector("[data-health-bar-outline]");
+    expect(healthBarOutline?.getAttribute("stroke")).toBe("#111");
+    expect(healthBarOutline?.getAttribute("stroke-width")).toBe("1");
+  });
+
+  test("shows occupied cell coordinates and an interactive cursor when hovering a unit", () => {
+    const { container } = render(
+      <Renderer2DBoard board={board()} onIntent={vi.fn()} />,
+    );
+
+    const entity = within(container).getByRole("button", { name: /Soldier, purple team/ });
+    const occupiedCell = container.querySelector("[data-cell-id='1:0']");
+
+    expect(entity.querySelector("title")?.textContent)
+      .toBe(occupiedCell?.querySelector("title")?.textContent);
+    expect(entity.querySelector("title")?.textContent)
+      .toBe("Plains cell at (1, 0)");
+    expect(entity.getAttribute("style")).toContain("cursor: pointer");
+  });
+
+  test("renders solid selection and target borders above every cell and entity", () => {
+    const presented = board();
+    const focusedBoard = {
+      ...presented,
+      cells: presented.cells.map((cell, index) => index === 1
+        ? { ...cell, selection: "focused" as const, target: "attack" as const }
+        : cell).reverse(),
+    };
+    const { container } = render(
+      <Renderer2DBoard board={focusedBoard} onIntent={vi.fn()} />,
+    );
+
+    const cells = within(container).getAllByRole("gridcell");
+    const entity = within(container).getByRole("button", { name: /Soldier, purple team/ });
+    const basePolygon = container.querySelector("[data-cell-id='1:0'] polygon");
+    const targetLayer = container.querySelector("[data-cell-highlight-layer='target']");
+    const selectionLayer = container.querySelector("[data-cell-highlight-layer='selection']");
+    const targetContrast = container.querySelector("[data-cell-target-highlight-contrast='0:0']");
+    const targetOverlay = container.querySelector("[data-cell-target-highlight='0:0']");
+    const selectedTargetOverlay = container.querySelector("[data-cell-target-highlight='1:0']");
+    const selectionContrast = container.querySelector("[data-cell-selection-highlight-contrast='1:0']");
+    const selectionOverlay = container.querySelector("[data-cell-selection-highlight='1:0']");
+
+    expect(cells[0].getAttribute("style")).toContain("outline: none");
+    expect(entity.getAttribute("style")).toContain("outline: none");
+    expect(basePolygon?.getAttribute("stroke")).toBe("rgba(8, 12, 18, 0.72)");
+    expect(targetOverlay?.getAttribute("data-highlight-kind")).toBe("move");
+    expect(targetOverlay?.getAttribute("stroke")).toBe("#22d3ee");
+    expect(targetOverlay?.getAttribute("stroke-dasharray")).toBeNull();
+    expect(targetOverlay?.getAttribute("pointer-events")).toBe("none");
+    expect(targetContrast?.getAttribute("stroke")).toBe("#111827");
+    expect(selectionOverlay?.getAttribute("data-highlight-kind")).toBe("selection");
+    expect(selectionOverlay?.getAttribute("fill")).toBe("none");
+    expect(selectionOverlay?.getAttribute("pointer-events")).toBe("none");
+    expect(selectionOverlay?.getAttribute("stroke")).toBe("#ffffff");
+    expect(selectionOverlay?.getAttribute("stroke-dasharray")).toBeNull();
+    expect(selectionOverlay?.getAttribute("stroke-width")).toBe("5");
+    expect(selectionContrast?.getAttribute("stroke")).toBe("#111827");
+    expect(selectionContrast?.getAttribute("stroke-width")).toBe("9");
+    expect((cells.at(-1)?.compareDocumentPosition(selectionOverlay as Node) ?? 0)
+      & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect((entity.compareDocumentPosition(targetLayer as Node) ?? 0)
+      & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect((targetLayer?.compareDocumentPosition(selectionLayer as Node) ?? 0)
+      & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect((targetContrast?.compareDocumentPosition(targetOverlay as Node) ?? 0)
+      & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect((selectedTargetOverlay?.compareDocumentPosition(selectionContrast as Node) ?? 0)
+      & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect((selectionContrast?.compareDocumentPosition(selectionOverlay as Node) ?? 0)
+      & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  test("uses terrain-safe solid borders for every target action", () => {
+    const targets = [
+      ["attack", "#ff3b5c", "terrain:mountain", "#3d4652"],
+      ["boost", "#39ff88", "terrain:forest", "#5cab68"],
+      ["construct", "#ff8a1f", "terrain:road", "#82605c"],
+      ["heal", "#38bdf8", "terrain:water", "#3273dc"],
+      ["load", "#c084fc", "terrain:desert", "#fff3a3"],
+      ["move", "#22d3ee", "terrain:plains", "#9acd32"],
+      ["spawn", "#ff4fd8", "terrain:beach", "#f4d35e"],
+      ["unload", "#2dd4bf", "terrain:forest", "#5cab68"],
+    ] as const satisfies readonly (
+      readonly [BoardTargetType, string, string, string]
+    )[];
+    const presented = board();
+    const targetBoard: BoardViewModel = {
+      ...presented,
+      cells: targets.map(([target, , terrainAssetId], q) => ({
+        ...presented.cells[0],
+        id: cellId(`${q}:0`),
+        coordinate: { q, r: 0 },
+        neighborIds: [],
+        selection: "none",
+        target,
+        terrainAssetId,
+      })),
+      entities: [],
+      animationCues: [],
+      cameraBounds: {
+        minimum: { q: 0, r: 0 },
+        maximum: { q: targets.length - 1, r: 0 },
+        center: { q: (targets.length - 1) / 2, r: 0 },
+      },
+    };
+    const { container } = render(
+      <Renderer2DBoard board={targetBoard} onIntent={vi.fn()} />,
+    );
+
+    targets.forEach(([target, color, , terrainColor], q) => {
+      const cell = container.querySelector(`[data-cell-id='${q}:0']`);
+      const overlay = container.querySelector(`[data-cell-highlight='${q}:0']`);
+      const contrast = container.querySelector(`[data-cell-highlight-contrast='${q}:0']`);
+      expect(cell?.querySelector("polygon")?.getAttribute("fill")).toBe(terrainColor);
+      expect(overlay?.getAttribute("data-highlight-kind")).toBe(target);
+      expect(overlay?.getAttribute("stroke")).toBe(color);
+      expect(overlay?.getAttribute("stroke-dasharray")).toBeNull();
+      expect(contrast?.getAttribute("stroke")).toBe("#111827");
+      expect(contrast?.getAttribute("stroke-width")).toBe("9");
+      expect((contrast?.compareDocumentPosition(overlay as Node) ?? 0)
+        & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+  });
+
+  test("animates accepted movement and skips it for reduced motion", () => {
+    const { container, rerender } = render(
+      <Renderer2DBoard board={board()} onIntent={vi.fn()} />,
+    );
+    const animated = container.querySelector('[data-entity-id="unit-1"] > g');
+    expect(animated?.getAttribute("style")).toContain("tbs-renderer-2d-move 260ms");
+
+    rerender(<Renderer2DBoard board={board()} onIntent={vi.fn()} reducedMotion />);
+    const settled = container.querySelector('[data-entity-id="unit-1"] > g');
+    expect(settled?.getAttribute("style") ?? "").not.toContain("tbs-renderer-2d-move");
+  });
+});

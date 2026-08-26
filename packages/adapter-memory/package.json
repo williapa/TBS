@@ -1,0 +1,34 @@
+{
+  "name": "@TBS/adapter-memory",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Deterministic in-memory implementation of the game application ports",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run src",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@TBS/application": "workspace:*",
+    "@TBS/protocol": "workspace:*"
+  },
+  "devDependencies": {
+    "@TBS/game-rules": "workspace:*",
+    "@TBS/test-kit": "workspace:*",
+    "typescript": "6.0.3",
+    "vitest": "4.1.10"
+  },
+  "nx": {
+    "projectType": "library",
+    "tags": ["layer:infrastructure", "type:library"]
+  }
+}

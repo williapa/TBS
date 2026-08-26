@@ -1,0 +1,37 @@
+{
+  "name": "@TBS/protocol",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Current runtime schemas, envelopes, and trust-boundary validation",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run src",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@TBS/game-core": "workspace:*",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "26.2.0",
+    "typescript": "6.0.3",
+    "vitest": "4.1.10"
+  },
+  "nx": {
+    "tags": [
+      "layer:domain",
+      "type:library"
+    ]
+  }
+}

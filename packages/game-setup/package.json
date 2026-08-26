@@ -1,0 +1,33 @@
+{
+  "name": "@TBS/game-setup",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Framework-free map documents, validation, generation, and deterministic game setup",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run src",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@TBS/game-core": "workspace:*",
+    "@TBS/game-rules": "workspace:*",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3",
+    "vitest": "4.1.10"
+  },
+  "nx": {
+    "projectType": "library",
+    "tags": ["layer:domain", "type:library"]
+  }
+}

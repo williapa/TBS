@@ -79,7 +79,7 @@ This section will hilight the general areas that code changes will likely be app
 
 1. Define a function which returns building options for a particular building type and amount of funds. When passed a building type and the available funds, it should return an array of objects, with each object defining a valid unit, its cost, and the invalid terrains. This function should be defined in a new directory "spawn", in a new appropriately named file (which should match the function name).
 
-2. Update the existing function in common "isTurnOver.ts" to account for buildings potentially being able to perform actions - it will use the function defined in #1, to determine if a building is able to spawn anything. If there are buildings that have not acted during the turn, but sufficient funds aren't available to spawan any units, then the turn should automatically be ended. In order for this function alone to be updated, it is important to note that buildings should be marked "moved" after spawning a unit. this property, "moved", is meant to generally reflect that any action has been performed by that unit. Perhaps it should be renamed, but let's not do that work as part of this feature.
+2. Update the rules-owned turn-completion mechanic to account for buildings that can still afford and perform a spawn action. If no building has an affordable option and no other unit can act, the turn should end automatically. Mark the building's action budget when it spawns.
 
 ## Server
 
@@ -90,7 +90,7 @@ This section will hilight the general areas that code changes will likely be app
 4. The gameInteraction.ts reducer must now define types related to the "spawn" flow:
 (1) click building -> (2) list spawn options in the Action Form, in addition to the cancel option (3) after unit selection, potential cells for the unit to be spawned should be hilighted (4) after clicking the cell on which the unit should be spawned, the action form should allow the user to either confirm the spawn, or cancel the action. 
 
-5. The ActionForm.tsx should be updated to display the valid spawn options, which should be attainable from the /common spawn function. These options should display the unit name, the cost, and the emoji related to the unit.
+5. The action surface should display valid spawn options derived from the rules selector and presentation read model, including the unit name, cost, and visual asset.
 
 6. On confirmation, the GameMap.tsx file should be updated to build a new gameAction type (which may need to be extended to accomodated spawns) to be sent to the server - assuming these code changes are done in order, then this type has already been defined on the server side.
 

@@ -1,0 +1,4 @@
+export const MONEY_OBJECT_REWARD = 1000;
+export const MISSILE_OBJECT_DAMAGE = 30;
+export const NUKE_OBJECT_TARGET_DAMAGE = 50;
+export const NUKE_OBJECT_SPLASH_DAMAGE = 25;

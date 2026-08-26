@@ -1,22 +1,43 @@
 {
   "name": "TBS",
   "private": true,
-  "workspaces": [
-    "common",
-    "server",
-    "ui"
-  ],
+  "packageManager": "pnpm@11.16.0",
   "scripts": {
-    "build": "npm run build -w @TBS/common && npm run build -w @TBS/server && npm run build -w @TBS/ui",
-    "common:test": "npm run test -w @TBS/common",
-    "dev:server": "npm run start -w @TBS/server",
-    "dev:ui": "npm run start -w @TBS/ui",
-    "db:create": "npm run db:create -w @TBS/server",
-    "db:delete": "npm run db:delete -w @TBS/server",
-    "db:clear-games": "npm run db:clear-games -w @TBS/server",
-    "ui:test": "npm run test -w @TBS/ui"
+    "architecture:check": "node scripts/check-architecture-boundaries.mjs",
+    "build": "pnpm typecheck && nx run-many -t build --parallel=1 && pnpm edge:build",
+    "check": "pnpm architecture:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "dev:ui": "pnpm --filter @TBS/ui start",
+    "edge:build": "node scripts/build-edge-functions.mjs",
+    "edge:serve": "pnpm edge:build && supabase functions serve",
+    "graph": "nx graph",
+    "lint": "eslint packages ui/src supabase/functions scripts playwright.config.js tests/e2e --max-warnings=0",
+    "performance:check": "pnpm --filter @TBS/renderer-3d build && pnpm --filter @TBS/ui build && node scripts/check-performance-budgets.mjs",
+    "portability:check": "nx run @TBS/adapter-memory:test",
+    "test": "nx run-many -t test --parallel=1",
+    "typecheck": "nx run-many -t typecheck --parallel=1",
+    "ui:test": "pnpm --filter @TBS/ui test",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status",
+    "supabase:reset": "supabase db reset --local",
+    "supabase:migration:new": "supabase migration new",
+    "supabase:test": "supabase test db",
+    "supabase:lint": "supabase db lint --local --level warning",
+    "pretest:e2e": "pnpm build",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
-    "dynamodb-admin": "^5.1.3"
+    "@eslint/js": "10.0.1",
+    "@nx/eslint-plugin": "23.1.1",
+    "@playwright/test": "^1.62.1",
+    "eslint": "10.8.1",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.10.0",
+    "jsdom": "30.0.1",
+    "nx": "23.1.1",
+    "rolldown": "1.2.3",
+    "supabase": "2.111.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.67.0"
   }
 }

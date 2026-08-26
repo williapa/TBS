@@ -1,65 +1,45 @@
 # TBS
 
-![game Screenshot](./game-capture.png)
+TBS (“Hostile Hexagons”) is a browser-based turn-based strategy game with durable two-player sessions and read-only spectators.
 
-TBS is a turn-based strategy game for the browser. The working title is "Medal Versus", which is meant to be a play on "MetaVerse" - the defunct facebook VR endeavor. 
+The supported stack is React, a normalized deterministic TypeScript core with focused rules, protocol, setup, application, presentation, renderer, and adapter packages, and Supabase for anonymous Auth, trusted Edge action evaluation, Postgres persistence/RPCs, Realtime Broadcast, and Presence. The browser runs without Express, Socket.IO, DynamoDB, or server-side map storage.
 
-This project uses:
+## Local development
 
-- react
-- s3 (todo)
-- cloudfront (todo)
+Prerequisites: Node.js, pnpm 11.16.0, Docker Desktop (or a Docker-compatible runtime), and Chromium installed by Playwright when running browser tests.
 
-to run the /ui workspace, and 
+1. Run `pnpm install` from the repository root.
+2. Run `pnpm supabase:start`.
+3. Run `pnpm supabase:status` and copy the API URL and publishable key into an `.env` file in the UI package.
+4. Run `pnpm edge:serve` in a second terminal to build and serve the trusted action authority.
+5. Run `pnpm dev:ui` and open the Vite URL printed in the terminal.
 
-- ec2 (todo)
-- node.js
-- dynamodb
+The publishable key is safe for browser configuration. Never place the service-role key in `.env`, source, test fixtures, or client builds. Full migration, reset, monitoring, and cleanup guidance is in [docs/supabase-local-development.md](./docs/supabase-local-development.md).
 
-to run the /server workspace. 
+## Product flow
 
-Other key dependencies:
+- Create a local map under `/maps/new` or edit one under `/maps/:mapId/edit`.
+- Choose a bundled/local map and a display name at `/`.
+- Share the generated `/game/:inviteToken` URL.
+- A second anonymous browser claims purple; later visitors may watch as spectators.
+- Reopening the invite restores durable membership and canonical database state.
 
-- typescript (everywhere)
-- eslint (everywhere)
-- react router dom (UI routing)
-- cloudscape (UI components)
-- express (server)
-- websocket.io (server)
-- docker-desktop (to run a local version of dynamodb)
-- dynamodb-admin (for dynamoDB GUI operations)
-- npm workspaces (for sharing the "common" code within this monorepo)
+## Commands
 
-## UI
+- `pnpm build` type-checks and builds the workspaces.
+- `pnpm lint` enforces the TypeScript, React hook, and repository lint rules.
+- `pnpm architecture:check` enforces the current dependency boundaries.
+- `pnpm graph` opens the Nx project/dependency graph.
+- `pnpm check` runs the complete cached local verification sequence.
+- `pnpm portability:check` rehearses the shared provider contracts against the in-memory adapter.
+- `pnpm performance:check` enforces the maximum-board and production-bundle budgets.
+- `pnpm edge:build` builds the shared trusted-action runtime for Supabase Edge Functions.
+- `pnpm edge:serve` builds and serves the local trusted action authority.
+- `pnpm test` runs the deterministic engine, protocol, application, presentation, renderer, and adapter suites.
+- `pnpm ui:test` runs UI and gateway unit/contract tests.
+- `pnpm supabase:reset` rebuilds only the local Supabase database from migrations.
+- `pnpm supabase:test` runs pgTAP database/RLS/RPC tests.
+- `pnpm supabase:lint` lints the local schema.
+- `pnpm test:e2e` runs the three-context Chromium journeys against local Supabase.
 
-The Front-end repository workspace is located under the directory "ui".
-This directory was created using the "create react app" typescript template.
-
-## Server
-
-The Back-end repository is located in the directory "server".
-It contains the dynamodb-local docker image in /dynamodb-local.
-It also contains scripts for creating, deleting, and maintaining the database.
-Most importantly, it contains the express server.
-
-## Common
-the logic to validate moves in the client is the same as the server. Types are also shared. If I were smarter, I might have named this "core", or even designed it as a "game engine"
-instead of a loosey-goosey mish-mash of functions and types. However, the idea holds true that everything is "common" logic, without external dependencies, which are consumed by server and ui via npm workspaces. And so it is named "Common".
-
-The most important thing to know is that the root package (/TBS) build command should be used to build everything in order - common first, then the server, then the UI (though the order between server and UI doesn't matter - the key point is that common should be built first in order to be consumed, and the build command in the project root will run all 3 in order).
-
-## Local Development Setup
-1. Install [docker desktop](https://docs.docker.com/desktop/)  and Node.js + NPM using [Node Version Manager](https://www.nvmnode.com/).
-2. run `npm install` from the root of the project - this project follows a "monorepo" structure so that there is a single shared "node_modules" directory across the 3 workspaces, rather than each workspace having its own installation and "node_modules" directory. It is important to never run `npm install` from any of the individual workspaces.
-3. run `./server/dynamodb-local/start.cmd` to deploy dynamodb-local to docker desktop. You do need to make sure docker desktop is running before using this command. You only need to use this command once. Afterwards, you can stop and start the service within docker-desktop's GUI. Once running, The local instance of dynamodb will be available at localhost:8000. 
-4. Build the project workspaces in order with command `npm run build`. This will compile all the typescript (common first, then server, then UI). Note that all remaining commands are scripts found in the root package.json, which targets the server and ui workspaces via npm workspaces.
-5. Create the dynamodb table using the npm script "db:create" - `npm run db:create`.  The resulting table uses the name "MedalVersus".
-6. Start the game server using `npm run dev:server`. The server runs on localhost:8420.
-7. Start the ui using `npm run dev:ui`. The react app runs on localhost:3000.
-8. At this point, all requirements for local development are running. Howeer, if you ever need to inspect the database contents, it is helpful to use the "dynamodb-admin" tool, which provides a GUI for dynamodb. Simply run `dynamodb-admin` and then navigate to localhost:8001 to inspect and manage your table and its records.
-
-## Ports Reference
-- 3000 - UI
-- 8000 - dynamodb-local
-- 8001 - dynamodb-admin GUI
-- 8420 - backend server
+See [docs/architecture.md](./docs/architecture.md), [docs/game-domain.md](./docs/game-domain.md), and [docs/testing.md](./docs/testing.md) for the supported design. The v2 design and implementation checkpoint are retained as historical context.

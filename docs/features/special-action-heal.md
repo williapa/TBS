@@ -39,12 +39,12 @@ Worker units should be able to heal ground vehicles.
 Implement `heal` as a new post-move terminal action that follows the same interaction and validation pattern as `boost`, but resolves by reducing an adjacent allied unit’s `damage` by up to 10. Reuse the existing shared movement/adjacency/action architecture so client and server stay aligned, and keep heal state stateless beyond the target’s updated `damage` value.
 
 ## Key Changes
-- Extend shared action/event types in `common/src/types/index.ts`:
+- Extend the standard action/event contracts in `@TBS/game-rules`:
   - Add `"heal"` to `supportedActions`.
   - Add a `Heal` action with `start`, `end`, and `target` coordinates.
   - Add a `HealEvent` with healer unit, healed unit, target coordinates, and a numeric `healedDamage` payload.
   - Extend `GameAction` and `GameEvent` unions accordingly.
-- Add shared heal rules in a new `common/src/heal` module, mirroring the boost helper shape:
+- Add focused heal rules in the `game-rules` action module, mirroring the boost handler shape:
   - `canUnitHeal(unitType)`
   - `canReceiveHeal(healerType, targetType)`
   - `getHealableCellIndexes(map, actorCell, perspective)`
@@ -54,7 +54,7 @@ Implement `heal` as a new post-move terminal action that follows the same intera
     - `engineer` -> `buildingUnitOptions`
     - `pilot` -> `flyingOptions`
     - `worker` -> `groundVehicleOptions`
-- Export the new heal helpers from `common/src/index.ts` so both UI and server consume one rule source.
+- Export the required heal policy from `@TBS/game-rules` so presentation previews and trusted execution consume one rule source.
 - Keep health modeling unchanged:
   - Do not add a new `healed` flag or any extra persistent state.
   - Healing only updates `damage`, using `Math.max(0, currentDamage - 10)`.

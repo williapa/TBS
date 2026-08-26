@@ -48,7 +48,7 @@ K. "Transport" - IF LOADED, list subset of detail sections (excluding G. Actions
 
 ## Other Details
 
-Functions to get the appropriate energy, energy cost, combat stats, etc. are already available in common. The implemented code for "getDetailsForUnit.ts" outlines some basic functions to build the detail popover text for actions. However, the details text (exported in the map detailsTextByAction) does not include a description of valid targets for "boost" and "heal". These should be appended to the details text for "boost" and "heal" actions, and the UI component can fetch and build a list of valid targets in the client. Or, if you find it to be a better design, you can modify "getDetailsForUnit.ts" to build the details text to accomodate this logic within the common code, simplifying the UI code.
+Rules expose energy, movement cost, combat stats, and valid targets. Presentation should turn those values into the detail-panel read model, including boost and heal target descriptions, so React does not recreate rule logic.
 
 ## Testing
 
@@ -63,7 +63,7 @@ This plan resolves the main ambiguities as follows:
 - Hide non-applicable fields instead of rendering `N/A`.
 - Treat terrain as its own first-class field, separate from occupant/unit type.
 - During an active move preview, keep the panel focused on the selected actor and update its coordinates/terrain/action context to the preview destination.
-- Keep action descriptions rule-driven from common code; enrich `boost` and `heal` descriptions there so the UI does not recreate rules text.
+- Keep action availability rule-driven and human-facing descriptions presentation-owned; enrich `boost` and `heal` read models there so the UI does not recreate logic.
 
 ### Key Changes
 - Add a new UI-facing panel model, for example `GamePanelState`, that represents exactly what the panel should show:
@@ -95,11 +95,11 @@ This plan resolves the main ambiguities as follows:
   - `Energy` and terrain `Energy Costs` only for movable units
   - `Actions` uses capability-based actions for the unit type, not turn- or board-specific availability
   - Vehicles with `loadedUnit` render an additional transport subsection with the reduced field set from the doc
-- Extend [getDetailsForUnit.ts](C:/Users/pauls/projects/TBS/common/src/rules/getDetailsForUnit.ts) so common exports a richer action-details helper:
+- Extend the presentation panel derivation so it exports a richer action-details read model:
   - preserve `getActionsForUnit`
   - add a helper that returns action descriptions with appended valid-target text for `boost` and `heal`
-  - export this helper from `@TBS/common`
-- Export the common calculators the panel needs from the common package root if they are not already surfaced:
+  - export this helper from `@TBS/presentation`
+- Export only the deliberate rules selectors the presenter needs from the `@TBS/game-rules` package root:
   - combat stats helper for base stats
   - default energy helper
   - terrain movement-cost helper
@@ -113,8 +113,8 @@ This plan resolves the main ambiguities as follows:
 ### Public Interfaces / Types
 - Add a UI type like `GamePanelState` plus a small row type such as `GamePanelRow`.
 - Add an `onPanelStateChange` prop to `GameMap`.
-- Add a new common export for enriched action details from `getDetailsForUnit.ts`.
-- Export any missing common stat/energy/movement helpers from the package root instead of reaching into internal paths.
+- Add a presentation export for enriched action details.
+- Export any missing rule stat/energy/movement selectors from the rules package root instead of reaching into internal paths.
 
 ### Test Plan
 - `GameMap` / panel-state derivation:

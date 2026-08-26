@@ -1,0 +1,2 @@
+-- Intentionally empty. Keep this file so `supabase db reset --local` has a
+-- stable seed target before project-specific fixtures are introduced.

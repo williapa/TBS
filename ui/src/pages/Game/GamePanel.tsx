@@ -1,4 +1,6 @@
 import "./GamePanel.css";
+import type { WinConditionViewModel } from "@TBS/presentation";
+import type { GamePanelRow, GamePanelState } from "../../types";
 
 const renderRowValue = (row: GamePanelRow) => {
   if (row.type === "actions") {
@@ -24,7 +26,7 @@ const renderRowValue = (row: GamePanelRow) => {
   );
 };
 
-const renderRows = (rows: GamePanelRow[]) =>
+const renderRows = (rows: readonly GamePanelRow[]) =>
   rows.map((row) => (
     <div className="game-panel__item" key={row.id}>
       <div className="game-panel__label">{row.label}</div>
@@ -32,17 +34,31 @@ const renderRows = (rows: GamePanelRow[]) =>
     </div>
   ));
 
-const renderSection = (title: string, rows: GamePanelRow[]) => (
+const renderSection = (title: string, rows: readonly GamePanelRow[]) => (
   <section className="game-panel__section" key={title}>
     <h3 className="game-panel__title">{title}</h3>
     <div className="game-panel__grid">{renderRows(rows)}</div>
   </section>
 );
 
-const GamePanel = ({ state }: { state: GamePanelState | null }) => (
+const GamePanel = ({
+  state,
+  winCondition,
+}: Readonly<{
+  state: GamePanelState | null;
+  winCondition: WinConditionViewModel;
+}>) => (
   <div className="game panel">
     {!state ? (
-      <p>Click a cell to see game information.</p>
+      <div className="game-panel">
+        {renderSection("Details", [{
+          id: "win-condition",
+          label: "Win condition",
+          type: "text",
+          value: winCondition.description,
+        }])}
+        <p className="game-panel__hint">Select a cell to see its details.</p>
+      </div>
     ) : (
       <div className="game-panel">
         {renderSection("Details", state.rows)}

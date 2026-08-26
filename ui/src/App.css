@@ -1,10 +1,11 @@
 html body {
-  background-color:rgba(32,33,35, .92); /* #252423; #13232f; */
-  color: #eee;
+  /* background-color:rgba(32,33,35, .92); /* #252423; #13232f; */
+  /* color: #eee; */
 }
 
 nav {
-  height: 40px;
+  box-sizing: border-box;
+  height: 44px;
   width: 100%;
   border-top: 2px solid #ccc;
   border-bottom: 2px solid #ccc;
@@ -13,19 +14,25 @@ nav {
 nav ul {
   display: flex;
   flex-direction: row;
+  height: 100%;
   list-style-type: none;
-  margin-top: 0px;
+  margin: 0;
   padding-inline-start: 0px;
 }
 
 nav ul li {
+  align-items: stretch;
+  box-sizing: border-box;
+  display: flex;
   flex: 1;
   text-align: center;
   border-right: 1px solid #ccc;
   border-left: 1px solid #ccc;
-  padding-top:10px;
-  padding-bottom:12px;
   background-color: rgb(22, 23, 24);
+}
+
+nav ul li.primary-navigation__home {
+  flex: 0 0 40px;
 }
 
 nav ul li:hover {
@@ -42,7 +49,51 @@ input[type="submit"] {
 }
 
 nav a {
+  align-items: center;
   color: white;
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  padding: 0 12px;
+}
+
+.primary-navigation__home a {
+  padding: 0;
+  text-decoration: none;
+}
+
+.session-landing-page {
+  align-items: center;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  min-height: calc(100vh - 44px);
+  padding: 32px;
+}
+
+.session-landing-page__content {
+  display: flex;
+  flex-direction: column;
+  max-width: 1100px;
+  width: 100%;
+}
+
+.session-landing-page__content h1 {
+  font-size: clamp(3rem, 8vw, 5.6rem);
+  margin: 0.67em 0;
+}
+
+.session-landing-page__content hr {
+  width: 100%;
+}
+
+.session-landing-page__summary {
+  font-size: 1.6rem;
+  text-align: center;
+}
+
+.session-landing-page__credit {
+  text-align: center;
 }
 
 .edit-cell-form label {
@@ -59,4 +110,43 @@ fieldset legend {
 
 .whitelabel label {
   color: white;
+}
+
+.cloudscape-form-page {
+  box-sizing: border-box;
+  margin: 0 auto;
+  max-width: 960px;
+  padding-bottom: 48px;
+  width: calc(100% - 48px);
+}
+
+.cloudscape-form-page h1 {
+  text-align: left;
+}
+
+.game-map-preview {
+  background: #0f141a;
+  border-radius: 8px;
+  height: clamp(260px, 55vw, 620px);
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
+@media (max-width: 600px) {
+  .cloudscape-form-page {
+    width: calc(100% - 24px);
+  }
+
+  .game-map-preview {
+    height: clamp(220px, 75vw, 420px);
+  }
+
+  .session-landing-page {
+    padding: 20px;
+  }
+
+  .session-landing-page__summary {
+    font-size: 1.25rem;
+  }
 }

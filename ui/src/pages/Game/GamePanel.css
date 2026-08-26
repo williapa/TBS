@@ -68,3 +68,8 @@
   margin-top: 4px;
   overflow-wrap: anywhere;
 }
+
+.game-panel__hint {
+  color: #5f6b7a;
+  margin: 0;
+}

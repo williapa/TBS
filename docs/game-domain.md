@@ -1,93 +1,76 @@
-# Game Domain
+# Game domain
 
-## Core Concepts
+## Canonical state and authority
 
-# Map
-A map in the game is a hexagon, created from hexagonal cells. /common defines functions to reference cells by their number, from left to right, top to bottom, as well as x / y coordinates, starting with a 0 index for both. it also defines functions to retrieve cells which a unit can move to, as well as attack from a given cell position. 
+Live games use the normalized, versioned `GameState` contract from `@TBS/game-core`. A state contains lifecycle, revision, axial board cells, stable entities, teams and money, objectives, and turn data. Board coordinates locate entities but never identify them.
 
-For a player to create a map, each team must have at least 1 initial unit that can move and attack, as the default objective is to destroy all enemy units that can move and attack.
+`@TBS/game-rules` owns the single standard action/event unions and deterministic `applyStandardAction` evaluator. An accepted action returns a new immutable state plus ordered domain events; a typed rejection leaves state unchanged. Postgres stores the canonical snapshot and applied-action history atomically. Realtime is only a revision wake-up signal, and clients reconcile missed notices from bounded durable history or the latest snapshot.
 
-# Terrain 
-An additonal aspect of map cells is "terrain type". Terrain types, like "forest", "beach", "water", or "road", impact a moving unit's range during a single move. For example, a boat might only be able to move on water. A person unit cannot move onto a water cell at all. A plane unit's range might not be impacted at all by the terrain cells. The attribute which determines range is "energy". 
+Two durable player seats exist: the creator is orange and the challenger is purple, with purple taking the first turn. Additional members are read-only spectators. Presence never grants a seat or controls gameplay.
 
-# Players
-TBS currently supports 2-player games. The game creator takes the "orange" team, which moves second. the game challenger takes the "purple" team, which moves first. In addition to map units being owned by either player team, a "money" value is tracked for each player. 
+## Maps and setup
 
-# Money
-Each player starts the game with 1000 money. When a player's turn ends, income for the next player is immediately calculated, based on the player's current buildings, and that income is added to the player's money count.
+The editor uses the versioned `MapDocument` contract owned by `@TBS/game-setup`. Its row, column, cell index, neighbor index, and empty-cell sentinel fields exist only at the map-document boundary. Setup validates map size, topology, identifiers, cargo, and the requirement that each player team has at least one movable combat unit. Unsupported prototype map documents are rejected or cleared.
 
-# Unit
-units are player owned game entities, such as animals, vehicles, buildings, objects or people. All units, except objects, start with 100 "health". Each unit type's behavior will be listed below.
+The new-map form limits hexagon side width to 10 in the browser. The setup contract retains its broader compatibility limit so previously saved or imported maps are not reinterpreted by this UI constraint.
 
-## Animals
+Game creation converts a validated map exactly once into revision-zero normalized state:
 
-Animals can move and attack. As for all movement, the terrain of each cell being moved through impacts the total range of movement - this is calculated in the common function which returns cells which can be moved to. Similarly, the common code defines the attributes that determine combat damage, although all combat introduces an element of randomization to introduce a level of unpredictability.
+- map cells become axial board cells keyed by coordinate;
+- placed units and cargo receive deterministic stable entity IDs;
+- orange and purple receive their initial money;
+- each team receives an elimination objective;
+- capital objectives are added when both teams begin with capitals; and
+- lifecycle begins in `waiting` with the current schema, ruleset, and content versions pinned.
 
-## People
+## Terrain and movement
 
-People are like animals, in that they can both move and attack. Attributes which determine movement range and attack strength are defined within the /common code.
+Terrain types affect the energy required for movement and whether a unit may enter a cell. Unit definitions and terrain movement costs live in the standard rules/content registries. Legal-path previews and trusted movement validation use the same rule policies.
 
-## Vehicles
+Each entity that can act has an action budget. A mobile combat unit may move once, and it may attack before moving only when the rules permit it; attack completes its action. A player may end the turn manually, and the deterministic post-action mechanic ends it automatically when no owned entity can still act. Action budgets reset for the next team.
 
-vehicles can move, based on terrain, but not attack. In the current state, these units are essentially blocking units, which could defend another unit but not inflict damage themselves.
+## Units and abilities
 
-## buildings
+Units are composed from definitions, capabilities, abilities, tags, and state components rather than category inheritance. The standard registry is the authority for movement, attack, defense, health, income, and supported abilities.
 
-Building units are not capable of movement or attack. They could still be used as defensive / blocking units, depending on their position on the map. In the current state, there is no way to add new building units to the map during a game. The only unit which carries an effect is the "capital" building. If a map contains at least 1 capital for each team, then this introduces an additional win condition - if a player's capital building is destroyed, they lose the game, even if they have other units that can move and attack still on the board.
+The current action families are:
 
-The capital building, in addition to its potential association with the additional win condition, is the only building which generates player income. A capital building generates 100 in income for that player's team. 
+- move and object collection/projectile use;
+- attack and deterministic counterattack;
+- boost and heal;
+- construct and spawn, including money costs;
+- load and unload transported entities; and
+- end turn.
 
-## Objects
+Rules expose shared selectors for legal entities, destinations, targets, choices, and affordability. Presentation turns those results into labels, panels, overlays, and semantic action drafts; React and the renderers do not reproduce the rules.
 
-Objects are items which exist on the map but provide no utility. Currently, this serves as a way to create a "dead" space on the map. These objects might provide utility in the future, however. 
+## Money and income
 
-# Turn
-During a player's turn, any unit which can move can move one time. A unit which can both attack and move can either attack, or move and then attack. A unit that can move and attack cannot perform an attack, and then move. Once a player has exercised moves for all available units, their turn automatically ends. If a player chooses not to move a unit (or units), they can choose to manually end their turn at any point. 
+Each team starts with 1,000 money. Construction and production spend the costs defined in the rules registry. At turn transition, income from the next team's on-board buildings is calculated and credited deterministically. Income values are part of unit definitions, so setup, previews, and trusted execution share one source.
 
-At the end of a turn, the 
+## Combat, objects, and status
 
-# Combat
-When a unit attacks another unit, the attacking unit does damage based on each unit's combat stats (attack and defense) defined for each unit, their current health, and an element of randomization. If the attacking unit does not destroy the defending unit, and the defneding unit also has the ability to "attack", then it deals damage back to the attacker, based on the same formula. This formula subtracts computed damage from the target unit's health. Since attack damage takes health as an input, and the attacker deals damage first, it is likely that the defender will end up doing less damage back to the attacker.  
+Combat damage is deterministic. Effective attack and defense include matchup and boost modifiers. Damage is:
 
-# Win Conditions
+```text
+max(0, floor(attack × attacker current health / maximum health)
+       - ceil(defense × defender current health / maximum health))
+```
 
-A win condition is defined for each game map, based on the units which exist in its initial state. For any map, destroying all moving & attacking units is a default win condition. The second win condition exists for maps where both teams have a capital building. For these maps, a player can win by destroying their opponent's capital building. 
+The attacker strikes first. A surviving defender counterattacks from the post-strike state, so its reduced health can lower the counterattack. Death removal, object effects, money awards, status consumption, objectives, victory, turn completion, and income occur through explicit ordered mechanics.
 
-# Future Plans
+Consumable objects may award money or supply projectile effects when collected as part of movement. Priest shielding and object damage are rule-owned behavior recorded in standard events.
 
-This section outlines game functions which have not yet been implemented.
+## Victory
 
-## Units
+Every game has elimination objectives: a team loses when it no longer has an on-board unit with both movement and attack capability. When setup added capital objectives, losing the team's capital is also a loss condition. A winning transition emits `game-over` and sets the canonical lifecycle to `finished` with the winner team.
 
-### People
+The map editor shows the win condition derived from its current unit placement. Game creation and invite previews show the same condition from the revision-zero objectives, and the active game shows it in the details panel whenever no cell or actor is selected. These views present the canonical objectives rather than storing a separate win-condition setting.
 
-Status: construction for construction workers is implemented. Other special abilities could come later
+Finished-game views announce the winning team and seated player's display name in the persistent game status, and mark the winning player panel independently of the transient event history.
 
-There are multiple different types of people units. Eventually, each should have custom special abilties, beyond unique energy, attack, and defense. As one example, the "worker" might be able to transform cell terrain, such as changing a forest into a plain, or a plain into a road. a "construction worker" might be able to build certain types of buildings, like houses. A zookeeper might be able to create a zoo. Performing these actions would consume money and have to be done in place of an attack on that turn. More about money later.
+## Extension path
 
+Add a unit through one content definition and any required presentation asset mapping. Add an action through a focused action module, runtime codec, registry composition, shared legality selector, semantic presentation wiring, and focused tests. Add post-action behavior through an explicitly ordered mechanic hook. None of these extension paths require a second reducer, protocol-version dispatch, persistence candidate-state change, or renderer-owned rule.
 
-### Vehicles
-
-Status: people can now load into vehicles and be unloaded, defined as "transport". combat stats are NOT currently augmented based on the caried unit. Vehicle movement does not yet consume money.
-
-currently, vehicles can move but not attack. In the future, it might make sense for vehicles to be able to "carry" people units, so that both units would occupy the same cell. Depending on the person and vehicle, the combination of the 2 units might be able to attack with increased attack/defense. Or, they might function simply as a way to extend range - consider a "boat" unit, being able to transport people across a set of water-terrain cells, as a shortcut. Once a "money" feature has been implemented, vehicle movement should consume some amount of money per cell, the idea being that the vehicle requires fuel, which costs money. 
-
-### Buildings
-
-Status: "spawn" has been implemented, allowing all buildings to spawn units for cost.
-
-currently, buildings do nothing except act as a blocking/defense unit. However, in the future, buildings might be able to spawn new unit types, based on the type of building. An airport might be able to spawn pilots, or airplane vehicles. A zoo might be able to spawn animals. These definitions would need to be added to 'common'. 
-
-### Objects
-
-Status: implemneted 
-Currently, objects simply occupy cells and cannot be attacked or consumed. But, for the "money bag" object, this should become an occupiable cell. When a unit steps on a cell with a money bag object, the object is consumed (aka, destroyed) and a certain amount of money is added for that player. Other objects might have similar effects. As an additional example, if a unit steps on a "missile" object, then this might create a special action where the player can launch the missile at an enemy and do damage (without typical retaliation combat damage). 
-
-## Terrain
-Currently, terrain affects energy consumed by moving units. In the future, however, terrain could be used to impact attack / defense. If you are attacking from a "beach" cell, this might negatively impact your attack and defense. 
-
-## Money 
-
-Status: "spawn" and "construction" now consume money. 
-
-Currently, money is a real game attribute and certain buildings can produce income each turn. In the future, this money will be able to be spent, allowing players to spawn new units, build buildings, and expand their power.
+The opt-in Pathfinder/forest-concealment example exercises unit registry extension and ordered mechanics without changing the pinned standard content.

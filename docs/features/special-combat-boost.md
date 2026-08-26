@@ -36,19 +36,19 @@ The scientist should be able to boost combat stats of any "building" unit.
 Implement boost as a new persistent unit state on `MapItem` and `LoadedUnit`, plus a new post-move action that marks one adjacent eligible ally as boosted. Resolve boost inside the existing matchup-aware combat stat pipeline so default stats stay separate from conditional combat logic, and keep special combat bonus precedence above boost exactly as the feature doc requires.
 
 ## Key Changes
-- Extend shared game types in `common/src/types/index.ts`:
+- Extend the standard action/event contracts in `@TBS/game-rules`:
   - Add `"boost"` to `supportedActions`, `GameAction`, and `GameEvent`.
   - Add a `boosted?: boolean` flag to `MapItem` and `LoadedUnit`.
   - Add a `Boost` action shape with source movement coordinates, final unit position, and target coordinates.
   - Add a `BoostEvent` carrying booster unit, boosted unit, and target cell.
-- Add shared boost rules/helpers in `common/src`:
+- Add focused boost rules and selectors in `game-rules`:
   - Create a small helper such as `canUnitBoost(unitType)` and `canReceiveBoost(boosterType, targetType)`.
   - Use the existing category lists (`peopleUnitOptions`, `animalUnitOptions`, `buildingUnitOptions`) to encode:
     - `bluesMusician -> people`
     - `zookeeper -> animal`
     - `scientist -> building`
   - Add a helper to compute adjacent valid boost targets from a map position so both UI and server share the same targeting rule.
-- Update combat stat resolution in `common/src/combat/getEffectiveCombatStats.ts`:
+- Update combat stat resolution in `packages/game-rules/src/content/combat.ts`:
   - Keep special matchup overrides as the highest-precedence rule.
   - If no matchup override applies and `item.boosted` is true, return base combat stats plus `+10 attack / +10 defense`.
   - Otherwise fall back to `getCombatStats(item)`.
@@ -75,7 +75,7 @@ Implement boost as a new persistent unit state on `MapItem` and `LoadedUnit`, pl
   - Apply the same indicator to loaded units if their `loadedUnit.boosted` is true, so persisted boost state stays visible consistently.
 
 ## Test Plan
-- Add common combat tests covering:
+- Add focused combat tests covering:
   - boosted unit gets `+10/+10` with no matchup override
   - special combat bonus still overrides boost when both could apply
   - non-boosted opponent in the same combat can still benefit from its own boost
@@ -96,4 +96,3 @@ Implement boost as a new persistent unit state on `MapItem` and `LoadedUnit`, pl
 - Boosts do not stack; trying to boost an already-boosted unit should be disallowed rather than silently ignored.
 - Only units physically present on the map can be targeted; loaded units cannot be boosted while inside a transport.
 - “Bonus overrides boost” means matchup-specific stats fully replace the boosted calculation for that combatant in that matchup.
-
