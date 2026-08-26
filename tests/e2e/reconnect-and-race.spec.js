@@ -15,7 +15,7 @@ test("closed player tabs restore from durable state without clearing browser sto
   let creator = await creatorContext.newPage();
   let challenger = await challengerContext.newPage();
   try {
-    await creator.goto("/");
+    await creator.goto("/game/new");
     await creator.getByLabel("Display name").fill("Durable creator");
     await creator.getByRole("button", { name: "Create game" }).click();
     const invitePath = new URL(await creator.getByLabel("Share link").inputValue()).pathname;
@@ -36,8 +36,8 @@ test("closed player tabs restore from durable state without clearing browser sto
 
     challenger = await challengerContext.newPage();
     await challenger.goto(invitePath);
-    await expect(challenger.getByRole("complementary", { name: "purple player" }))
-      .toContainText("Durable challenger (you)");
+    await expect(challenger.getByRole("complementary", { name: "purple player" })
+      .locator(".player__name")).toHaveText("Durable challenger");
     await expect(revision(challenger)).toHaveText("2");
     await expect(challenger.locator('[data-revision="1"]')).toContainText("Purple ended their turn. Orange gained");
     await expect(challenger.locator('[data-revision="2"]')).toContainText("Orange ended their turn. Purple gained");
@@ -48,10 +48,10 @@ test("closed player tabs restore from durable state without clearing browser sto
     challenger = await challengerContext.newPage();
     await creator.goto(invitePath);
     await challenger.goto(invitePath);
-    await expect(creator.getByRole("complementary", { name: "orange player" }))
-      .toContainText("Durable creator (you)");
-    await expect(challenger.getByRole("complementary", { name: "purple player" }))
-      .toContainText("Durable challenger (you)");
+    await expect(creator.getByRole("complementary", { name: "orange player" })
+      .locator(".player__name")).toHaveText("Durable creator");
+    await expect(challenger.getByRole("complementary", { name: "purple player" })
+      .locator(".player__name")).toHaveText("Durable challenger");
     await expect(revision(creator)).toHaveText("2");
     await expect(revision(challenger)).toHaveText("2");
   } finally {
@@ -69,18 +69,19 @@ test("two same-member stale tabs commit once and exact action-ID retry is idempo
   try {
     await orange.goto("/");
     await identityPage.goto("/");
-    await expect(orange.getByRole("heading", { name: "Start a game" })).toBeVisible();
-    await expect(identityPage.getByRole("heading", { name: "Start a game" })).toBeVisible();
+    await expect(orange.getByRole("heading", { name: "🎖️ Hostile Hexagons 🎖️" })).toBeVisible();
+    await expect(identityPage.getByRole("heading", { name: "🎖️ Hostile Hexagons 🎖️" })).toBeVisible();
     const sharedIdentity = await identityContext.storageState();
     twinContext = await browser.newContext({ storageState: sharedIdentity });
     const twinPage = await twinContext.newPage();
     await twinPage.goto("/");
-    await expect(twinPage.getByRole("heading", { name: "Start a game" })).toBeVisible();
+    await expect(twinPage.getByRole("heading", { name: "🎖️ Hostile Hexagons 🎖️" })).toBeVisible();
 
     const initialState = actionScenarios()[0].state;
     const created = await gatewayCall(orange, "createGame", {
       displayName: "Race creator",
       initialState,
+      mapName: "Race battlefield",
     });
     await gatewayCall(identityPage, "joinGame", created.inviteToken, "player", "Race challenger");
     await gatewayCall(twinPage, "joinGame", created.inviteToken, "player", "Race challenger");

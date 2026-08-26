@@ -35,6 +35,13 @@ const createGame = async (store: InMemoryGameSessionStore) => {
 describe("new session create and join flow", () => {
   beforeEach(() => window.localStorage.clear());
 
+  test("renders the restored Hostile Hexagons homepage", () => {
+    renderFlow(new InMemoryGameSessionGateway(createStore(), "visitor"));
+
+    expect(screen.getByRole("heading", { name: "🎖️ Hostile Hexagons 🎖️" })).toBeInTheDocument();
+    expect(screen.getByText(/Lead your legion to victory/)).toBeInTheDocument();
+  });
+
   test("creates a game from a selected local map, copies its payload, and produces a share link", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
@@ -55,7 +62,7 @@ describe("new session create and join flow", () => {
       update: (id, input) => repository.update(id, input),
       delete: (id) => repository.delete(id),
     };
-    renderFlow(new InMemoryGameSessionGateway(store, "creator"), "/", customMapRepository);
+    renderFlow(new InMemoryGameSessionGateway(store, "creator"), "/game/new", customMapRepository);
 
     expect(await screen.findAllByText("Forest crossing")).not.toHaveLength(0);
     expect(screen.getByRole("img", { name: "Map preview" })).toBeInTheDocument();
@@ -150,11 +157,26 @@ describe("new session create and join flow", () => {
     const activeView = renderFlow(new InMemoryGameSessionGateway(activeStore, "purple"), `/game/${active.inviteToken}`);
     expect(await activeView.findByRole("heading", { name: "Game in progress" })).toBeInTheDocument();
     expect(activeView.container.querySelectorAll(".r1 > .player.panel")).toHaveLength(2);
+    const orangePanel = activeView.getByRole("complementary", { name: "orange player" });
+    const purplePanel = activeView.getByRole("complementary", { name: "purple player" });
+    expect(orangePanel).not.toHaveClass("panel--active");
+    expect(orangePanel).not.toHaveAttribute("aria-current");
+    expect(purplePanel).toHaveClass("panel--active");
+    expect(purplePanel).toHaveAttribute("aria-current", "true");
+    expect(within(purplePanel).getByText("Purple")).toHaveAccessibleName("Purple, your player, current turn");
+    expect(activeView.queryByText("(you)")).not.toBeInTheDocument();
+    expect(activeView.queryByText("(acting)")).not.toBeInTheDocument();
+    expect(activeView.getByRole("status")).toHaveTextContent("Your turn");
     expect(activeView.container.querySelector(".r1 > .game.special-panel")).toBeInTheDocument();
     expect(activeView.container.querySelector(".r2 > .game.panel")).toBeInTheDocument();
     expect(activeView.container.querySelector(".r2 > .event.panel")).toBeInTheDocument();
     fireEvent.click(activeView.getByRole("button", { name: "End turn" }));
     await waitFor(() => expect(activeView.getByText("Revision").nextSibling).toHaveTextContent("1"));
+    expect(orangePanel).toHaveClass("panel--active");
+    expect(orangePanel).toHaveAttribute("aria-current", "true");
+    expect(purplePanel).not.toHaveClass("panel--active");
+    expect(purplePanel).not.toHaveAttribute("aria-current");
+    expect(activeView.getByRole("status")).toHaveTextContent("Orange's turn");
     expect(activeView.queryByRole("button", { name: "End turn" })).not.toBeInTheDocument();
     activeView.unmount();
 
@@ -192,7 +214,8 @@ describe("new session create and join flow", () => {
     const mapsView = renderFlow(gateway, "/maps");
     expect(await mapsView.findByRole("heading", { name: "New Map Configuration" })).toBeInTheDocument();
     const navigation = mapsView.getByRole("navigation", { name: "Primary" });
-    expect(navigation).toContainElement(mapsView.getByRole("link", { name: "Start game" }));
+    /*expect(navigation).toContainElement(mapsView.getByRole("link", { name: "Home" })); */ /* I removed this link for now */
+    expect(navigation).toContainElement(mapsView.getByRole("link", { name: "Create game" }));
     expect(navigation).toContainElement(mapsView.getByRole("link", { name: "Create map" }));
     expect(mapsView.queryByText(/signup|profile|lobby/i)).not.toBeInTheDocument();
     expect(mapsView.queryByLabelText("Import map JSON")).not.toBeInTheDocument();
@@ -200,8 +223,12 @@ describe("new session create and join flow", () => {
     mapsView.unmount();
 
     const redirected = renderFlow(gateway, "/lobby");
-    expect(await redirected.findByRole("heading", { name: "Start a game" })).toBeInTheDocument();
+    expect(await redirected.findByRole("heading", { name: "🎖️ Hostile Hexagons 🎖️" })).toBeInTheDocument();
     redirected.unmount();
+
+    const oldCreateGame = renderFlow(gateway, "/createGame");
+    expect(await oldCreateGame.findByRole("heading", { name: "Start a game" })).toBeInTheDocument();
+    oldCreateGame.unmount();
 
     const oldEditor = renderFlow(gateway, "/mapEditor");
     expect(await oldEditor.findByText("New Map Configuration")).toBeInTheDocument();

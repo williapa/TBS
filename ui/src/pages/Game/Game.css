@@ -124,7 +124,6 @@
 .player.panel--active {
   outline: 4px solid white;
   outline-offset: -4px;
-  /*z-index: 2;*/
 }
 
 .player.panel--winner {
@@ -215,7 +214,8 @@
   z-index: 3;
 }
 
-.game-view__metadata {
+.game-view__metadata,
+.game-view__turn-status {
   clip: rect(0 0 0 0);
   clip-path: inset(50%);
   height: 1px;
@@ -239,6 +239,15 @@
 @media (max-width: 720px) {
   .player.panel {
     width: 24%;
+  }
+
+  .player__name {
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    display: -webkit-box;
+    font-size: 0.8rem;
+    line-height: 1.15;
+    overflow: hidden;
   }
 
   .game.special-panel {

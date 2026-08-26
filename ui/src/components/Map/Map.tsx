@@ -54,7 +54,7 @@ const Map = ({ name, dimension = 16, defaultTerrain, mapId, initialMap }: MapPro
       const input = { name: name ?? "", map: mapData };
       if (mapId) await mapRepository.update(mapId, input);
       else await mapRepository.save(input);
-      navigate("/");
+      navigate("/game/new");
     } catch (value) {
       setSaveError(value instanceof Error ? value.message : "The map could not be saved");
     } finally {

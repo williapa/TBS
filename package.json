@@ -12,7 +12,7 @@
     "graph": "nx graph",
     "lint": "eslint packages ui/src supabase/functions scripts playwright.config.js tests/e2e --max-warnings=0",
     "performance:check": "pnpm --filter @TBS/renderer-3d build && pnpm --filter @TBS/ui build && node scripts/check-performance-budgets.mjs",
-    "portability:check": "pnpm --filter @TBS/adapter-memory test",
+    "portability:check": "nx run @TBS/adapter-memory:test",
     "test": "nx run-many -t test --parallel=1",
     "typecheck": "nx run-many -t typecheck --parallel=1",
     "ui:test": "pnpm --filter @TBS/ui test",

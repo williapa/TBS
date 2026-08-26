@@ -59,7 +59,7 @@ describe("map editor persistence", () => {
               path="/mapEditor"
               element={<Map name="Tiny" initialMap={createDefaultBattlefield().map} />}
             />
-            <Route path="/" element={<h1>Start a game</h1>} />
+            <Route path="/game/new" element={<h1>Start a game</h1>} />
           </Routes>
         </MemoryRouter>
       </MapRepositoryProvider>

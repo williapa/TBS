@@ -20,7 +20,7 @@ The browser does not call an Express server, Socket.IO, DynamoDB, or map REST en
 
 ## Product routes
 
-- `/` previews the selected bundled or local map with the read-only 2D renderer, creates a game from that exact setup, and produces an invite URL.
+- `/` presents the  homepage. `/game/new` previews the selected bundled or local map with the read-only 2D renderer, creates a game from that exact setup, and produces an invite URL.
 - `/maps/new` and `/maps/:mapId/edit` create and edit versioned maps in browser local storage. `/maps` currently redirects to the new-map flow; import/export remains a setup/repository API rather than a shipped screen.
 - `/game/:inviteToken` previews the current battlefield for a fresh invite visitor, then joins a player or spectator; saved members reconnect directly and render waiting, active, or finished state.
 

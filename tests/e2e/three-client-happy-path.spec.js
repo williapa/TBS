@@ -59,7 +59,7 @@ test("creator, challenger, and spectator complete a live game and all action fam
     const challenger = await openClient("challenger");
     const spectator = await openClient("spectator");
 
-    await creator.goto("/");
+    await creator.goto("/game/new");
     await expect(creator.getByRole("heading", { name: "Start a game" })).toBeVisible();
     await creator.getByLabel("Display name").fill("Creator");
     await creator.getByRole("button", { name: /Map.*Default battlefield/ }).click();
@@ -73,8 +73,12 @@ test("creator, challenger, and spectator complete a live game and all action fam
     await challenger.goto(invitePath);
     await challenger.getByLabel("Display name").fill("Challenger");
     await challenger.getByRole("button", { name: "Join as player" }).click();
-    await expect(challenger.getByRole("complementary", { name: "purple player" }))
-      .toContainText("Challenger (you)");
+    const challengerPanel = challenger.getByRole("complementary", { name: "purple player" });
+    await expect(challengerPanel.locator(".player__name")).toHaveText("Challenger");
+    expect(await challengerPanel.evaluate((panel) => {
+      const styles = getComputedStyle(panel);
+      return { outlineStyle: styles.outlineStyle, outlineWidth: styles.outlineWidth };
+    })).toEqual({ outlineStyle: "solid", outlineWidth: "4px" });
 
     await spectator.goto(invitePath);
     await spectator.getByLabel("Display name").fill("Spectator");

@@ -60,10 +60,23 @@ export const SessionGamePage = () => {
     ? actions.at(-1)?.events ?? []
     : [];
   const winCondition = presentWinCondition(state.objectives);
+  const activePlayerName = activeTeamId === orangeTeamId
+    ? players[orangeTeamId]?.displayName ?? "Orange"
+    : activeTeamId === purpleTeamId
+      ? players[purpleTeamId]?.displayName ?? "Purple"
+      : undefined;
+  const turnAnnouncement = activeTeamId
+    ? activeTeamId === role
+      ? "Your turn"
+      : `${activePlayerName ?? activeTeamId}'s turn`
+    : undefined;
 
   return (
     <main className="game-view" aria-labelledby="game-state-title">
       <h1 className="game-view__status" id="game-state-title">{statusLabel}</h1>
+      {turnAnnouncement && (
+        <p className="game-view__turn-status" role="status">{turnAnnouncement}</p>
+      )}
       <dl className="game-view__metadata">
         <dt>Orange</dt><dd>{players[orangeTeamId]?.displayName ?? "Open seat"} {players[orangeTeamId] && (onlineMembers.has(players[orangeTeamId].memberId) ? "(online)" : "(offline)")}</dd>
         <dt>Purple</dt><dd>{players[purpleTeamId]?.displayName ?? "Open seat"} {players[purpleTeamId] && (onlineMembers.has(players[purpleTeamId].memberId) ? "(online)" : "(offline)")}</dd>

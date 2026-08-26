@@ -1,6 +1,6 @@
 # TBS
 
-TBS (“Medal Versus”) is a browser-based turn-based strategy game with durable two-player sessions and read-only spectators.
+TBS (“Hostile Hexagons”) is a browser-based turn-based strategy game with durable two-player sessions and read-only spectators.
 
 The supported stack is React, a normalized deterministic TypeScript core with focused rules, protocol, setup, application, presentation, renderer, and adapter packages, and Supabase for anonymous Auth, trusted Edge action evaluation, Postgres persistence/RPCs, Realtime Broadcast, and Presence. The browser runs without Express, Socket.IO, DynamoDB, or server-side map storage.
 

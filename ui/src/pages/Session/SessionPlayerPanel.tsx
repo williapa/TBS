@@ -24,18 +24,18 @@ export const SessionPlayerPanel = ({
   onEndTurn,
 }: SessionPlayerPanelProps) => {
   const name = displayName ?? "Open seat";
+  const accessibleName = `${name}${isLocalPlayer ? ", your player" : ""}${activeTurn ? ", current turn" : ""}`;
   const avatarSeed = encodeURIComponent(displayName ?? color);
   const flip = color === "orange" ? "&flip=true" : "";
 
   return (
     <aside
       aria-label={`${color} player`}
+      aria-current={activeTurn ? "true" : undefined}
       className={`player panel${activeTurn ? " panel--active" : ""}${isWinner ? " panel--winner" : ""}`}
     >
       <div className={`player__identity player__identity--${color}`}>
-        <p className="player__name">
-          {name} {isLocalPlayer && "(you)"} {activeTurn && "(acting)"}
-        </p>
+        <p aria-label={accessibleName} className="player__name">{name}</p>
         {isWinner && <p className="player__winner"><span aria-hidden="true">★</span> Winner</p>}
         <img
           alt="avatar"
