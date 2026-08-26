@@ -3,7 +3,7 @@ import { InMemoryGameSessionGateway, InMemoryGameSessionStore } from '@TBS/adapt
 import { applyStandardAction } from '@TBS/game-rules';
 import App from '../src/App';
 
-test('renders the Medal Versus homepage', async () => {
+test('renders the Hostile Hexagons homepage', async () => {
   const gateway = new InMemoryGameSessionGateway(
     new InMemoryGameSessionStore(applyStandardAction),
     'test-user',

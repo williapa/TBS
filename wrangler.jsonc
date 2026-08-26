@@ -1,0 +1,9 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "hostilehexagons",
+  "compatibility_date": "2026-08-26",
+  "assets": {
+    "directory": "./ui/build",
+    "not_found_handling": "single-page-application"
+  }
+}

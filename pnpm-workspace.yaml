@@ -4,7 +4,9 @@ packages:
 allowBuilds:
   # Nx's installer selects its platform-native binary; no network or source
   # generation is performed by the script.
+  esbuild: true
   nx: true
+  workerd: true
 confirmModulesPurge: false
 minimumReleaseAgeExclude:
   - globals@17.10.0
