@@ -1,9 +1,11 @@
 import { createActiveGameStateFixture } from "@TBS/test-kit";
+import { applyStandardAction } from "@TBS/game-rules";
 import { mapUnitOptions } from "@TBS/game-setup";
 import type * as PresentationModule from "@TBS/presentation";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 import GameMap from "./GameMap";
+import { createActionEnvelope } from "../../multiplayer/createActionEnvelope";
 
 const rendererLifecycle = vi.hoisted(() => ({ disposed: vi.fn() }));
 const interactionPreviewCalls = vi.hoisted(() => vi.fn());
@@ -155,6 +157,59 @@ describe("GameMap renderer lifecycle", () => {
     expect(onAction).toHaveBeenCalledWith(expect.objectContaining({ type: "move" }));
     expect(screen.queryByRole("button", { name: "Confirm Move" })).not.toBeInTheDocument();
     expect(screen.queryByRole("dialog", { name: "Available actions" })).not.toBeInTheDocument();
+  });
+
+  test("keeps an optimistic movement animation on confirmation and cancels it for a conflicting transition", async () => {
+    const onAction = vi.fn();
+    const props = gameProps();
+    const view = render(<GameMap active onAction={onAction} {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: /Soldier, orange team/ }));
+    fireEvent.click(moveTargetCell());
+    fireEvent.click(screen.getByRole("button", { name: "Move" }));
+    const command = onAction.mock.calls[0]?.[0];
+    if (!command || command.type !== "move") {
+      throw new Error("animation fixture requires a move command");
+    }
+    const reduced = applyStandardAction(props.state, props.perspective, command);
+    if (!reduced.ok) throw new Error("animation fixture move should be valid");
+    const firstActionId = createActionEnvelope(
+      props.state.revision,
+      command,
+      () => "45000000-0000-4000-8000-000000000001",
+    ).actionId;
+    const conflictingActionId = createActionEnvelope(
+      props.state.revision,
+      command,
+      () => "45000000-0000-4000-8000-000000000002",
+    ).actionId;
+
+    view.rerender(
+      <GameMap
+        active={false}
+        events={reduced.events}
+        perspective={props.perspective}
+        state={reduced.state}
+        transitionId={firstActionId}
+      />,
+    );
+    await waitFor(() => expect(
+      screen.getByRole("button", { name: /Soldier, orange team/ }).querySelector("g")
+        ?.getAttribute("style"),
+    ).toContain("tbs-renderer-2d-move"));
+
+    view.rerender(
+      <GameMap
+        active={false}
+        events={[]}
+        perspective={props.perspective}
+        state={reduced.state}
+        transitionId={conflictingActionId}
+      />,
+    );
+    await waitFor(() => expect(
+      screen.getByRole("button", { name: /Soldier, orange team/ }).querySelector("g")
+        ?.getAttribute("style") ?? "",
+    ).not.toContain("tbs-renderer-2d-move"));
   });
 
   test("reuses the snapshot legality preview across interaction-only renders", () => {

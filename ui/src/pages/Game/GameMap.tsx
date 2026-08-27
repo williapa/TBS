@@ -50,6 +50,7 @@ const GameMap = ({
   onPanelStateChange,
   perspective,
   state,
+  transitionId,
 }: ActiveMapProps) => {
   const parentRef = useRef<HTMLDivElement>(null);
   const previousRevision = useRef(state.revision);
@@ -69,7 +70,7 @@ const GameMap = ({
     setAnimationEvents(adjacent ? latestEvents.current : []);
     setInteractionState(createInitialGameInteractionState());
     setLastInspectedCellId(null);
-  }, [state.revision]);
+  }, [state.revision, transitionId]);
 
   useEffect(() => {
     if (reducedMotion) setAnimationEvents([]);

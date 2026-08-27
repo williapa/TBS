@@ -27,10 +27,16 @@ const envelope = {
 
 const sessionFor = (snapshot: StandardGameSnapshot) => ({
   gameId: snapshot.gameId,
-  memberId: "purple-member",
-  role: purpleTeamId,
+  memberId: "orange-member",
+  role: orangeTeamId,
   snapshot,
 });
+
+const deferred = <T,>() => {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((next) => { resolve = next; });
+  return { promise, resolve };
+};
 
 const clientFor = (
   snapshot: StandardGameSnapshot,
@@ -102,24 +108,24 @@ describe("GameSessionModel", () => {
     const listener = vi.fn();
     model.subscribe(listener);
 
-    await model.joinGame("invite-token", "player", "Purple");
+    await model.joinGame("invite-token", "player", "Orange");
 
     expect(model.getState()).toMatchObject({
-      role: "purple",
+      role: "orange",
       connectionState: "connected",
       submitState: "idle",
     });
     expect(model.getState().actions.map(({ actionId: id }) => id)).toEqual([envelope.actionId]);
     expect(client.updatePresence).toHaveBeenCalledWith({
       gameId: snapshot.gameId,
-      displayName: "Purple",
-      role: "purple",
+      displayName: "Orange",
+      role: "orange",
       onlineAt: "2026-08-11T12:00:00.000Z",
     });
     expect(listener).toHaveBeenCalled();
   });
 
-  it("publishes canonical successful submissions and returns to idle", async () => {
+  it("publishes an optimistic transition immediately and settles it after acceptance", async () => {
     const snapshot = createGameSnapshotFixture();
     const reduced = applyStandardAction(snapshot.state, orangeTeamId, envelope.action);
     if (!reduced.ok) throw new Error("fixture action should be valid");
@@ -133,20 +139,168 @@ describe("GameSessionModel", () => {
     };
     const nextSnapshot = { ...snapshot, state: reduced.state };
     const client = clientFor(snapshot);
-    client.submitAction = vi.fn(async () => ({
+    const submission = deferred<Awaited<ReturnType<GameClient["submitAction"]>>>();
+    client.submitAction = vi.fn(() => submission.promise);
+    const model = new GameSessionModel(client, { nowIso: () => "ignored" });
+    await model.joinGame("invite-token", "player", "Orange");
+
+    const resultPromise = model.submitAction(envelope);
+
+    expect(model.getState().snapshot?.state.revision).toBe(0);
+    expect(model.getState().optimisticTransition).toMatchObject({
+      actionId: envelope.actionId,
+      expectedRevision: 0,
+      snapshot: { state: { revision: 1 } },
+      events: reduced.events,
+    });
+    expect(model.getState().submitState).toBe("submitting");
+
+    submission.resolve({
       ok: true as const,
       appliedAction,
       snapshot: nextSnapshot,
-    }));
-    const model = new GameSessionModel(client, { nowIso: () => "ignored" });
-    await model.joinGame("invite-token", "player", "Purple");
-
-    const result = await model.submitAction(envelope);
+    });
+    const result = await resultPromise;
 
     expect(result.ok).toBe(true);
     expect(model.getState().snapshot?.state.revision).toBe(1);
+    expect(model.getState().optimisticTransition).toBeNull();
     expect(model.getState().actions).toEqual([appliedAction]);
     expect(model.getState().submitState).toBe("idle");
+  });
+
+  it("rolls back the optimistic transition when the server rejects the action", async () => {
+    const snapshot = createGameSnapshotFixture();
+    const reduced = applyStandardAction(snapshot.state, orangeTeamId, envelope.action);
+    if (!reduced.ok) throw new Error("fixture action should be valid");
+    const client = clientFor(snapshot);
+    const submission = deferred<Awaited<ReturnType<GameClient["submitAction"]>>>();
+    client.submitAction = vi.fn(() => submission.promise);
+    const model = new GameSessionModel(client, { nowIso: () => "ignored" });
+    await model.joinGame("invite-token", "player", "Orange");
+
+    const resultPromise = model.submitAction(envelope);
+    expect(model.getState().optimisticTransition?.snapshot.state).toEqual(reduced.state);
+
+    submission.resolve({
+      ok: false,
+      error: {
+        code: "invalid-action",
+        message: "The server rejected the move",
+        retryable: false,
+      },
+      snapshot,
+    });
+    const result = await resultPromise;
+
+    expect(result.ok).toBe(false);
+    expect(model.getState()).toMatchObject({
+      snapshot: { state: { revision: 0 } },
+      optimisticTransition: null,
+      submitState: "idle",
+      error: { code: "invalid-action", message: "The server rejected the move" },
+    });
+    expect(model.getState().actions).toEqual([]);
+  });
+
+  it("reconciles an accepted action when the submission response is lost", async () => {
+    const initial = createGameSnapshotFixture();
+    const reduced = applyStandardAction(initial.state, orangeTeamId, envelope.action);
+    if (!reduced.ok) throw new Error("fixture action should be valid");
+    const appliedAction: StandardAppliedAction = {
+      protocolVersion: envelope.protocolVersion,
+      actionId: envelope.actionId,
+      revision: reduced.state.revision,
+      actorTeamId: orangeTeamId,
+      action: envelope.action,
+      events: reduced.events,
+    };
+    let history: readonly StandardAppliedAction[] = [];
+    const client = clientFor(initial);
+    client.getActions = vi.fn(async (_gameId, afterRevision) =>
+      history.filter(({ revision }) => revision > afterRevision));
+    client.submitAction = vi.fn(async () => ({
+      ok: false as const,
+      error: {
+        code: "network" as const,
+        message: "The response was lost",
+        retryable: true,
+      },
+    }));
+    const model = new GameSessionModel(client, { nowIso: () => "ignored" });
+    await model.joinGame("invite-token", "player", "Orange");
+    history = [appliedAction];
+
+    const result = await model.submitAction(envelope);
+
+    expect(result.ok).toBe(false);
+    expect(model.getState().snapshot?.state.revision).toBe(1);
+    expect(model.getState().optimisticTransition).toBeNull();
+    expect(model.getState().actions).toEqual([appliedAction]);
+    expect(model.getState().error).toBeNull();
+    expect(model.getState().submitState).toBe("idle");
+  });
+
+  it("does not let a delayed submission response regress newer reconciled state", async () => {
+    const initial = createGameSnapshotFixture();
+    const firstResult = applyStandardAction(initial.state, orangeTeamId, envelope.action);
+    if (!firstResult.ok) throw new Error("first fixture action should be valid");
+    const firstAction: StandardAppliedAction = {
+      protocolVersion: envelope.protocolVersion,
+      actionId: envelope.actionId,
+      revision: 1,
+      actorTeamId: orangeTeamId,
+      action: envelope.action,
+      events: firstResult.events,
+    };
+    const secondEnvelope = {
+      ...envelope,
+      actionId: actionId("00000000-0000-4000-8000-000000000002"),
+      expectedRevision: 1,
+    };
+    const secondResult = applyStandardAction(firstResult.state, purpleTeamId, secondEnvelope.action);
+    if (!secondResult.ok) throw new Error("second fixture action should be valid");
+    const secondAction: StandardAppliedAction = {
+      protocolVersion: secondEnvelope.protocolVersion,
+      actionId: secondEnvelope.actionId,
+      revision: 2,
+      actorTeamId: purpleTeamId,
+      action: secondEnvelope.action,
+      events: secondResult.events,
+    };
+    const client = clientFor(initial);
+    let revisionListener: ((notice: Parameters<Parameters<GameClient["subscribe"]>[1]>[0]) => void) | undefined;
+    let history: readonly StandardAppliedAction[] = [];
+    client.getActions = vi.fn(async (_gameId, afterRevision) =>
+      history.filter(({ revision }) => revision > afterRevision));
+    client.subscribe = vi.fn(async (_gameId, listener) => {
+      revisionListener = listener;
+      return () => undefined;
+    });
+    const submission = deferred<Awaited<ReturnType<GameClient["submitAction"]>>>();
+    client.submitAction = vi.fn(() => submission.promise);
+    const model = new GameSessionModel(client, { nowIso: () => "ignored" });
+    await model.joinGame("invite-token", "player", "Orange");
+
+    const resultPromise = model.submitAction(envelope);
+    history = [firstAction, secondAction];
+    revisionListener?.({
+      gameId: initial.gameId,
+      revision: 2,
+      actionId: secondAction.actionId,
+    });
+    await vi.waitFor(() => expect(model.getState().snapshot?.state.revision).toBe(2));
+
+    submission.resolve({
+      ok: true,
+      appliedAction: firstAction,
+      snapshot: { ...initial, state: firstResult.state },
+    });
+    await resultPromise;
+
+    expect(model.getState().snapshot?.state.revision).toBe(2);
+    expect(model.getState().optimisticTransition).toBeNull();
+    expect(model.getState().actions.map(({ revision }) => revision)).toEqual([1, 2]);
   });
 
   it("normalizes connection failures and clears or resets owned state", async () => {
@@ -173,6 +327,7 @@ describe("GameSessionModel", () => {
       session: null,
       role: null,
       snapshot: null,
+      optimisticTransition: null,
       actions: [],
       presence: [],
       connectionState: "idle",

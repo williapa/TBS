@@ -7,6 +7,7 @@ import type {
   GameSubmitState,
   GatewayError,
   JoinIntent,
+  OptimisticGameTransition,
   PresenceState,
   SessionRole,
   StandardActionEnvelope,
@@ -30,6 +31,7 @@ export type GameSessionContextValue = {
   session: GameSession | null;
   role: SessionRole | null;
   snapshot: StandardGameSnapshot | null;
+  optimisticTransition: OptimisticGameTransition | null;
   actions: readonly StandardAppliedAction[];
   presence: readonly PresenceState[];
   connectionState: GameConnectionState;

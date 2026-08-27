@@ -6,13 +6,14 @@ import { MemoryRouter } from "react-router-dom";
 import type { MapRepository } from "../../maps";
 import { LocalStorageMapRepository } from "../../maps";
 import { InMemoryGameSessionGateway, InMemoryGameSessionStore } from "@TBS/adapter-memory";
+import type { GameClient } from "@TBS/application";
 import { GameSessionGatewayContext } from "../../multiplayer/GameSessionGatewayContext";
 import { GameSessionProvider } from "../../multiplayer/GameSessionProvider";
 import { createActionEnvelope } from "../../multiplayer/createActionEnvelope";
 import { SessionFlowRoutes } from "./SessionFlowRoutes";
 import { saveReconnectDetails } from "./sessionReconnect";
 
-const renderFlow = (gateway: InMemoryGameSessionGateway, route = "/", mapRepository?: MapRepository) => render(
+const renderFlow = (gateway: GameClient, route = "/", mapRepository?: MapRepository) => render(
   <MemoryRouter initialEntries={[route]}>
     <GameSessionGatewayContext.Provider value={gateway}>
       <GameSessionProvider><SessionFlowRoutes mapRepository={mapRepository} /></GameSessionProvider>
@@ -201,6 +202,55 @@ describe("new session create and join flow", () => {
     expect(within(winningPanel).getByText("Winner")).toBeInTheDocument();
     expect(finishedView.getByRole("complementary", { name: "purple player" }))
       .not.toHaveClass("panel--winner");
+  });
+
+  test("renders a move before submission completes and rolls it back after rejection", async () => {
+    const store = createStore();
+    const created = await createGame(store);
+    const purple = new InMemoryGameSessionGateway(store, "purple-optimistic");
+    const joined = await purple.joinGame(created.inviteToken, "player", "Purple");
+    saveReconnectDetails(created.inviteToken, { displayName: "Purple", intent: "player" });
+    let releaseSubmission!: () => void;
+    const submissionGate = new Promise<void>((resolve) => { releaseSubmission = resolve; });
+    purple.submitAction = vi.fn(async () => {
+      await submissionGate;
+      return {
+        ok: false as const,
+        error: {
+          code: "invalid-action" as const,
+          message: "The server rejected the move",
+          retryable: false,
+        },
+        snapshot: joined.snapshot,
+      };
+    });
+    const view = renderFlow(purple, `/game/${created.inviteToken}`);
+    await view.findByRole("heading", { name: "Game in progress" });
+    const movingUnit = view.getByRole("button", { name: /Soldier, purple team/ });
+    const originalTransform = movingUnit.getAttribute("transform");
+
+    fireEvent.click(movingUnit);
+    const targetId = view.container.querySelector('[data-highlight-kind="move"]')
+      ?.getAttribute("data-cell-highlight");
+    const target = view.getAllByRole("gridcell")
+      .find((cell) => cell.getAttribute("data-cell-id") === targetId);
+    if (!target) throw new Error("optimistic move fixture requires a legal destination");
+    fireEvent.click(target);
+    fireEvent.click(view.getByRole("button", { name: "Move" }));
+
+    await waitFor(() => expect(
+      view.getByRole("button", { name: /Soldier, purple team/ }).getAttribute("transform"),
+    ).not.toBe(originalTransform));
+    expect(view.getByText("Revision").nextSibling).toHaveTextContent("0 (action pending)");
+    expect(view.container.querySelectorAll("[data-revision]")).toHaveLength(0);
+
+    releaseSubmission();
+
+    await waitFor(() => expect(
+      view.getByRole("button", { name: /Soldier, purple team/ }).getAttribute("transform"),
+    ).toBe(originalTransform));
+    expect(view.getByRole("alert")).toHaveTextContent("The server rejected the move");
+    expect(view.getByText("Revision").nextSibling).toHaveTextContent("0");
   });
 
   test("renders an invalid invite state", async () => {

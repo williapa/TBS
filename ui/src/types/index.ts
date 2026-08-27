@@ -150,6 +150,7 @@ export type MapEditorProps = Readonly<{ config: MapEditorConfig }>;
 export type ActiveMapProps = Readonly<{
   active?: boolean;
   events?: StandardAppliedAction["events"];
+  transitionId?: StandardAppliedAction["actionId"];
   onAction?: (action: StandardActionDraft) => void;
   onPanelStateChange?: (state: GamePanelState | null) => void;
   perspective: Exclude<SessionRole, "spectator">;

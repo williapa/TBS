@@ -15,14 +15,25 @@ import { SessionEventsPanel } from "./SessionEventsPanel";
 import { SessionPlayerPanel } from "./SessionPlayerPanel";
 
 export const SessionGamePage = () => {
-  const { actions, error, presence, role, snapshot, submitAction, submitState } = useGameSession();
+  const {
+    actions,
+    error,
+    optimisticTransition,
+    presence,
+    role,
+    snapshot,
+    submitAction,
+    submitState,
+  } = useGameSession();
   const [panelState, setPanelState] = useState<GamePanelState | null>(null);
   const send = useCallback((action: StandardActionDraft) => {
     if (!snapshot) return;
     void submitAction(createActionEnvelope(snapshot.state.revision, action));
   }, [snapshot, submitAction]);
   if (!snapshot || !role) return null;
-  const { players, spectatorCount, state } = snapshot;
+  const renderedSnapshot = optimisticTransition?.snapshot ?? snapshot;
+  const { players, spectatorCount } = snapshot;
+  const { state } = renderedSnapshot;
   const orangeTeamId = Object.values(state.teams).find(({ id }) => id === "orange")?.id;
   const purpleTeamId = Object.values(state.teams).find(({ id }) => id === "purple")?.id;
   if (!orangeTeamId || !purpleTeamId) {
@@ -56,9 +67,15 @@ export const SessionGamePage = () => {
     : state.lifecycle.phase === "active"
       ? "Game in progress"
       : `${winnerTeamName} team wins${winnerDisplayName ? ` — ${winnerDisplayName} is the winner!` : "!"}`;
-  const latestEvents = actions.at(-1)?.revision === state.revision
-    ? actions.at(-1)?.events ?? []
-    : [];
+  const latestAction = actions.at(-1);
+  const committedTransition = latestAction?.revision === state.revision
+    ? latestAction
+    : undefined;
+  const latestEvents = optimisticTransition?.events
+    ?? committedTransition?.events
+    ?? [];
+  const transitionId = optimisticTransition?.actionId
+    ?? committedTransition?.actionId;
   const winCondition = presentWinCondition(state.objectives);
   const activePlayerName = activeTeamId === orangeTeamId
     ? players[orangeTeamId]?.displayName ?? "Orange"
@@ -83,7 +100,7 @@ export const SessionGamePage = () => {
         <dt>Spectators</dt><dd>{spectatorCount}</dd>
         <dt>Viewers online</dt><dd>{presence.length}</dd>
         <dt>Spectators online</dt><dd>{onlineSpectators}</dd>
-        <dt>Revision</dt><dd>{state.revision}</dd>
+        <dt>Revision</dt><dd>{snapshot.state.revision}{optimisticTransition ? " (action pending)" : ""}</dd>
         {activeTeamId && <><dt>Current turn</dt><dd>{activeTeamId}</dd></>}
         {winnerTeamId && <><dt>Winner</dt><dd>{winnerTeamId}</dd></>}
       </dl>
@@ -108,6 +125,7 @@ export const SessionGamePage = () => {
           onPanelStateChange={setPanelState}
           perspective={perspective}
           state={state}
+          transitionId={transitionId}
         />
         <SessionPlayerPanel
           activeTurn={purplePanel.active}

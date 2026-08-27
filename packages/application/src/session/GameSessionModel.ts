@@ -1,3 +1,5 @@
+import { applyStandardAction } from "@TBS/game-rules";
+
 import type {
   CreatedGame,
   CreateGameInput,
@@ -22,10 +24,18 @@ import type { ReconciliationSource } from "./GameRevisionReconciler";
 export type GameConnectionState = "idle" | "loading" | "connected" | "error";
 export type GameSubmitState = "idle" | "submitting";
 
+export type OptimisticGameTransition = Readonly<{
+  actionId: StandardActionEnvelope["actionId"];
+  expectedRevision: number;
+  snapshot: StandardGameSnapshot;
+  events: StandardAppliedAction["events"];
+}>;
+
 export type GameSessionState = Readonly<{
   session: GameSession | null;
   role: SessionRole | null;
   snapshot: StandardGameSnapshot | null;
+  optimisticTransition: OptimisticGameTransition | null;
   actions: readonly StandardAppliedAction[];
   presence: readonly PresenceState[];
   connectionState: GameConnectionState;
@@ -39,6 +49,7 @@ const INITIAL_STATE: GameSessionState = {
   session: null,
   role: null,
   snapshot: null,
+  optimisticTransition: null,
   actions: [],
   presence: [],
   connectionState: "idle",
@@ -164,20 +175,48 @@ export class GameSessionModel {
       return result;
     }
 
-    this.update({ submitState: "submitting", error: null });
+    if (this.state.submitState === "submitting") {
+      const result: SubmitActionResult = {
+        ok: false,
+        error: {
+          code: "invalid-action",
+          message: "Another action is still being submitted",
+          retryable: true,
+        },
+      };
+      this.update({ error: result.error });
+      return result;
+    }
+
+    const currentOperation = this.operation;
+    this.update({
+      submitState: "submitting",
+      error: null,
+      optimisticTransition: this.createOptimisticTransition(envelope),
+    });
     try {
       const result = await this.client.submitAction({ gameId: session.gameId, envelope });
-      if (!this.active) return result;
-      if (result.snapshot) this.publishSnapshot(result.snapshot);
-      if (result.ok) this.publishActions([result.appliedAction]);
-      else this.update({ error: result.error });
+      if (!this.isCurrent(currentOperation)) return result;
+      if (result.ok) {
+        this.settleSubmission(result.snapshot, [result.appliedAction], null);
+      } else {
+        this.settleSubmission(result.snapshot, [], result.error);
+        if (result.error.retryable) {
+          await this.reconcileRetryableSubmission(envelope.actionId, currentOperation);
+        }
+      }
       return result;
     } catch (error) {
       const normalized = normalizeGatewayError(error);
-      this.update({ error: normalized });
+      if (this.isCurrent(currentOperation)) {
+        this.settleSubmission(undefined, [], normalized);
+        if (normalized.retryable) {
+          await this.reconcileRetryableSubmission(envelope.actionId, currentOperation);
+        }
+      }
       return { ok: false, error: normalized };
     } finally {
-      this.update({ submitState: "idle" });
+      if (this.isCurrent(currentOperation)) this.update({ submitState: "idle" });
     }
   };
 
@@ -212,6 +251,7 @@ export class GameSessionModel {
         session: joined,
         role: joined.role,
         snapshot: joined.snapshot,
+        optimisticTransition: null,
       });
       const afterRevision = Math.max(
         0,
@@ -246,12 +286,72 @@ export class GameSessionModel {
     source: ReconciliationSource = "snapshot",
   ): void {
     if (!this.active) return;
+    const currentRevision = this.state.snapshot?.state.revision;
+    if (currentRevision !== undefined && snapshot.state.revision < currentRevision) return;
+    const optimisticTransition = this.state.optimisticTransition;
     this.update({
       snapshot,
+      optimisticTransition: optimisticTransition
+        && snapshot.state.revision < optimisticTransition.snapshot.state.revision
+        ? optimisticTransition
+        : null,
       session: this.state.session
         ? { ...this.state.session, snapshot }
         : this.state.session,
     });
+    this.refreshHistory(snapshot, source);
+  }
+
+  private createOptimisticTransition(
+    envelope: StandardActionEnvelope,
+  ): OptimisticGameTransition | null {
+    const { role, snapshot } = this.state;
+    if (
+      !snapshot
+      || !role
+      || role === "spectator"
+      || envelope.expectedRevision !== snapshot.state.revision
+    ) {
+      return null;
+    }
+    const result = applyStandardAction(snapshot.state, role, envelope.action);
+    if (!result.ok) return null;
+    return {
+      actionId: envelope.actionId,
+      expectedRevision: envelope.expectedRevision,
+      snapshot: { ...snapshot, state: result.state },
+      events: result.events,
+    };
+  }
+
+  private settleSubmission(
+    snapshot: StandardGameSnapshot | undefined,
+    actions: readonly StandardAppliedAction[],
+    error: GatewayError | null,
+  ): void {
+    const currentSnapshot = this.state.snapshot;
+    const acceptsSnapshot = Boolean(
+      snapshot
+      && (!currentSnapshot || snapshot.state.revision >= currentSnapshot.state.revision),
+    );
+    const canonicalSnapshot = acceptsSnapshot ? snapshot ?? null : currentSnapshot;
+    this.replaceState({
+      ...this.state,
+      snapshot: canonicalSnapshot,
+      session: this.state.session && canonicalSnapshot
+        ? { ...this.state.session, snapshot: canonicalSnapshot }
+        : this.state.session,
+      optimisticTransition: null,
+      actions: mergeActions(this.state.actions, actions),
+      error,
+    });
+    if (acceptsSnapshot && snapshot) this.refreshHistory(snapshot, "snapshot");
+  }
+
+  private refreshHistory(
+    snapshot: StandardGameSnapshot,
+    source: ReconciliationSource,
+  ): void {
     if (source === "replay" || snapshot.state.revision === 0) return;
 
     const afterRevision = Math.max(
@@ -262,6 +362,19 @@ export class GameSessionModel {
       (history) => this.publishActions(history),
       (error: unknown) => this.update({ error: normalizeGatewayError(error) }),
     );
+  }
+
+  private async reconcileRetryableSubmission(
+    actionId: StandardActionEnvelope["actionId"],
+    operation: number,
+  ): Promise<void> {
+    await this.reconciler.reconcile().catch(() => undefined);
+    if (
+      this.isCurrent(operation)
+      && this.state.actions.some((action) => action.actionId === actionId)
+    ) {
+      this.update({ error: null });
+    }
   }
 
   private publishActions(actions: readonly StandardAppliedAction[]): void {
