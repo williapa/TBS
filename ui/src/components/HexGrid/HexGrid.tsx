@@ -4,6 +4,7 @@ import type {
   Dimensions,
   EditableCell,
   HexMap,
+  MapCellEditState,
   MapItem,
 } from "../../types";
 
@@ -13,6 +14,7 @@ type HexGridProps = Readonly<{
   callback?: (row: number, column: number, mapItem: EditableCell) => void;
   dimensions: Dimensions;
   editing?: boolean;
+  getCellEditState?: (cell: MapItem) => MapCellEditState;
   mapData: HexMap;
   setEdit?: (editing: boolean) => void;
 }>;
@@ -24,6 +26,7 @@ const HexGrid = ({
   callback,
   dimensions,
   editing = false,
+  getCellEditState = () => "editable",
   mapData,
   setEdit,
 }: HexGridProps) => {
@@ -39,16 +42,22 @@ const HexGrid = ({
 
   const cellView = (item: MapItem) => {
     const color = terrainColor(item.terrain);
+    const editState = getCellEditState(item);
+    const disabled = editState !== "editable";
     return (
       <div
+        aria-disabled={disabled}
         data-cell-id={item.index}
+        data-edit-state={editState}
         key={item.index}
         style={{
-          cursor: "pointer",
+          cursor: disabled ? "not-allowed" : "pointer",
+          filter: disabled ? "grayscale(1)" : undefined,
           float: "left",
           height: `${cellHeight}px`,
           marginBottom: `-${triangleHeight}px`,
           marginLeft: `${gap}px`,
+          opacity: editState === "disabled" ? 0.35 : editState === "axis" ? 0.58 : 1,
           textAlign: "center",
           width: `${cellWidth}px`,
         }}
@@ -73,6 +82,7 @@ const HexGrid = ({
             callback={callback}
             column={item.column}
             editing={editing}
+            editState={editState}
             height={triangleHeight}
             index={item.index}
             row={item.row}

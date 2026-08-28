@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import MapEditorForm, { CLIENT_MAX_MAP_SIDE } from "./MapEditorForm";
 
 describe("MapEditorForm", () => {
@@ -28,7 +29,21 @@ describe("MapEditorForm", () => {
       defaultTerrain: "forest",
       dimension: CLIENT_MAX_MAP_SIDE,
       name: "Largest map",
+      reflectionAxis: "vertical",
       submitted: true,
     });
+  });
+
+  test("allows diagonal reflection for a new map", async () => {
+    const submit = vi.fn();
+    const user = userEvent.setup();
+    render(<MapEditorForm submit={submit} />);
+
+    fireEvent.change(screen.getByLabelText("Map name"), { target: { value: "Diagonal map" } });
+    await user.click(screen.getByLabelText("Reflection line"));
+    await user.click(await screen.findByRole("option", { name: "Diagonal" }));
+    await user.click(screen.getByRole("button", { name: "Go to map editor" }));
+
+    expect(submit).toHaveBeenCalledWith(expect.objectContaining({ reflectionAxis: "diagonal" }));
   });
 });

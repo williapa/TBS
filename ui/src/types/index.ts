@@ -10,6 +10,7 @@ import type {
   MapLoadedUnit,
   MapTeamId,
   MapUnitTypeId,
+  MapReflectionAxis,
 } from "@TBS/game-setup";
 import type {
   BoardCellViewModel,
@@ -53,6 +54,7 @@ export type RowCol = Readonly<{
 
 export type ModeType = "editor" | "game";
 export type Dimensions = Readonly<{ width: number; height: number }>;
+export type MapCellEditState = "editable" | "axis" | "disabled";
 
 export type GamePanelAction = Readonly<{
   id: string;
@@ -74,6 +76,7 @@ export type GamePanelState = Readonly<{
 export type CellProps = RowCol & Readonly<{
   callback?: (row: number, column: number, mapItem: EditableCell) => void;
   editing?: boolean;
+  editState?: MapCellEditState;
   index: number;
   setEdit?: (editing: boolean) => void;
   team?: TeamType;
@@ -133,19 +136,23 @@ export type ActionFormProps = Readonly<{
   left: number;
 }>;
 
-export type MapEditorConfig = Readonly<{
-  defaultTerrain?: TerrainType;
-  dimension?: number;
-  mode?: ModeType;
-  name?: string;
-  submitted: boolean;
-}>;
+export type MapEditorConfig =
+  | Readonly<{ submitted: false }>
+  | Readonly<{
+      defaultTerrain: TerrainType;
+      dimension: number;
+      name: string;
+      reflectionAxis: MapReflectionAxis;
+      submitted: true;
+    }>;
+
+export type SubmittedMapEditorConfig = Extract<MapEditorConfig, Readonly<{ submitted: true }>>;
 
 export type MapEditorFormProps = Readonly<{
-  submit: (config: MapEditorConfig) => void;
+  submit: (config: SubmittedMapEditorConfig) => void;
 }>;
 
-export type MapEditorProps = Readonly<{ config: MapEditorConfig }>;
+export type MapEditorProps = Readonly<{ config: SubmittedMapEditorConfig }>;
 
 export type ActiveMapProps = Readonly<{
   active?: boolean;

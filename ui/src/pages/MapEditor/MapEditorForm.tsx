@@ -11,10 +11,12 @@ import {
 } from "@cloudscape-design/components";
 import type { FormEvent} from "react";
 import { useState } from "react";
-import { mapTerrainOptions, MIN_MAP_SIDE } from "@TBS/game-setup";
+import { mapReflectionAxes, mapTerrainOptions, MIN_MAP_SIDE } from "@TBS/game-setup";
+import type { MapReflectionAxis } from "@TBS/game-setup";
 import type { MapEditorFormProps, TerrainType } from "../../types";
 
 type TerrainSelectOption = Readonly<{ label: string; value: TerrainType }>;
+type ReflectionSelectOption = Readonly<{ label: string; value: MapReflectionAxis }>;
 
 export const CLIENT_MAX_MAP_SIDE = 10;
 
@@ -22,11 +24,16 @@ const terrainSelectOptions: readonly TerrainSelectOption[] = mapTerrainOptions.m
   label: terrain[0].toUpperCase() + terrain.slice(1),
   value: terrain,
 }));
+const reflectionSelectOptions: readonly ReflectionSelectOption[] = mapReflectionAxes.map((axis) => ({
+  label: axis[0].toUpperCase() + axis.slice(1),
+  value: axis,
+}));
 
 const MapEditorForm = ({ submit }: MapEditorFormProps) => {
   const [name, setName] = useState("");
   const [dimension, setDimension] = useState("10");
   const [terrain, setTerrain] = useState<TerrainSelectOption>(terrainSelectOptions[1]);
+  const [reflection, setReflection] = useState<ReflectionSelectOption>(reflectionSelectOptions[0]);
   const [submitted, setSubmitted] = useState(false);
 
   const parsedDimension = Number(dimension);
@@ -53,6 +60,7 @@ const MapEditorForm = ({ submit }: MapEditorFormProps) => {
       name: name.trim(),
       dimension: parsedDimension,
       defaultTerrain: terrain.value,
+      reflectionAxis: reflection.value,
     });
   };
 
@@ -114,6 +122,21 @@ const MapEditorForm = ({ submit }: MapEditorFormProps) => {
                       if (selectedTerrain) setTerrain(selectedTerrain);
                     }}
                     options={terrainSelectOptions}
+                  />
+                </FormField>
+                <FormField
+                  label="Reflection line"
+                  description="Start with one editable half, then reflect it to create the opposing side."
+                >
+                  <Select
+                    selectedOption={reflection}
+                    onChange={({ detail }) => {
+                      const selectedReflection = reflectionSelectOptions.find(
+                        (option) => option.value === detail.selectedOption.value
+                      );
+                      if (selectedReflection) setReflection(selectedReflection);
+                    }}
+                    options={reflectionSelectOptions}
                   />
                 </FormField>
               </SpaceBetween>

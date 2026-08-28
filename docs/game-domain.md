@@ -16,6 +16,10 @@ The editor uses the versioned `MapDocument` contract owned by `@TBS/game-setup`.
 
 The new-map form limits hexagon side width to 10 in the browser. The setup contract retains its broader compatibility limit so previously saved or imported maps are not reinterpreted by this UI constraint.
 
+New maps begin in a symmetry-assisted editor stage. The creator chooses either a vertical axis through opposite map edges or a diagonal axis through opposite corners, edits one half of the hexagon, and then reflects that half across the selected axis. Before reflecting, the creator may choose to flip the reflected half vertically, reversing its top-to-bottom arrangement within the destination half. Cells on the axis and the destination half are visible but read-only until reflection. Reflection copies terrain and units while exchanging orange and purple ownership. Empty cells and object units remain neutral. After reflection, every cell becomes editable for final adjustments and the ordinary map save flow is unchanged. Existing saved maps open directly in unrestricted editing.
+
+Newly placed non-object units default to orange but may be assigned to either player team before reflection. Money, missiles, and nukes never accept team ownership in the editor. Map documents continue to represent this absence of ownership with the existing `gray` sentinel, and compatible documents containing colored objects are normalized to neutral when read.
+
 Game creation converts a validated map exactly once into revision-zero normalized state:
 
 - map cells become axial board cells keyed by coordinate;

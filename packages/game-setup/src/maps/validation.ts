@@ -11,6 +11,7 @@ import {
   type MapGrid,
   type SaveMapInput,
 } from "../contracts";
+import { neutralizeObjectMapUnitTeam } from "./mapUnitOwnership";
 
 const invalid = (message: string): never => {
   throw new MapSetupError("invalid-map", message);
@@ -66,7 +67,10 @@ export const mapCellSchema = z.object({
   if (cell.loadedUnit && cell.loadedUnit.team !== cell.team) {
     context.addIssue({ code: "custom", path: ["loadedUnit", "team"], message: "initial cargo must share its vehicle team" });
   }
-}).transform((cell): MapCell => cell);
+}).transform((cell): MapCell => ({
+  ...cell,
+  team: neutralizeObjectMapUnitTeam(cell.unit, cell.team),
+}));
 
 export const mapGridSchema = z.array(z.array(mapCellSchema).min(1)).min(1);
 export const saveMapInputSchema = z.object({

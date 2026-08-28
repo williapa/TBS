@@ -9,6 +9,7 @@ const EditorCell = ({
   column, 
   callback, 
   editing,
+  editState = "editable",
   height = 40,
   index,
   setEdit = () => undefined,
@@ -21,7 +22,7 @@ const EditorCell = ({
   const [amIEditing, setAmIEditing] = useState(false);
   
   const editorOnClick = (e: MouseEvent<HTMLDivElement>) => {
-    if (!editing) {           
+    if (!editing && editState === "editable") {
       const { top, left } = e.currentTarget.getBoundingClientRect();
       setEditorPosition({ top: (top + window.scrollY), left: (left + window.scrollX) });
       setEdit(true);
@@ -40,6 +41,7 @@ const EditorCell = ({
 
   return (
     <div
+      aria-disabled={editState !== "editable"}
       onClick={editorOnClick}
       style={{
         textAlign: "center",

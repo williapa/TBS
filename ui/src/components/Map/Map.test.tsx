@@ -2,27 +2,37 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import {
   createDefaultBattlefield,
   createHexMap,
+  getMapReflectionCellRole,
   mapTeamOptions,
   mapUnitOptions,
 } from "@TBS/game-setup";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import type { MapRepository} from "../../maps";
 import { MapRepositoryProvider } from "../../maps";
-import type { EditableCell, HexMap } from "../../types";
+import type { EditableCell, HexMap, MapCellEditState, MapItem } from "../../types";
 import Map from "./Map";
 
 vi.mock("../HexGrid/HexGrid", () => ({
   default: ({
     callback,
+    getCellEditState,
     mapData,
   }: Readonly<{
     callback?: (row: number, column: number, mapItem: EditableCell) => void;
+    getCellEditState?: (cell: MapItem) => MapCellEditState;
     mapData: HexMap;
   }>) => {
     const capital = mapData.flat().find((cell) => cell.unit === "capital");
     const empty = mapData.flat().find((cell) => cell.unit === "none");
+    const editStates = mapData.flat().map((cell) => getCellEditState?.(cell) ?? "editable");
     return (
       <div data-testid="hex-grid">
+        <span data-testid="editable-count">
+          {editStates.filter((state) => state === "editable").length}
+        </span>
+        <span data-testid="axis-count">
+          {editStates.filter((state) => state === "axis").length}
+        </span>
         {callback && capital && empty && (
           <button
             onClick={() => callback(capital.row, capital.column, {
@@ -109,5 +119,56 @@ describe("map editor persistence", () => {
     );
     expect(screen.getByText("Capital victory requires at least one capital for each team."))
       .toBeInTheDocument();
+  });
+
+  test("reflects a guided new map before enabling unrestricted editing and save", async () => {
+    const save = vi.fn().mockResolvedValue({ id: "symmetric", name: "Symmetric" });
+    const repository: MapRepository = {
+      list: vi.fn(),
+      get: vi.fn(),
+      save,
+      update: vi.fn(),
+      delete: vi.fn(),
+    };
+    const terrain = createDefaultBattlefield().map[0][0].terrain;
+    const map = createHexMap(2, terrain);
+    const source = map.flat().find((cell) =>
+      getMapReflectionCellRole(cell.row, cell.column, 2, "vertical") === "source");
+    const orange = mapTeamOptions.find((team) => team === "orange");
+    const soldier = mapUnitOptions.find((unit) => unit === "soldier");
+    if (!source || !orange || !soldier) throw new Error("Vertical reflection fixture is unavailable");
+    map[source.row][source.column] = { ...source, team: orange, unit: soldier };
+
+    render(
+      <MapRepositoryProvider repository={repository}>
+        <MemoryRouter>
+          <Map initialMap={map} name="Symmetric" reflectionAxis="vertical" />
+        </MemoryRouter>
+      </MapRepositoryProvider>,
+    );
+
+    expect(screen.getByTestId("editable-count")).toHaveTextContent("3");
+    expect(screen.getByTestId("axis-count")).toHaveTextContent("1");
+    expect(screen.queryByRole("button", { name: 'Create map "Symmetric"' })).not.toBeInTheDocument();
+    const flipCheckbox = screen.getByRole("checkbox", { name: "Flip reflected half vertically" });
+    expect(flipCheckbox).not.toBeChecked();
+    fireEvent.click(flipCheckbox);
+    expect(flipCheckbox).toBeChecked();
+
+    fireEvent.click(screen.getByRole("button", { name: "Reflect map" }));
+
+    expect(screen.getByTestId("editable-count")).toHaveTextContent("7");
+    expect(screen.queryByRole("button", { name: "Reflect map" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("checkbox", { name: "Flip reflected half vertically" }))
+      .not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: 'Create map "Symmetric"' }));
+
+    await waitFor(() => expect(save).toHaveBeenCalledOnce());
+    const savedMap = save.mock.calls[0]?.[0].map as HexMap;
+    expect(savedMap.flat()).toEqual(expect.arrayContaining([
+      expect.objectContaining({ team: "orange", unit: "soldier" }),
+      expect.objectContaining({ team: "purple", unit: "soldier" }),
+    ]));
+    expect(savedMap[2][1]).toMatchObject({ team: "purple", unit: "soldier" });
   });
 });

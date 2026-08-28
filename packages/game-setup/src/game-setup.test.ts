@@ -8,6 +8,7 @@ import {
   createInitialGameSetup,
   CURRENT_MAP_SCHEMA_VERSION,
   deriveInitialObjectives,
+  getMapReflectionCellRole,
   axialToMapIndex,
   axialToMapOffset,
   exportMapDocument,
@@ -17,8 +18,10 @@ import {
   mapOffsetToAxial,
   MAX_MAP_COLUMNS,
   MAX_SERIALIZED_MAP_BYTES,
+  reflectMap,
   type MapGrid,
   updateMapCell,
+  validateMap,
   validatePlayableMap,
   validateSaveMapInput,
 } from "./index";
@@ -221,5 +224,131 @@ describe("editor operations", () => {
     expect(updated[0][1]).toBe(map[0][1]);
     expect(updated[0][0].terrain).toBe("forest");
     expect(map[0][0].terrain).toBe("plains");
+  });
+
+  test("defaults placed units to orange and keeps objects neutral", () => {
+    const map = createHexMap(2, terrainTypeId("plains"));
+    const soldier = updateMapCell(map, 0, 0, {
+      terrain: terrainTypeId("plains"),
+      team: "gray",
+      unit: unitTypeId("soldier"),
+    });
+    const money = updateMapCell(soldier, 0, 1, {
+      terrain: terrainTypeId("plains"),
+      team: teamId("purple"),
+      unit: unitTypeId("money"),
+    });
+
+    expect(money[0][0].team).toBe("orange");
+    expect(money[0][1].team).toBe("gray");
+  });
+
+  test.each(["vertical", "diagonal"] as const)(
+    "partitions every supported editor map around the %s reflection axis",
+    (axis) => {
+      for (let width = 2; width <= 10; width += 1) {
+        const map = createHexMap(width, terrainTypeId("plains"));
+        const roles = map.flat().map((cell) =>
+          getMapReflectionCellRole(cell.row, cell.column, width, axis));
+        expect(roles.filter((role) => role === "source")).toHaveLength(
+          roles.filter((role) => role === "destination").length,
+        );
+        expect(roles).toContain("axis");
+      }
+    },
+  );
+
+  test("reflects the left half vertically while preserving destination topology", () => {
+    const map = createHexMap(3, terrainTypeId("plains"));
+    map[2][0] = {
+      ...map[2][0],
+      terrain: terrainTypeId("forest"),
+      team: teamId("orange"),
+      unit: unitTypeId("truck"),
+      loadedUnit: { team: teamId("orange"), unit: unitTypeId("worker") },
+    };
+    map[2][2] = {
+      ...map[2][2],
+      terrain: terrainTypeId("water"),
+    };
+    const destinationBefore = map[2][4];
+
+    const reflected = reflectMap(map, "vertical");
+
+    expect(reflected).not.toBe(map);
+    expect(reflected[2][0]).toEqual(map[2][0]);
+    expect(reflected[2][2]).toEqual(map[2][2]);
+    expect(reflected[2][4]).toEqual({
+      ...destinationBefore,
+      terrain: "forest",
+      team: "purple",
+      unit: "truck",
+      loadedUnit: { team: "purple", unit: "worker" },
+    });
+    expect(map[2][4]).toBe(destinationBefore);
+  });
+
+  test("reflects the upper-right half diagonally and leaves objects neutral", () => {
+    const map = createHexMap(3, terrainTypeId("plains"));
+    map[1][3] = {
+      ...map[1][3],
+      terrain: terrainTypeId("desert"),
+      team: teamId("orange"),
+      unit: unitTypeId("money"),
+    };
+    const destinationBefore = map[3][0];
+
+    const reflected = reflectMap(map, "diagonal");
+
+    expect(reflected[1][3].team).toBe("gray");
+    expect(reflected[3][0]).toEqual({
+      ...destinationBefore,
+      terrain: "desert",
+      team: "gray",
+      unit: "money",
+    });
+  });
+
+  test.each([
+    ["vertical", { source: [1, 0], mirrored: [1, 3], flipped: [3, 3] }],
+    ["diagonal", { source: [2, 3], mirrored: [3, 1], flipped: [2, 1] }],
+  ] as const)("flips the reflected %s half vertically within its destination side", (axis, cells) => {
+    const map = createHexMap(3, terrainTypeId("plains"));
+    const [sourceRow, sourceColumn] = cells.source;
+    map[sourceRow][sourceColumn] = {
+      ...map[sourceRow][sourceColumn],
+      terrain: terrainTypeId("forest"),
+      team: teamId("orange"),
+      unit: unitTypeId("soldier"),
+    };
+
+    const reflected = reflectMap(map, axis, { flipVertically: true });
+    const [flippedRow, flippedColumn] = cells.flipped;
+    const [mirroredRow, mirroredColumn] = cells.mirrored;
+
+    expect(reflected[flippedRow][flippedColumn]).toMatchObject({
+      terrain: "forest",
+      team: "purple",
+      unit: "soldier",
+    });
+    expect(reflected[mirroredRow][mirroredColumn]).toMatchObject({
+      terrain: "plains",
+      team: "gray",
+      unit: "none",
+    });
+  });
+
+  test("normalizes colored objects from compatible maps and creates them without owners", () => {
+    const map = playableMap();
+    map[1][1] = {
+      ...map[1][1],
+      team: teamId("orange"),
+      unit: unitTypeId("nuke"),
+    };
+
+    const validated = validateMap(map);
+    expect(validated[1][1].team).toBe("gray");
+    expect(createInitialGameSetup(map).entities[entityId("initial-cell-3")]?.ownerTeamId)
+      .toBeUndefined();
   });
 });

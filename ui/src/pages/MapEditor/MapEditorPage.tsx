@@ -1,19 +1,20 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import type { SavedMap} from "../../maps";
+import type { MapEditorConfig } from "../../types";
 import { useMapRepository } from "../../maps";
 import Map from "../../components/Map/Map";
 import MapEditorForm from "./MapEditorForm";
 import MapEditor from "./MapEditor";
 
-const defaultFormValues = {
+const defaultFormValues: MapEditorConfig = {
   submitted: false,
 };
 
 const MapEditorPage = () => {
   const { mapId } = useParams();
   const repository = useMapRepository();
-  const [formValues, setFormValues] = useState(defaultFormValues);
+  const [formValues, setFormValues] = useState<MapEditorConfig>(defaultFormValues);
   const [savedMap, setSavedMap] = useState<SavedMap>();
   const [error, setError] = useState<string>();
 

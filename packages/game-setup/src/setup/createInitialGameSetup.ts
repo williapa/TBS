@@ -21,9 +21,10 @@ import {
 import { mapOffsetToAxial } from "../geometry/mapHex";
 import { validatePlayableMap } from "../maps/validation";
 import type { MapCell, MapGrid } from "../contracts";
+import { isObjectMapUnit } from "../maps/mapUnitOwnership";
 
-const ownerFor = (cell: Pick<MapCell, "team">): TeamId | undefined =>
-  cell.team === "gray" ? undefined : cell.team;
+const ownerFor = (cell: Pick<MapCell, "team" | "unit">): TeamId | undefined =>
+  cell.team === "gray" || isObjectMapUnit(cell.unit) ? undefined : cell.team;
 
 const initialEntity = (
   cell: Pick<MapCell, "team" | "unit">,
