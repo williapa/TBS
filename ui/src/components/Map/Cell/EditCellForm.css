@@ -2,7 +2,26 @@
   position: absolute;
   background: white;
   border: 1px solid black;
+  box-sizing: border-box;
   padding: 20px;
   z-index: 999;
   width: 200px;
+}
+
+.edit-cell-form .form-row {
+  max-width: none;
+  width: 100%;
+}
+
+.edit-cell-form select {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+}
+
+.edit-cell-form button {
+  box-sizing: border-box;
+  margin-top: 12px;
+  width: 100%;
 }

@@ -29,7 +29,7 @@ const Input = ({ initial, name, options, type }: InputProps) => {
       return <input key={name} defaultValue={initialValue} type="number" name={name} max={32} />;
     case "select":
       return (
-        <select key={name} name={name} defaultValue={initialValue}>
+        <select id={name} key={name} name={name} defaultValue={initialValue}>
           {optionGroups.length === 0 ? optionElements(options) : optionGroups.map((group) => {
             const optionsForGroup = options?.filter((option) => option.group === group);
             return (

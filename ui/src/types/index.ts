@@ -118,7 +118,7 @@ export type InputProps = Readonly<{
 export type EditableCell = EditableMapCell;
 
 export type CellFormProps = Readonly<{
-  cancel: () => void;
+  close: () => void;
   initialValues: MapItem;
   top: number;
   left: number;

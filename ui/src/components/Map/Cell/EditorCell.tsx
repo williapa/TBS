@@ -29,14 +29,13 @@ const EditorCell = ({
     }
   }
 
-  const cancel = () => {
+  const close = () => {
     setEdit(false);
     setAmIEditing(false);
   };
 
   const save = (mapItem: EditableCell) => {
     callback?.(row, column, mapItem);
-    cancel();
   }
 
   return (
@@ -54,7 +53,7 @@ const EditorCell = ({
           <EditCellForm {...editorPosition} 
             initialValues={{ team, terrain, unit, row, column, index }}
             save={save} 
-            cancel={cancel} 
+            close={close}
           /> 
         }
       </span>
