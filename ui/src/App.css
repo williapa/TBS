@@ -64,36 +64,128 @@ nav a {
 
 .session-landing-page {
   align-items: center;
+  background:
+    radial-gradient(circle at 82% 18%, rgba(128, 0, 128, 0.16), transparent 30%),
+    radial-gradient(circle at 15% 82%, rgba(255, 165, 0, 0.12), transparent 34%),
+    #161d26;
   box-sizing: border-box;
   display: flex;
   justify-content: center;
   min-height: calc(100vh - 44px);
-  padding: 32px;
+  overflow: hidden;
+  padding: clamp(24px, 5vw, 72px);
+  position: relative;
+}
+
+.session-landing-page::before {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  content: "";
+  inset: 0;
+  mask-image: linear-gradient(to bottom, black, transparent 85%);
+  pointer-events: none;
+  position: absolute;
 }
 
 .session-landing-page__content {
-  display: flex;
-  flex-direction: column;
-  max-width: 1100px;
+  align-items: center;
+  background: rgba(15, 20, 26, 0.84);
+  border: 1px solid rgba(235, 235, 240, 0.16);
+  border-radius: 24px;
+  box-sizing: border-box;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.38);
+  display: grid;
+  gap: clamp(36px, 6vw, 80px);
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  isolation: isolate;
+  max-width: 1180px;
+  overflow: hidden;
+  padding: clamp(40px, 6vw, 80px);
+  position: relative;
   width: 100%;
+}
+
+.session-landing-page__content::before {
+  background: linear-gradient(90deg, orange 0 50%, purple 50% 100%);
+  content: "";
+  height: 4px;
+  inset: 0 0 auto;
+  position: absolute;
+}
+
+.session-landing-page__hero {
+  min-width: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .session-landing-page__content h1 {
-  font-size: clamp(3rem, 8vw, 5.6rem);
-  margin: 0.67em 0;
+  font-size: clamp(3.25rem, 6.2vw, 5.25rem);
+  letter-spacing: -0.055em;
+  line-height: 0.98;
+  margin: 0;
+  max-width: 760px;
+  text-align: left;
 }
 
-.session-landing-page__content hr {
-  width: 100%;
+.session-landing-page__medal {
+  display: inline-block;
+  font-size: 0.58em;
+  letter-spacing: normal;
+  transform: translateY(-0.1em);
 }
 
 .session-landing-page__summary {
-  font-size: 1.6rem;
-  text-align: center;
+  color: #b7c1cc;
+  font-size: clamp(1.1rem, 2vw, 1.35rem);
+  line-height: 1.6;
+  margin: 28px 0 0;
+  max-width: 610px;
+  text-align: left;
 }
 
-.session-landing-page__credit {
-  text-align: center;
+.session-landing-page__action {
+  margin-top: 34px;
+}
+
+.session-landing-page__action > span {
+  box-shadow: 0 12px 30px rgba(9, 105, 177, 0.26);
+}
+
+.session-landing-page__battlefield {
+  align-items: center;
+  aspect-ratio: 1;
+  display: flex;
+  justify-content: center;
+  max-width: 430px;
+  position: relative;
+  width: 100%;
+}
+
+.session-landing-page__battlefield::before,
+.session-landing-page__battlefield::after {
+  border: 1px solid rgba(235, 235, 240, 0.12);
+  border-radius: 28px;
+  content: "";
+  inset: 5%;
+  position: absolute;
+  transform: rotate(8deg);
+}
+
+.session-landing-page__battlefield::after {
+  border-color: rgba(235, 235, 240, 0.07);
+  inset: 13%;
+  transform: rotate(-12deg);
+}
+
+.session-landing-page__board {
+  filter: drop-shadow(0 24px 24px rgba(0, 0, 0, 0.38));
+  height: 92%;
+  position: relative;
+  width: 92%;
+  z-index: 1;
 }
 
 .edit-cell-form label {
@@ -141,12 +233,51 @@ fieldset legend {
   .game-map-preview {
     height: clamp(220px, 75vw, 420px);
   }
+}
 
+@media (max-width: 720px) {
   .session-landing-page {
-    padding: 20px;
+    align-items: flex-start;
+    padding: 20px 14px 28px;
+  }
+
+  .session-landing-page__content {
+    border-radius: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    padding: 38px 24px 30px;
+  }
+
+  .session-landing-page__content h1 {
+    font-size: clamp(2.75rem, 14vw, 4rem);
+    text-align: center;
   }
 
   .session-landing-page__summary {
-    font-size: 1.25rem;
+    font-size: 1.05rem;
+    margin-top: 22px;
+    text-align: center;
+  }
+
+  .session-landing-page__action {
+    display: flex;
+    justify-content: center;
+    margin-top: 26px;
+  }
+
+  .session-landing-page__battlefield {
+    max-width: 250px;
+  }
+}
+
+@media (min-width: 721px) and (max-width: 1000px) {
+  .session-landing-page__content {
+    grid-template-columns: minmax(0, 1fr) minmax(250px, 0.65fr);
+    padding: 54px 40px;
+  }
+
+  .session-landing-page__content h1 {
+    font-size: clamp(3rem, 7vw, 4.5rem);
   }
 }
