@@ -5,6 +5,7 @@ import "./App.css";
 import { browserEnvironment } from "./env";
 import { GameSessionGatewayContext, GameSessionProvider } from "./multiplayer";
 import { SessionFlowRoutes } from "./pages/Session/SessionFlowRoutes";
+import { SoloGameProvider } from "./solo";
 
 const App = ({ gateway }: { gateway: GameClient }) => {
   useEffect(() => {
@@ -18,7 +19,9 @@ const App = ({ gateway }: { gateway: GameClient }) => {
     <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
       <GameSessionGatewayContext.Provider value={gateway}>
         <GameSessionProvider>
-          <SessionFlowRoutes />
+          <SoloGameProvider>
+            <SessionFlowRoutes />
+          </SoloGameProvider>
         </GameSessionProvider>
       </GameSessionGatewayContext.Provider>
     </BrowserRouter>

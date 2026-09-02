@@ -8,7 +8,7 @@ Live games use the normalized, versioned `GameState` contract from `@TBS/game-co
 
 The active client may render one optimistic transition calculated by that same evaluator while its action envelope is awaiting the trusted server. This projection is transient: it is not inserted into canonical action history, persisted, or used as the base for another submission. Server acceptance replaces the canonical snapshot and clears the matching projection. Rejection clears it and renders the prior canonical snapshot again. Realtime and submission responses may confirm or supersede the projection, but they cannot regress a newer canonical revision.
 
-Two durable player seats exist: the creator is orange and the challenger is purple, with purple taking the first turn. Additional members are read-only spectators. Presence never grants a seat or controls gameplay.
+Two durable multiplayer player seats exist: the creator is orange and the challenger is purple, with purple taking the first turn. Additional members are read-only spectators. Presence never grants a seat or controls gameplay. Solo test games also begin with purple, but one local controller may act for whichever team is active and no membership or Presence state exists.
 
 ## Maps and setup
 

@@ -4,7 +4,6 @@ import { applyMode, Mode } from '@cloudscape-design/global-styles';
 import './index.css';
 import App from './App';
 import { createBrowserApplication } from './composition/createBrowserApplication';
-import { IdentityGate } from './multiplayer';
 
 applyMode(Mode.Dark);
 
@@ -14,7 +13,5 @@ const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
 root.render(
-  <IdentityGate identityProvider={application.identity}>
-    <App gateway={application.gameClient} />
-  </IdentityGate>
+  <App gateway={application.gameClient} />
 );

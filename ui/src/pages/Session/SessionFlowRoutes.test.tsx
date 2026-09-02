@@ -10,13 +10,18 @@ import type { GameClient } from "@TBS/application";
 import { GameSessionGatewayContext } from "../../multiplayer/GameSessionGatewayContext";
 import { GameSessionProvider } from "../../multiplayer/GameSessionProvider";
 import { createActionEnvelope } from "../../multiplayer/createActionEnvelope";
+import { SoloGameProvider } from "../../solo";
 import { SessionFlowRoutes } from "./SessionFlowRoutes";
 import { saveReconnectDetails } from "./sessionReconnect";
 
 const renderFlow = (gateway: GameClient, route = "/", mapRepository?: MapRepository) => render(
   <MemoryRouter initialEntries={[route]}>
     <GameSessionGatewayContext.Provider value={gateway}>
-      <GameSessionProvider><SessionFlowRoutes mapRepository={mapRepository} /></GameSessionProvider>
+      <GameSessionProvider>
+        <SoloGameProvider>
+          <SessionFlowRoutes mapRepository={mapRepository} />
+        </SoloGameProvider>
+      </GameSessionProvider>
     </GameSessionGatewayContext.Provider>
   </MemoryRouter>
 );
@@ -93,6 +98,39 @@ describe("new session create and join flow", () => {
     const watcher = await new InMemoryGameSessionGateway(store, "watcher-copy").joinGame("invite-1", "spectator", "Watcher");
     expect(purple.snapshot.state.board).toEqual(game.state.board);
     expect(watcher.snapshot.state.entities).toEqual(game.state.entities);
+  });
+
+  test("starts test mode without a display name and locally controls both turns", async () => {
+    const gateway = new InMemoryGameSessionGateway(createStore(), "unused-multiplayer-user");
+    const createGameSpy = vi.spyOn(gateway, "createGame");
+    renderFlow(gateway, "/game/new");
+
+    expect(await screen.findByRole("button", { name: "Test mode" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Create game" })).toBeDisabled();
+    expect(screen.queryByText("Start instantly on this device and control both Orange and Purple."))
+      .not.toBeInTheDocument();
+    fireEvent.mouseEnter(screen.getByRole("button", { name: "Test mode" }));
+    expect(await screen.findByText("Start instantly on this device and control both Orange and Purple."))
+      .toBeInTheDocument();
+    fireEvent.mouseLeave(screen.getByRole("button", { name: "Test mode" }));
+    fireEvent.mouseEnter(screen.getByRole("button", { name: "Create game" }));
+    expect(await screen.findByText(/Start an online multiplayer match/))
+      .toBeInTheDocument();
+    fireEvent.mouseLeave(screen.getByRole("button", { name: "Create game" }));
+    fireEvent.click(screen.getByRole("button", { name: "Test mode" }));
+
+    expect(await screen.findByRole("heading", { name: "Solo test game" })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Purple turn — you control both teams");
+    const purplePanel = screen.getByRole("complementary", { name: "purple player" });
+    expect(within(purplePanel).getByRole("button", { name: "End turn" })).toBeInTheDocument();
+    fireEvent.click(within(purplePanel).getByRole("button", { name: "End turn" }));
+
+    await waitFor(() => expect(screen.getByRole("status"))
+      .toHaveTextContent("Orange turn — you control both teams"));
+    const orangePanel = screen.getByRole("complementary", { name: "orange player" });
+    expect(within(orangePanel).getByRole("button", { name: "End turn" })).toBeInTheDocument();
+    expect(screen.getByText("Revision").nextSibling).toHaveTextContent("1");
+    expect(createGameSpy).not.toHaveBeenCalled();
   });
 
   test("an invite can claim purple or explicitly choose spectator", async () => {

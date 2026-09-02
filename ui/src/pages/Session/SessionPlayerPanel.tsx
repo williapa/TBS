@@ -9,6 +9,7 @@ type SessionPlayerPanelProps = {
   isWinner: boolean;
   money: number;
   onEndTurn: () => void;
+  presenceLabel?: string;
 };
 
 export const SessionPlayerPanel = ({
@@ -22,6 +23,7 @@ export const SessionPlayerPanel = ({
   isWinner,
   money,
   onEndTurn,
+  presenceLabel,
 }: SessionPlayerPanelProps) => {
   const name = displayName ?? "Open seat";
   const accessibleName = `${name}${isLocalPlayer ? ", your player" : ""}${activeTurn ? ", current turn" : ""}`;
@@ -42,7 +44,9 @@ export const SessionPlayerPanel = ({
           className="player__avatar"
           src={`https://api.dicebear.com/5.x/adventurer/svg?seed=${avatarSeed}${flip}`}
         />
-        <p className="player__presence">{displayName ? (isOnline ? "online" : "offline") : "waiting"}</p>
+        <p className="player__presence">
+          {presenceLabel ?? (displayName ? (isOnline ? "online" : "offline") : "waiting")}
+        </p>
       </div>
       {canEndTurn && (
         <div className="player__actions">

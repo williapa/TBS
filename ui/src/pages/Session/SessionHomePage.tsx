@@ -10,18 +10,23 @@ import {
   Input,
   Select,
   SpaceBetween,
+  Tooltip,
 } from "@cloudscape-design/components";
 import type { FormEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { SavedMap} from "../../maps";
 import { useMapRepository } from "../../maps";
 import { useGameSession } from "../../multiplayer";
+import { useSoloGame } from "../../solo";
 import { GameMapPreview } from "./GameMapPreview";
 import { saveReconnectDetails } from "./sessionReconnect";
 
+type GameModeTooltip = "multiplayer" | "test";
+
 export const SessionHomePage = () => {
   const { createGame, connectionState, error } = useGameSession();
+  const { startGame: startSoloGame } = useSoloGame();
   const navigate = useNavigate();
   const mapRepository = useMapRepository();
   const [maps, setMaps] = useState<SavedMap[]>([]);
@@ -31,6 +36,9 @@ export const SessionHomePage = () => {
   const [shareUrl, setShareUrl] = useState<string>();
   const [copied, setCopied] = useState(false);
   const [mapsLoading, setMapsLoading] = useState(true);
+  const [gameModeTooltip, setGameModeTooltip] = useState<GameModeTooltip>();
+  const testModeButton = useRef<HTMLSpanElement>(null);
+  const createGameButton = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -74,6 +82,15 @@ export const SessionHomePage = () => {
     }
   };
 
+  const startTestMode = () => {
+    if (!selectedMap || !selectedSetup.state) return;
+    startSoloGame({
+      initialState: selectedSetup.state,
+      mapName: selectedMap.name,
+    });
+    navigate("/game/solo");
+  };
+
   const copy = async () => {
     if (!shareUrl) return;
     await navigator.clipboard.writeText(shareUrl);
@@ -86,7 +103,7 @@ export const SessionHomePage = () => {
         header={(
           <Header
             variant="h1"
-            description="Create a two-player match, then share the invite link with your opponent."
+            description="Play both teams locally in test mode, or create a multiplayer match and share its invite link."
           >
             Start a game
           </Header>
@@ -96,14 +113,61 @@ export const SessionHomePage = () => {
           <form onSubmit={submit}>
             <Form
               actions={(
-                <Button
-                  variant="primary"
-                  formAction="submit"
-                  loading={connectionState === "loading"}
-                  disabled={!displayName.trim() || !selectedSetup.state}
-                >
-                  Create game
-                </Button>
+                <>
+                  <SpaceBetween direction="horizontal" size="xs">
+                    <span
+                      ref={testModeButton}
+                      onBlur={() => setGameModeTooltip(undefined)}
+                      onFocus={() => setGameModeTooltip("test")}
+                      onMouseEnter={() => setGameModeTooltip("test")}
+                      onMouseLeave={() => setGameModeTooltip(undefined)}
+                    >
+                      <Button
+                        formAction="none"
+                        iconAlign="right"
+                        iconName="status-info"
+                        disabled={!selectedSetup.state}
+                        onClick={startTestMode}
+                      >
+                        Test mode
+                      </Button>
+                    </span>
+                    <span
+                      ref={createGameButton}
+                      onBlur={() => setGameModeTooltip(undefined)}
+                      onFocus={() => setGameModeTooltip("multiplayer")}
+                      onMouseEnter={() => setGameModeTooltip("multiplayer")}
+                      onMouseLeave={() => setGameModeTooltip(undefined)}
+                    >
+                      <Button
+                        variant="primary"
+                        formAction="submit"
+                        iconAlign="right"
+                        iconName="status-info"
+                        loading={connectionState === "loading"}
+                        disabled={!displayName.trim() || !selectedSetup.state}
+                      >
+                        Create game
+                      </Button>
+                    </span>
+                  </SpaceBetween>
+                  {gameModeTooltip === "test" && (
+                    <Tooltip
+                      content="Start instantly on this device and control both Orange and Purple."
+                      getTrack={() => testModeButton.current}
+                      onEscape={() => setGameModeTooltip(undefined)}
+                      position="top"
+                    />
+                  )}
+                  {gameModeTooltip === "multiplayer" && (
+                    <Tooltip
+                      content="Start an online multiplayer match - invite your opponent via shareable link."
+                      getTrack={() => createGameButton.current}
+                      onEscape={() => setGameModeTooltip(undefined)}
+                      position="top"
+                    />
+                  )}
+                </>
               )}
               errorText={error?.message}
             >

@@ -5,6 +5,7 @@ import MapEditorPage from "../MapEditor/MapEditorPage";
 import { InviteJoinPage } from "./InviteJoinPage";
 import { SessionHomePage } from "./SessionHomePage";
 import { SessionLandingPage } from "./SessionLandingPage";
+import { SoloGamePage } from "./SoloGamePage";
 
 export const SessionFlowRoutes = ({ mapRepository }: { mapRepository?: MapRepository }) => (
   <MapRepositoryProvider repository={mapRepository}>
@@ -20,6 +21,7 @@ export const SessionFlowRoutes = ({ mapRepository }: { mapRepository?: MapReposi
     <Routes>
       <Route path="/" element={<SessionLandingPage />} />
       <Route path="/game/new" element={<SessionHomePage />} />
+      <Route path="/game/solo" element={<SoloGamePage />} />
       <Route path="/maps" element={<Navigate replace to="/maps/new" />} />
       <Route path="/maps/new" element={<MapEditorPage />} />
       <Route path="/maps/:mapId/edit" element={<MapEditorPage />} />

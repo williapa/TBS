@@ -212,7 +212,7 @@ describe("map documents and setup", () => {
       { id: "default-battlefield", name: "Default battlefield", cells: 2 },
       { id: "four-forests", name: "4 Forests", cells: 91 },
       { id: "lake-affection", name: "Lake Affection", cells: 169 },
-      { id: "money-mountain", name: "Money Mountain", cells: 169 },
+      { id: "money-mountain", name: "Money Mountain", cells: 91 },
     ]);
     presets.forEach(({ map }) => expect(validatePlayableMap(map)).toEqual(map));
     expect(createBundledMapPresets()[1].map).not.toBe(presets[1].map);

@@ -12,7 +12,7 @@
                   8,
                   9
               ],
-              "terrain": "road",
+              "terrain": "beach",
               "unit": "none",
               "team": "gray"
           },
@@ -26,9 +26,9 @@
                   9,
                   10
               ],
-              "terrain": "beach",
-              "unit": "none",
-              "team": "gray"
+              "terrain": "water",
+              "unit": "port",
+              "team": "orange"
           },
           {
               "row": 0,
@@ -1265,8 +1265,8 @@
                   95
               ],
               "terrain": "beach",
-              "unit": "port",
-              "team": "orange"
+              "unit": "none",
+              "team": "gray"
           },
           {
               "row": 7,
@@ -1393,8 +1393,8 @@
                   103
               ],
               "terrain": "beach",
-              "unit": "port",
-              "team": "purple"
+              "unit": "none",
+              "team": "gray"
           },
           {
               "row": 7,
@@ -2628,9 +2628,9 @@
                   166,
                   168
               ],
-              "terrain": "beach",
-              "unit": "none",
-              "team": "gray"
+              "terrain": "water",
+              "unit": "port",
+              "team": "purple"
           },
           {
               "row": 14,
@@ -2641,7 +2641,7 @@
                   160,
                   167
               ],
-              "terrain": "road",
+              "terrain": "beach",
               "unit": "none",
               "team": "gray"
           }

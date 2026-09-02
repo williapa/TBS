@@ -1,18 +1,12 @@
-import {
-  presentTeamPanel,
-  presentWinCondition,
-  type StandardActionDraft,
-} from "@TBS/presentation";
-import { useCallback, useState } from "react";
+import type { SessionRole } from "@TBS/application";
+import type { StandardActionDraft } from "@TBS/presentation";
+import { useCallback } from "react";
 
-import "../Game/Game.css";
-import GameMap from "../Game/GameMap";
-import GamePanel from "../Game/GamePanel";
 import { createActionEnvelope } from "../../multiplayer/createActionEnvelope";
 import { useGameSession } from "../../multiplayer/GameSessionProvider";
-import type { GamePanelState } from "../../types";
-import { SessionEventsPanel } from "./SessionEventsPanel";
-import { SessionPlayerPanel } from "./SessionPlayerPanel";
+import { GameView } from "./GameView";
+
+type PlayerTeamId = Exclude<SessionRole, "spectator">;
 
 export const SessionGamePage = () => {
   const {
@@ -25,12 +19,12 @@ export const SessionGamePage = () => {
     submitAction,
     submitState,
   } = useGameSession();
-  const [panelState, setPanelState] = useState<GamePanelState | null>(null);
   const send = useCallback((action: StandardActionDraft) => {
     if (!snapshot) return;
     void submitAction(createActionEnvelope(snapshot.state.revision, action));
   }, [snapshot, submitAction]);
   if (!snapshot || !role) return null;
+
   const renderedSnapshot = optimisticTransition?.snapshot ?? snapshot;
   const { players, spectatorCount } = snapshot;
   const { state } = renderedSnapshot;
@@ -39,23 +33,17 @@ export const SessionGamePage = () => {
   if (!orangeTeamId || !purpleTeamId) {
     return <p role="alert">The game does not contain the standard player teams.</p>;
   }
-  const perspective = role === "spectator" ? orangeTeamId : role;
+
   const activeTeamId = state.lifecycle.phase === "active"
     ? state.lifecycle.activeTeamId
     : undefined;
   const winnerTeamId = state.lifecycle.phase === "finished"
     ? state.lifecycle.winnerTeamId
     : undefined;
-  const canAct = activeTeamId === role && submitState === "idle";
   const onlineMembers = new Set(presence.map((entry) => entry.memberId));
   const onlineSpectators = new Set(
     presence.filter((entry) => entry.role === "spectator").map((entry) => entry.memberId),
   ).size;
-  const orangePanel = presentTeamPanel(state, orangeTeamId);
-  const purplePanel = presentTeamPanel(state, purpleTeamId);
-  if (!orangePanel || !purplePanel) {
-    return <p role="alert">The game team state is incomplete.</p>;
-  }
   const winnerTeamName = winnerTeamId === orangeTeamId
     ? "Orange"
     : winnerTeamId === purpleTeamId
@@ -71,12 +59,8 @@ export const SessionGamePage = () => {
   const committedTransition = latestAction?.revision === state.revision
     ? latestAction
     : undefined;
-  const latestEvents = optimisticTransition?.events
-    ?? committedTransition?.events
-    ?? [];
-  const transitionId = optimisticTransition?.actionId
-    ?? committedTransition?.actionId;
-  const winCondition = presentWinCondition(state.objectives);
+  const events = optimisticTransition?.events ?? committedTransition?.events ?? [];
+  const transitionId = optimisticTransition?.actionId ?? committedTransition?.actionId;
   const activePlayerName = activeTeamId === orangeTeamId
     ? players[orangeTeamId]?.displayName ?? "Orange"
     : activeTeamId === purpleTeamId
@@ -87,63 +71,51 @@ export const SessionGamePage = () => {
       ? "Your turn"
       : `${activePlayerName ?? activeTeamId}'s turn`
     : undefined;
+  const controlledTeamId: PlayerTeamId | undefined = role !== "spectator"
+    && submitState === "idle"
+    ? role
+    : undefined;
+  const perspective = role === "spectator" ? orangeTeamId : role;
 
   return (
-    <main className="game-view" aria-labelledby="game-state-title">
-      <h1 className="game-view__status" id="game-state-title">{statusLabel}</h1>
-      {turnAnnouncement && (
-        <p className="game-view__turn-status" role="status">{turnAnnouncement}</p>
+    <GameView
+      actions={actions}
+      controlledTeamId={controlledTeamId}
+      errorMessage={error?.message}
+      events={events}
+      metadata={(
+        <>
+          <dt>Spectators</dt><dd>{spectatorCount}</dd>
+          <dt>Viewers online</dt><dd>{presence.length}</dd>
+          <dt>Spectators online</dt><dd>{onlineSpectators}</dd>
+        </>
       )}
-      <dl className="game-view__metadata">
-        <dt>Orange</dt><dd>{players[orangeTeamId]?.displayName ?? "Open seat"} {players[orangeTeamId] && (onlineMembers.has(players[orangeTeamId].memberId) ? "(online)" : "(offline)")}</dd>
-        <dt>Purple</dt><dd>{players[purpleTeamId]?.displayName ?? "Open seat"} {players[purpleTeamId] && (onlineMembers.has(players[purpleTeamId].memberId) ? "(online)" : "(offline)")}</dd>
-        <dt>Spectators</dt><dd>{spectatorCount}</dd>
-        <dt>Viewers online</dt><dd>{presence.length}</dd>
-        <dt>Spectators online</dt><dd>{onlineSpectators}</dd>
-        <dt>Revision</dt><dd>{snapshot.state.revision}{optimisticTransition ? " (action pending)" : ""}</dd>
-        {activeTeamId && <><dt>Current turn</dt><dd>{activeTeamId}</dd></>}
-        {winnerTeamId && <><dt>Winner</dt><dd>{winnerTeamId}</dd></>}
-      </dl>
-      {error && <p className="game-view__error" role="alert">{error.message}</p>}
-      <div className="r1">
-        <SessionPlayerPanel
-          activeTurn={orangePanel.active}
-          canEndTurn={canAct && role === orangeTeamId}
-          color="orange"
-          displayName={players[orangeTeamId]?.displayName}
-          income={orangePanel.income}
-          isLocalPlayer={role === orangeTeamId}
-          isOnline={Boolean(players[orangeTeamId] && onlineMembers.has(players[orangeTeamId].memberId))}
-          isWinner={orangePanel.winner}
-          money={orangePanel.money}
-          onEndTurn={() => send({ type: "end-turn" })}
-        />
-        <GameMap
-          active={canAct}
-          events={latestEvents}
-          onAction={send}
-          onPanelStateChange={setPanelState}
-          perspective={perspective}
-          state={state}
-          transitionId={transitionId}
-        />
-        <SessionPlayerPanel
-          activeTurn={purplePanel.active}
-          canEndTurn={canAct && role === purpleTeamId}
-          color="purple"
-          displayName={players[purpleTeamId]?.displayName}
-          income={purplePanel.income}
-          isLocalPlayer={role === purpleTeamId}
-          isOnline={Boolean(players[purpleTeamId] && onlineMembers.has(players[purpleTeamId].memberId))}
-          isWinner={purplePanel.winner}
-          money={purplePanel.money}
-          onEndTurn={() => send({ type: "end-turn" })}
-        />
-      </div>
-      <div className="r2">
-        <GamePanel state={panelState} winCondition={winCondition} />
-        <SessionEventsPanel actions={actions} />
-      </div>
-    </main>
+      onAction={send}
+      pending={Boolean(optimisticTransition)}
+      perspective={perspective}
+      players={{
+        orange: {
+          displayName: players[orangeTeamId]?.displayName,
+          isLocalPlayer: role === orangeTeamId,
+          isOnline: Boolean(players[orangeTeamId] && onlineMembers.has(players[orangeTeamId].memberId)),
+          metadataSuffix: players[orangeTeamId]
+            ? onlineMembers.has(players[orangeTeamId].memberId) ? "(online)" : "(offline)"
+            : undefined,
+        },
+        purple: {
+          displayName: players[purpleTeamId]?.displayName,
+          isLocalPlayer: role === purpleTeamId,
+          isOnline: Boolean(players[purpleTeamId] && onlineMembers.has(players[purpleTeamId].memberId)),
+          metadataSuffix: players[purpleTeamId]
+            ? onlineMembers.has(players[purpleTeamId].memberId) ? "(online)" : "(offline)"
+            : undefined,
+        },
+      }}
+      revision={snapshot.state.revision}
+      state={state}
+      statusLabel={statusLabel}
+      transitionId={transitionId}
+      turnAnnouncement={turnAnnouncement}
+    />
   );
 };

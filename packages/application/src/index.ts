@@ -11,3 +11,4 @@ export * from "./ports/realtime";
 export * from "./ports/session";
 export * from "./session/GameRevisionReconciler";
 export * from "./session/GameSessionModel";
+export * from "./session/SoloGameModel";

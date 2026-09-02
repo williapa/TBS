@@ -1,19 +1,14 @@
-import {
-  createSupabaseBrowserClient,
-  SupabaseGameClient,
-  SupabaseIdentityAdapter,
-} from "@TBS/adapter-supabase";
 import { currentStandardProtocolCodec } from "@TBS/application";
-import type { GameClient, IdentityPort } from "@TBS/application";
+import type { GameClient } from "@TBS/application";
 
 import { browserEnvironment } from "../env";
+import { createDeferredGameClient } from "./createDeferredGameClient";
 
 export type BrowserApplication = Readonly<{
   gameClient: GameClient;
-  identity: IdentityPort;
 }>;
 
-export const createBrowserApplication = (): BrowserApplication => {
+const loadMultiplayerClient = async (): Promise<GameClient> => {
   const {
     supabaseUrl: url,
     supabasePublishableKey: publishableKey,
@@ -24,10 +19,16 @@ export const createBrowserApplication = (): BrowserApplication => {
     );
   }
 
+  const {
+    createSupabaseBrowserClient,
+    SupabaseGameClient,
+    SupabaseIdentityAdapter,
+  } = await import("@TBS/adapter-supabase");
   const providerClient = createSupabaseBrowserClient({ url, publishableKey });
   const identity = new SupabaseIdentityAdapter(providerClient.auth);
-  return {
-    gameClient: new SupabaseGameClient(providerClient, currentStandardProtocolCodec, identity),
-    identity,
-  };
+  return new SupabaseGameClient(providerClient, currentStandardProtocolCodec, identity);
 };
+
+export const createBrowserApplication = (): BrowserApplication => ({
+  gameClient: createDeferredGameClient(loadMultiplayerClient),
+});
