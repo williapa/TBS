@@ -3,7 +3,7 @@ import { applyStandardAction } from "@TBS/game-rules";
 import { describe, expect, test } from "vitest";
 
 import {
-  createDefaultBattlefield,
+  createBundledMapPresets,
   createHexMap,
   createInitialGameSetup,
   CURRENT_MAP_SCHEMA_VERSION,
@@ -206,8 +206,16 @@ describe("map documents and setup", () => {
     expect(result.state.entities[entityId("initial-cell-0")]?.id).toBe("initial-cell-0");
   });
 
-  test("owns the bundled default preset without depending on test fixtures", () => {
-    expect(validatePlayableMap(createDefaultBattlefield().map)).toHaveLength(1);
+  test("owns validated bundled presets without depending on test fixtures", () => {
+    const presets = createBundledMapPresets();
+    expect(presets.map(({ id, name, map }) => ({ id, name, cells: map.flat().length }))).toEqual([
+      { id: "default-battlefield", name: "Default battlefield", cells: 2 },
+      { id: "four-forests", name: "4 Forests", cells: 91 },
+      { id: "lake-affection", name: "Lake Affection", cells: 169 },
+      { id: "money-mountain", name: "Money Mountain", cells: 169 },
+    ]);
+    presets.forEach(({ map }) => expect(validatePlayableMap(map)).toEqual(map));
+    expect(createBundledMapPresets()[1].map).not.toBe(presets[1].map);
   });
 });
 

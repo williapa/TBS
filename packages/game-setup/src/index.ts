@@ -7,5 +7,6 @@ export * from "./geometry/mapHex";
 export * from "./maps/transfer";
 export * from "./maps/mapUnitOwnership";
 export * from "./maps/validation";
+export * from "./presets/bundledMapPresets";
 export * from "./presets/defaultBattlefield";
 export * from "./setup/createInitialGameSetup";

@@ -8,13 +8,19 @@ if (!forest) throw new Error("Forest terrain fixture is unavailable");
 describe("LocalStorageMapRepository", () => {
   beforeEach(() => window.localStorage.clear());
 
-  test("ships the validated default through list/get and keeps it read-only", async () => {
+  test("ships validated bundled maps through list/get and keeps them read-only", async () => {
     const repository = new LocalStorageMapRepository(window.localStorage, () => "custom-1");
     const listed = await repository.list();
-    expect(listed).toHaveLength(1);
-    expect(listed[0]).toMatchObject({ id: "default-battlefield", schemaVersion: 1, readOnly: true });
+    expect(listed.map(({ id, name }) => ({ id, name }))).toEqual([
+      { id: "default-battlefield", name: "Default battlefield" },
+      { id: "four-forests", name: "4 Forests" },
+      { id: "lake-affection", name: "Lake Affection" },
+      { id: "money-mountain", name: "Money Mountain" },
+    ]);
+    expect(listed).toHaveLength(4);
+    expect(listed.every(({ readOnly, schemaVersion }) => readOnly && schemaVersion === 1)).toBe(true);
     expect(await repository.get("default-battlefield")).toEqual(listed[0]);
-    await expect(repository.delete("default-battlefield")).rejects.toMatchObject({ code: "read-only" });
+    await expect(repository.delete("four-forests")).rejects.toMatchObject({ code: "read-only" });
   });
 
   test("saves, reloads, updates, and deletes local maps", async () => {

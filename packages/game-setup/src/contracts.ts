@@ -34,6 +34,10 @@ export type MapDocument = Readonly<{
   map: MapGrid;
 }>;
 
+export type BundledMapPreset = MapDocument & Readonly<{
+  id: string;
+}>;
+
 export type SaveMapInput = Readonly<{
   name: string;
   map: MapGrid;

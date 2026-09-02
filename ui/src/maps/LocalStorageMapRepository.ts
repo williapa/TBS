@@ -1,6 +1,6 @@
 import {
   assertSerializedMapSize,
-  createDefaultBattlefield,
+  createBundledMapPresets,
   validateSaveMapInput,
 } from "@TBS/game-setup";
 import type {
@@ -16,11 +16,9 @@ type StoredRepository = { repositoryVersion: 1; maps: Omit<SavedMap, "readOnly">
 
 const STORAGE_KEY = "TBS.maps.v1";
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
-
-const defaultMap = (): SavedMap => {
-  const preset = createDefaultBattlefield();
-  return { ...preset, id: "default-battlefield", readOnly: true };
-};
+const bundledMaps: readonly SavedMap[] = createBundledMapPresets()
+  .map((preset) => ({ ...preset, readOnly: true }));
+const bundledMapIds = new Set(bundledMaps.map(({ id }) => id));
 
 const invalid = (message: string): never => { throw new MapRepositoryError("invalid-map", message); };
 
@@ -71,7 +69,7 @@ export class LocalStorageMapRepository implements MapRepository {
   }
 
   async list() {
-    return [defaultMap(), ...this.read().maps.map((map) => ({ ...map, readOnly: false as const }))].map(clone);
+    return [...bundledMaps, ...this.read().maps.map((map) => ({ ...map, readOnly: false as const }))].map(clone);
   }
 
   async get(id: string) {
@@ -81,14 +79,16 @@ export class LocalStorageMapRepository implements MapRepository {
   async save(input: SaveMapInput) {
     const repository = this.read();
     const saved = parseSavedMap({ ...input, id: this.createId(), schemaVersion: CURRENT_MAP_SCHEMA_VERSION });
-    if (saved.id === defaultMap().id || repository.maps.some((map) => map.id === saved.id)) invalid("Generated map ID already exists");
+    if (bundledMapIds.has(saved.id) || repository.maps.some((map) => map.id === saved.id)) {
+      invalid("Generated map ID already exists");
+    }
     repository.maps.push(saved);
     this.write(repository);
     return clone({ ...saved, readOnly: false });
   }
 
   async update(id: string, input: SaveMapInput) {
-    if (id === defaultMap().id) throw new MapRepositoryError("read-only", "The bundled default map is read-only");
+    if (bundledMapIds.has(id)) throw new MapRepositoryError("read-only", "Bundled maps are read-only");
     const repository = this.read();
     const index = repository.maps.findIndex((map) => map.id === id);
     if (index < 0) throw new MapRepositoryError("map-not-found", "Map not found");
@@ -99,7 +99,7 @@ export class LocalStorageMapRepository implements MapRepository {
   }
 
   async delete(id: string) {
-    if (id === defaultMap().id) throw new MapRepositoryError("read-only", "The bundled default map is read-only");
+    if (bundledMapIds.has(id)) throw new MapRepositoryError("read-only", "Bundled maps are read-only");
     const repository = this.read();
     const next = repository.maps.filter((map) => map.id !== id);
     if (next.length === repository.maps.length) throw new MapRepositoryError("map-not-found", "Map not found");

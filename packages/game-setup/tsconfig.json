@@ -6,7 +6,8 @@
     "declaration": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "noEmitOnError": true
+    "noEmitOnError": true,
+    "resolveJsonModule": true
   },
   "include": ["src/**/*"]
 }
