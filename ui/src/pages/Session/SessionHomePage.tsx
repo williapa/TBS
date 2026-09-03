@@ -1,13 +1,16 @@
 import { createInitialGameSetup } from "@TBS/game-setup";
 import {
   Alert,
+  Box,
   Button,
   Container,
   ContentLayout,
   Form,
   FormField,
+  Flashbar,
   Header,
   Input,
+  Modal,
   Select,
   SpaceBetween,
   Tooltip,
@@ -15,7 +18,7 @@ import {
 import type { FormEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { SavedMap} from "../../maps";
+import type { SavedMap } from "../../maps";
 import { useMapRepository } from "../../maps";
 import { useGameSession } from "../../multiplayer";
 import { useSoloGame } from "../../solo";
@@ -31,11 +34,14 @@ export const SessionHomePage = () => {
   const mapRepository = useMapRepository();
   const [maps, setMaps] = useState<SavedMap[]>([]);
   const [mapError, setMapError] = useState<string>();
+  const [mapDeletedNotice, setMapDeletedNotice] = useState<{ content: string }>();
+  const [mapPendingDeletion, setMapPendingDeletion] = useState<SavedMap>();
   const [displayName, setDisplayName] = useState("");
   const [mapId, setMapId] = useState("");
   const [shareUrl, setShareUrl] = useState<string>();
   const [copied, setCopied] = useState(false);
   const [mapsLoading, setMapsLoading] = useState(true);
+  const [deletingMapId, setDeletingMapId] = useState<string>();
   const [gameModeTooltip, setGameModeTooltip] = useState<GameModeTooltip>();
   const testModeButton = useRef<HTMLSpanElement>(null);
   const createGameButton = useRef<HTMLSpanElement>(null);
@@ -53,6 +59,12 @@ export const SessionHomePage = () => {
     });
     return () => { active = false; };
   }, [mapRepository]);
+
+  useEffect(() => {
+    if (!mapDeletedNotice) return;
+    const timeout = window.setTimeout(() => setMapDeletedNotice(undefined), 3_000);
+    return () => window.clearTimeout(timeout);
+  }, [mapDeletedNotice]);
 
   const selectedMap = maps.find((map) => map.id === mapId);
   const selectedSetup = useMemo(() => {
@@ -97,6 +109,28 @@ export const SessionHomePage = () => {
     setCopied(true);
   };
 
+  const deleteMap = async () => {
+    if (!mapPendingDeletion || mapPendingDeletion.readOnly) return;
+    setDeletingMapId(mapPendingDeletion.id);
+    setMapError(undefined);
+    try {
+      await mapRepository.delete(mapPendingDeletion.id);
+      const remainingMaps = maps.filter(({ id }) => id !== mapPendingDeletion.id);
+      setMaps(remainingMaps);
+      setMapId(remainingMaps[0]?.id ?? "");
+      setMapDeletedNotice({ content: `Map "${mapPendingDeletion.name}" has been deleted.` });
+    } catch (value) {
+      setMapError(value instanceof Error ? value.message : "The map could not be deleted");
+    } finally {
+      setDeletingMapId(undefined);
+      setMapPendingDeletion(undefined);
+    }
+  };
+
+  const closeDeleteModal = () => {
+    if (!deletingMapId) setMapPendingDeletion(undefined);
+  };
+
   return (
     <main className="cloudscape-form-page">
       <ContentLayout
@@ -110,6 +144,46 @@ export const SessionHomePage = () => {
         )}
       >
         <SpaceBetween direction="vertical" size="l">
+          {mapPendingDeletion && (
+            <Modal
+              visible
+              onDismiss={closeDeleteModal}
+              closeAriaLabel="Close delete map confirmation"
+              header="Delete custom map"
+              footer={(
+                <Box float="right">
+                  <SpaceBetween direction="horizontal" size="xs">
+                    <Button
+                      formAction="none"
+                      disabled={Boolean(deletingMapId)}
+                      onClick={closeDeleteModal}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="primary"
+                      formAction="none"
+                      iconName="remove"
+                      loading={Boolean(deletingMapId)}
+                      onClick={deleteMap}
+                    >
+                      Delete map
+                    </Button>
+                  </SpaceBetween>
+                </Box>
+              )}
+            >
+              Are you sure you want to delete &quot;{mapPendingDeletion.name}&quot;? This action cannot be undone.
+            </Modal>
+          )}
+          {mapDeletedNotice && (
+            <Flashbar
+              items={[{
+                type: "success",
+                content: mapDeletedNotice.content,
+              }]}
+            />
+          )}
           <form onSubmit={submit}>
             <Form
               actions={(
@@ -189,7 +263,16 @@ export const SessionHomePage = () => {
                     description={selectedMap ? `Selected battlefield: ${selectedMap.name}.` : "Choose the battlefield for this match."}
                     errorText={mapError ?? selectedSetup.error}
                     secondaryControl={(
-                      <Button variant="link" formAction="none" onClick={() => navigate("/maps/new")}>Create a new map</Button>
+                      <Button
+                        variant="link"
+                        formAction="none"
+                        iconName="remove"
+                        ariaHaspopup="dialog"
+                        disabled={!selectedMap || selectedMap.readOnly}
+                        onClick={() => setMapPendingDeletion(selectedMap)}
+                      >
+                        Delete map
+                      </Button>
                     )}
                   >
                     <Select

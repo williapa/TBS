@@ -1,7 +1,7 @@
 import { applyStandardAction } from "@TBS/game-rules";
 import { createDefaultBattlefield, mapTerrainOptions } from "@TBS/game-setup";
 import { createWaitingGameStateFixture } from "@TBS/test-kit";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { MapRepository } from "../../maps";
 import { LocalStorageMapRepository } from "../../maps";
@@ -98,6 +98,79 @@ describe("new session create and join flow", () => {
     const watcher = await new InMemoryGameSessionGateway(store, "watcher-copy").joinGame("invite-1", "spectator", "Watcher");
     expect(purple.snapshot.state.board).toEqual(game.state.board);
     expect(watcher.snapshot.state.entities).toEqual(game.state.entities);
+  });
+
+  test("confirms custom-map deletion, protects bundled maps, and replaces the three-second notice", async () => {
+    let nextMapId = 1;
+    const repository = new LocalStorageMapRepository(
+      window.localStorage,
+      () => `custom-${nextMapId++}`,
+    );
+    const firstCustomMap = await repository.save({
+      name: "First custom map",
+      map: createDefaultBattlefield().map,
+    });
+    const secondCustomMap = await repository.save({
+      name: "Second custom map",
+      map: createDefaultBattlefield().map,
+    });
+    const bundledMap = (await repository.list()).find(({ readOnly }) => readOnly);
+    if (!bundledMap) throw new Error("Bundled map fixture is unavailable");
+    const deleteMap = vi.spyOn(repository, "delete");
+    const customMapRepository: MapRepository = {
+      list: async () => [firstCustomMap, secondCustomMap, bundledMap],
+      get: (id) => repository.get(id),
+      save: (input) => repository.save(input),
+      update: (id, input) => repository.update(id, input),
+      delete: (id) => repository.delete(id),
+    };
+    renderFlow(
+      new InMemoryGameSessionGateway(createStore(), "map-deleter"),
+      "/game/new",
+      customMapRepository,
+    );
+
+    const openDeleteModalButton = await screen.findByRole("button", { name: "Delete map" });
+    expect(openDeleteModalButton).toBeEnabled();
+    expect(screen.queryByRole("button", { name: "Create a new map" })).not.toBeInTheDocument();
+    fireEvent.click(openDeleteModalButton);
+    let deleteModal = screen.getByRole("dialog", { name: "Delete custom map" });
+    expect(within(deleteModal).getByText(/Are you sure you want to delete "First custom map"/))
+      .toBeInTheDocument();
+    expect(deleteMap).not.toHaveBeenCalled();
+    fireEvent.click(within(deleteModal).getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog", { name: "Delete custom map" })).not.toBeInTheDocument();
+    expect(deleteMap).not.toHaveBeenCalled();
+
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(openDeleteModalButton);
+      deleteModal = screen.getByRole("dialog", { name: "Delete custom map" });
+      await act(async () => {
+        fireEvent.click(within(deleteModal).getByRole("button", { name: "Delete map" }));
+        await Promise.resolve();
+      });
+      expect(deleteMap).toHaveBeenCalledWith(firstCustomMap.id);
+      expect(screen.getByText('Map "First custom map" has been deleted.')).toBeInTheDocument();
+
+      fireEvent.click(openDeleteModalButton);
+      deleteModal = screen.getByRole("dialog", { name: "Delete custom map" });
+      await act(async () => {
+        fireEvent.click(within(deleteModal).getByRole("button", { name: "Delete map" }));
+        await Promise.resolve();
+      });
+      expect(deleteMap).toHaveBeenCalledWith(secondCustomMap.id);
+      expect(screen.queryByText('Map "First custom map" has been deleted.')).not.toBeInTheDocument();
+      expect(screen.getByText('Map "Second custom map" has been deleted.')).toBeInTheDocument();
+      expect(openDeleteModalButton).toBeDisabled();
+
+      act(() => vi.advanceTimersByTime(2_999));
+      expect(screen.getByText('Map "Second custom map" has been deleted.')).toBeInTheDocument();
+      act(() => vi.advanceTimersByTime(1));
+      expect(screen.queryByText('Map "Second custom map" has been deleted.')).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   test("starts test mode without a display name and locally controls both turns", async () => {
