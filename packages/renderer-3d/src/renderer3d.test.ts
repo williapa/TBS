@@ -78,13 +78,22 @@ describe("renderer-3d presentation behavior", () => {
   });
 
   it("provides project-owned procedural fallbacks for known and future assets", () => {
-    expect(getProceduralModel("unit:capital").kind).toBe("building");
-    expect(getProceduralModel("unit:pathfinder")).toEqual({ assetId: "unit:pathfinder", kind: "person", source: "project-owned-procedural" });
+    expect(getProceduralModel("unit:bank").kind).toBe("building");
+    expect(getProceduralModel("unit:pathfinder")).toEqual({ assetId: "unit:pathfinder", kind: "person", healthBarHeight: 1.18, source: "project-owned-procedural" });
+  });
+
+  it("resolves the capital's distinct model with health clearance while retaining other building fallbacks", () => {
+    for (const assetId of ["unit:capital", "capital"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "capital", healthBarHeight: 1.68, source: "project-owned-procedural" });
+    }
+    for (const unitId of ["airport", "bank", "church", "college", "factory", "house", "lab", "office", "port", "zoo"]) {
+      expect(getProceduralModel(`unit:${unitId}`).kind).toBe("building");
+    }
   });
 
   it("resolves the leader's distinct model without changing other people or unknown assets", () => {
     for (const assetId of ["unit:leader", "leader"]) {
-      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "leader", source: "project-owned-procedural" });
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "leader", healthBarHeight: 1.52, source: "project-owned-procedural" });
     }
     for (const assetId of ["unit:soldier", "unit:priest", "unit:future-leader"]) {
       expect(getProceduralModel(assetId).kind).toBe("person");

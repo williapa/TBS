@@ -11,6 +11,7 @@ import type {
 } from "@TBS/presentation";
 
 import { entityWorldPosition } from "../animation/entityMotion.js";
+import { CapitalModel } from "../assets/CapitalModel.js";
 import { getProceduralModel } from "../assets/modelManifest.js";
 import { LeaderModel } from "../assets/LeaderModel.js";
 import { initialCameraState, type CameraIntent, type StrategyCameraState, updateCameraState } from "../camera/cameraState.js";
@@ -99,6 +100,7 @@ const TerrainInstances = ({ batch, onIntent }: Readonly<{ batch: TerrainBatch; o
 const PrimitiveModel = ({ entity }: Readonly<{ entity: BoardEntityViewModel }>) => {
   const model = getProceduralModel(entity.assetId);
   const color = teamColor(entity.teamId);
+  if (model.kind === "capital") return <CapitalModel color={color} orientation={entity.orientation} />;
   if (model.kind === "leader") return <LeaderModel color={color} orientation={entity.orientation} />;
   if (model.kind === "building") return (
     <group>
@@ -168,7 +170,7 @@ const Entity = ({ cue, entity, onIntent, reducedMotion }: Readonly<{
       )}
       <PrimitiveModel entity={entity} />
       {healthFill !== null && (
-        <group position={[0, getProceduralModel(entity.assetId).kind === "leader" ? 1.52 : 1.18, 0]}>
+        <group position={[0, getProceduralModel(entity.assetId).healthBarHeight, 0]}>
           {healthFill.width < healthBarTrack.width && (
             <mesh position={[healthBarTrack.centerX, 0, 0]} scale={[healthBarTrack.width, 0.08, 0.08]}><boxGeometry /><meshBasicMaterial color="#2a1b1b" /></mesh>
           )}
