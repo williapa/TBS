@@ -81,6 +81,7 @@ describe("new session create and join flow", () => {
     expect(previewDetails.getByText("Ada")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Create game" }));
     const link = await screen.findByLabelText("Share link");
+    expect(screen.queryByRole("group", { name: "Board view" })).not.toBeInTheDocument();
     expect(link).toHaveValue("http://localhost/game/invite-1");
     expect(screen.getByRole("button", { name: "Open game" })).toBeInTheDocument();
     expect(
@@ -268,6 +269,7 @@ describe("new session create and join flow", () => {
     saveReconnectDetails(active.inviteToken, { displayName: "Purple", intent: "player" });
     const activeView = renderFlow(new InMemoryGameSessionGateway(activeStore, "purple"), `/game/${active.inviteToken}`);
     expect(await activeView.findByRole("heading", { name: "Game in progress" })).toBeInTheDocument();
+    expect(activeView.getByRole("group", { name: "Board view" })).toBeVisible();
     expect(activeView.container.querySelectorAll(".r1 > .player.panel")).toHaveLength(2);
     const orangePanel = activeView.getByRole("complementary", { name: "orange player" });
     const purplePanel = activeView.getByRole("complementary", { name: "purple player" });

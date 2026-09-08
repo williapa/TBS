@@ -10,10 +10,17 @@ test("test mode plays both teams without contacting Supabase", async ({ page }) 
 
   await page.goto("/game/new");
   await expect(page.getByRole("heading", { name: "Start a game" })).toBeVisible();
+  await expect(page.getByRole("group", { name: "Board view" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Create game" })).toBeDisabled();
   await page.getByRole("button", { name: "Test mode" }).click();
 
   await expect(page.getByRole("heading", { name: "Solo test game" })).toBeVisible();
+  const boardViewToggle = page.getByRole("group", { name: "Board view" });
+  await expect(boardViewToggle).toBeVisible();
+  await expect(boardViewToggle.getByRole("button", { name: "Use 2D board" }))
+    .toHaveAttribute("aria-pressed", "true");
+  await expect(boardViewToggle.getByRole("button", { name: "Use 3D board" }))
+    .toBeVisible();
   await expect(page.getByRole("status"))
     .toHaveText("Purple turn — you control both teams");
   const purplePanel = page.getByRole("complementary", { name: "purple player" });

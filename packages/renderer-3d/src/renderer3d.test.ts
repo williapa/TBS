@@ -82,6 +82,15 @@ describe("renderer-3d presentation behavior", () => {
     expect(getProceduralModel("unit:pathfinder")).toEqual({ assetId: "unit:pathfinder", kind: "person", source: "project-owned-procedural" });
   });
 
+  it("resolves the leader's distinct model without changing other people or unknown assets", () => {
+    for (const assetId of ["unit:leader", "leader"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "leader", source: "project-owned-procedural" });
+    }
+    for (const assetId of ["unit:soldier", "unit:priest", "unit:future-leader"]) {
+      expect(getProceduralModel(assetId).kind).toBe("person");
+    }
+  });
+
   it("uses terrain-safe solid action colors while selection stays white", () => {
     const targets = [
       ["attack", "#ff3b5c"],

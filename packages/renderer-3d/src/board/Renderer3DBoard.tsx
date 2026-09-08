@@ -12,8 +12,10 @@ import type {
 
 import { entityWorldPosition } from "../animation/entityMotion.js";
 import { getProceduralModel } from "../assets/modelManifest.js";
+import { LeaderModel } from "../assets/LeaderModel.js";
 import { initialCameraState, type CameraIntent, type StrategyCameraState, updateCameraState } from "../camera/cameraState.js";
 import { cellHighlightRenderOrder, targetHighlightColor, targetHighlightContrastColor } from "./highlightColor.js";
+import { healthBarFill, healthBarTrack } from "./healthBarLayout.js";
 import { HEX_WORLD_ORIENTATION, projectHexToWorld } from "./projection.js";
 import { cellForTerrainInstance, createTerrainBatches, type TerrainBatch } from "./terrainBatches.js";
 
@@ -97,6 +99,7 @@ const TerrainInstances = ({ batch, onIntent }: Readonly<{ batch: TerrainBatch; o
 const PrimitiveModel = ({ entity }: Readonly<{ entity: BoardEntityViewModel }>) => {
   const model = getProceduralModel(entity.assetId);
   const color = teamColor(entity.teamId);
+  if (model.kind === "leader") return <LeaderModel color={color} orientation={entity.orientation} />;
   if (model.kind === "building") return (
     <group>
       <mesh castShadow position={[0, 0.48, 0]}><boxGeometry args={[0.72, 0.9, 0.72]} /><meshStandardMaterial color={color} roughness={0.7} /></mesh>
@@ -152,8 +155,8 @@ const Entity = ({ cue, entity, onIntent, reducedMotion }: Readonly<{
     );
   };
   const initial = entityWorldPosition(entity, cue, 0, reducedMotion);
-  const healthRatio = entity.health
-    ? entity.health.current / entity.health.maximum
+  const healthFill = entity.health
+    ? healthBarFill(entity.health)
     : null;
   return (
     <group name={`entity:${entity.id}`} onClick={select} position={[initial.x, initial.y, initial.z]} ref={group}>
@@ -164,10 +167,14 @@ const Entity = ({ cue, entity, onIntent, reducedMotion }: Readonly<{
         </mesh>
       )}
       <PrimitiveModel entity={entity} />
-      {healthRatio !== null && (
-        <group position={[0, 1.18, 0]}>
-          <mesh position={[-0.2, 0, 0]} scale={[0.6, 0.08, 0.08]}><boxGeometry /><meshBasicMaterial color="#2a1b1b" /></mesh>
-          <mesh position={[-0.2 + (0.3 * healthRatio), 0.012, 0.01]} scale={[0.6 * healthRatio, 0.085, 0.085]}><boxGeometry /><meshBasicMaterial color={teamColor(entity.teamId)} /></mesh>
+      {healthFill !== null && (
+        <group position={[0, getProceduralModel(entity.assetId).kind === "leader" ? 1.52 : 1.18, 0]}>
+          {healthFill.width < healthBarTrack.width && (
+            <mesh position={[healthBarTrack.centerX, 0, 0]} scale={[healthBarTrack.width, 0.08, 0.08]}><boxGeometry /><meshBasicMaterial color="#2a1b1b" /></mesh>
+          )}
+          {healthFill.width > 0 && (
+            <mesh position={[healthFill.centerX, 0, 0]} scale={[healthFill.width, 0.085, 0.085]}><boxGeometry /><meshBasicMaterial color={teamColor(entity.teamId)} /></mesh>
+          )}
         </group>
       )}
       {entity.teamId === "purple" && <mesh position={[-0.42, 0.22, 0]}><sphereGeometry args={[0.1, 8, 6]} /><meshBasicMaterial color="#ffffff" /></mesh>}
