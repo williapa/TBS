@@ -1,4 +1,11 @@
-export type PrimitiveModelKind = "aircraft" | "building" | "capital" | "leader" | "person" | "vehicle";
+export type PrimitiveModelKind =
+  | "aircraft"
+  | "building"
+  | "capital"
+  | "construction-worker"
+  | "leader"
+  | "person"
+  | "vehicle";
 
 export type ProceduralModelDescriptor = Readonly<{
   assetId: string;
@@ -18,13 +25,21 @@ export const getProceduralModel = (assetId: string): ProceduralModelDescriptor =
   const unitId = assetId.startsWith("unit:") ? assetId.slice("unit:".length) : assetId;
   const kind = unitId === "leader" || unitId === "capital"
     ? unitId
-    : buildingIds.has(unitId)
-      ? "building"
-      : aircraftIds.has(unitId)
-        ? "aircraft"
-        : vehicleIds.has(unitId)
-          ? "vehicle"
-          : "person";
-  const healthBarHeight = kind === "capital" ? 1.68 : kind === "leader" ? 1.52 : 1.18;
+    : unitId === "constructionWorker"
+      ? "construction-worker"
+      : buildingIds.has(unitId)
+        ? "building"
+        : aircraftIds.has(unitId)
+          ? "aircraft"
+          : vehicleIds.has(unitId)
+            ? "vehicle"
+            : "person";
+  const healthBarHeight = kind === "capital"
+    ? 1.68
+    : kind === "leader"
+      ? 1.52
+      : kind === "construction-worker"
+        ? 1.42
+        : 1.18;
   return { assetId, kind, healthBarHeight, source: "project-owned-procedural" };
 };

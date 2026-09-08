@@ -12,6 +12,7 @@ import type {
 
 import { entityWorldPosition } from "../animation/entityMotion.js";
 import { CapitalModel } from "../assets/CapitalModel.js";
+import { ConstructionWorkerModel } from "../assets/ConstructionWorkerModel.js";
 import { getProceduralModel } from "../assets/modelManifest.js";
 import { LeaderModel } from "../assets/LeaderModel.js";
 import { initialCameraState, type CameraIntent, type StrategyCameraState, updateCameraState } from "../camera/cameraState.js";
@@ -101,6 +102,7 @@ const PrimitiveModel = ({ entity }: Readonly<{ entity: BoardEntityViewModel }>) 
   const model = getProceduralModel(entity.assetId);
   const color = teamColor(entity.teamId);
   if (model.kind === "capital") return <CapitalModel color={color} orientation={entity.orientation} />;
+  if (model.kind === "construction-worker") return <ConstructionWorkerModel color={color} orientation={entity.orientation} />;
   if (model.kind === "leader") return <LeaderModel color={color} orientation={entity.orientation} />;
   if (model.kind === "building") return (
     <group>

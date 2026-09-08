@@ -100,6 +100,15 @@ describe("renderer-3d presentation behavior", () => {
     }
   });
 
+  it("resolves the construction worker's distinct model without changing other workers or people", () => {
+    for (const assetId of ["unit:constructionWorker", "constructionWorker"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "construction-worker", healthBarHeight: 1.42, source: "project-owned-procedural" });
+    }
+    for (const assetId of ["unit:worker", "unit:engineer", "unit:future-constructionWorker"]) {
+      expect(getProceduralModel(assetId).kind).toBe("person");
+    }
+  });
+
   it("uses terrain-safe solid action colors while selection stays white", () => {
     const targets = [
       ["attack", "#ff3b5c"],
