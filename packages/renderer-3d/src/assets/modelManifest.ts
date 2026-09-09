@@ -6,6 +6,7 @@ export type PrimitiveModelKind =
   | "blues-musician"
   | "building"
   | "capital"
+  | "church"
   | "construction-worker"
   | "dragon"
   | "factory"
@@ -31,7 +32,7 @@ export type ProceduralModelDescriptor = Readonly<{
 }>;
 
 const buildingIds = new Set([
-  "church", "college", "house", "lab",
+  "college", "house", "lab",
   "office",
 ]);
 const aircraftIds = new Set(["airplane", "helicopter"]);
@@ -39,7 +40,7 @@ const vehicleIds = new Set(["ambulance", "sub"]);
 
 export const getProceduralModel = (assetId: string): ProceduralModelDescriptor => {
   const unitId = assetId.startsWith("unit:") ? assetId.slice("unit:".length) : assetId;
-  const kind = unitId === "factory" || unitId === "truck" || unitId === "bank" || unitId === "zuckerbird" || unitId === "airport" || unitId === "port" || unitId === "zoo" || unitId === "leader" || unitId === "capital" || unitId === "soldier" || unitId === "dragon" || unitId === "lion" || unitId === "scientist" || unitId === "nuke" || unitId === "money" || unitId === "missile"
+  const kind = unitId === "church" || unitId === "factory" || unitId === "truck" || unitId === "bank" || unitId === "zuckerbird" || unitId === "airport" || unitId === "port" || unitId === "zoo" || unitId === "leader" || unitId === "capital" || unitId === "soldier" || unitId === "dragon" || unitId === "lion" || unitId === "scientist" || unitId === "nuke" || unitId === "money" || unitId === "missile"
     ? unitId
     : unitId === "bigTruck"
       ? "big-truck"
@@ -54,16 +55,18 @@ export const getProceduralModel = (assetId: string): ProceduralModelDescriptor =
               : vehicleIds.has(unitId)
                 ? "vehicle"
                 : "person";
-  const healthBarHeight = kind === "capital"
-    ? 1.68
-    : kind === "big-truck" || kind === "zuckerbird" || kind === "leader" || kind === "scientist" || kind === "blues-musician" || kind === "missile"
-      ? 1.52
-      : kind === "airport" || kind === "construction-worker" || kind === "soldier" || kind === "dragon" || kind === "nuke"
-        ? 1.42
-        : kind === "factory" || kind === "bank" || kind === "zoo" || kind === "port"
-          ? 1.55
-          : kind === "lion"
-            ? 1.32
-            : 1.18;
+  const healthBarHeight = kind === "church"
+    ? 1.85
+    : kind === "capital"
+      ? 1.68
+      : kind === "big-truck" || kind === "zuckerbird" || kind === "leader" || kind === "scientist" || kind === "blues-musician" || kind === "missile"
+        ? 1.52
+        : kind === "airport" || kind === "construction-worker" || kind === "soldier" || kind === "dragon" || kind === "nuke"
+          ? 1.42
+          : kind === "factory" || kind === "bank" || kind === "zoo" || kind === "port"
+            ? 1.55
+            : kind === "lion"
+              ? 1.32
+              : 1.18;
   return { assetId, kind, healthBarHeight, source: "project-owned-procedural" };
 };

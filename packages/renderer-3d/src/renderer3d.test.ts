@@ -153,9 +153,18 @@ describe("renderer-3d presentation behavior", () => {
     for (const assetId of ["unit:capital", "capital"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "capital", healthBarHeight: 1.68, source: "project-owned-procedural" });
     }
-    for (const unitId of ["church", "college", "house", "lab", "office"]) {
+    for (const unitId of ["college", "house", "lab", "office"]) {
       expect(getProceduralModel(`unit:${unitId}`).kind).toBe("building");
     }
+  });
+
+  it("resolves the church with health clearance above its steeple cross", () => {
+    for (const assetId of ["unit:church", "church"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "church", healthBarHeight: 1.85, source: "project-owned-procedural" });
+    }
+    expect(getProceduralModel("unit:house").kind).toBe("building");
+    expect(getProceduralModel("unit:priest").kind).toBe("person");
+    expect(getProceduralModel("unit:future-church").kind).toBe("person");
   });
 
   it("resolves the port with health clearance above its crane", () => {
