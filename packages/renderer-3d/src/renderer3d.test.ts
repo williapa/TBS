@@ -143,6 +143,15 @@ describe("renderer-3d presentation behavior", () => {
     }
   });
 
+  it("resolves the blues musician's distinct model with fedora and guitar clearance", () => {
+    for (const assetId of ["unit:bluesMusician", "bluesMusician"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "blues-musician", healthBarHeight: 1.52, source: "project-owned-procedural" });
+    }
+    for (const assetId of ["unit:michaelJackson", "unit:priest", "unit:future-bluesMusician"]) {
+      expect(getProceduralModel(assetId).kind).toBe("person");
+    }
+  });
+
   it("uses terrain-safe solid action colors while selection stays white", () => {
     const targets = [
       ["attack", "#ff3b5c"],

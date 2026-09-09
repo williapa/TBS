@@ -11,6 +11,7 @@ import type {
 } from "@TBS/presentation";
 
 import { entityWorldPosition } from "../animation/entityMotion.js";
+import { BluesMusicianModel } from "../assets/BluesMusicianModel.js";
 import { CapitalModel } from "../assets/CapitalModel.js";
 import { ConstructionWorkerModel } from "../assets/ConstructionWorkerModel.js";
 import { DragonModel } from "../assets/DragonModel.js";
@@ -105,6 +106,7 @@ const TerrainInstances = ({ batch, onIntent }: Readonly<{ batch: TerrainBatch; o
 const PrimitiveModel = ({ entity }: Readonly<{ entity: BoardEntityViewModel }>) => {
   const model = getProceduralModel(entity.assetId);
   const color = teamColor(entity.teamId);
+  if (model.kind === "blues-musician") return <BluesMusicianModel color={color} orientation={entity.orientation} />;
   if (model.kind === "capital") return <CapitalModel color={color} orientation={entity.orientation} />;
   if (model.kind === "construction-worker") return <ConstructionWorkerModel color={color} orientation={entity.orientation} />;
   if (model.kind === "dragon") return <DragonModel color={color} orientation={entity.orientation} />;
