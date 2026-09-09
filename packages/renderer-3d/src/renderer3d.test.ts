@@ -106,11 +106,20 @@ describe("renderer-3d presentation behavior", () => {
     expect(getProceduralModel("unit:future-nuke").kind).toBe("person");
   });
 
+  it("resolves the airport with health clearance above its control tower", () => {
+    for (const assetId of ["unit:airport", "airport"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "airport", healthBarHeight: 1.42, source: "project-owned-procedural" });
+    }
+    expect(getProceduralModel("unit:airplane").kind).toBe("aircraft");
+    expect(getProceduralModel("unit:bank").kind).toBe("building");
+    expect(getProceduralModel("unit:future-airport").kind).toBe("person");
+  });
+
   it("resolves the capital's distinct model with health clearance while retaining other building fallbacks", () => {
     for (const assetId of ["unit:capital", "capital"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "capital", healthBarHeight: 1.68, source: "project-owned-procedural" });
     }
-    for (const unitId of ["airport", "bank", "church", "college", "factory", "house", "lab", "office"]) {
+    for (const unitId of ["bank", "church", "college", "factory", "house", "lab", "office"]) {
       expect(getProceduralModel(`unit:${unitId}`).kind).toBe("building");
     }
   });
@@ -119,7 +128,7 @@ describe("renderer-3d presentation behavior", () => {
     for (const assetId of ["unit:port", "port"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "port", healthBarHeight: 1.55, source: "project-owned-procedural" });
     }
-    expect(getProceduralModel("unit:airport").kind).toBe("building");
+    expect(getProceduralModel("unit:bank").kind).toBe("building");
     expect(getProceduralModel("unit:future-port").kind).toBe("person");
   });
 
