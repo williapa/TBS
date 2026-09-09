@@ -16,7 +16,8 @@ export type PrimitiveModelKind =
   | "scientist"
   | "soldier"
   | "vehicle"
-  | "zoo";
+  | "zoo"
+  | "zuckerbird";
 
 export type ProceduralModelDescriptor = Readonly<{
   assetId: string;
@@ -34,7 +35,7 @@ const vehicleIds = new Set(["ambulance", "bigTruck", "sub", "truck"]);
 
 export const getProceduralModel = (assetId: string): ProceduralModelDescriptor => {
   const unitId = assetId.startsWith("unit:") ? assetId.slice("unit:".length) : assetId;
-  const kind = unitId === "airport" || unitId === "port" || unitId === "zoo" || unitId === "leader" || unitId === "capital" || unitId === "soldier" || unitId === "dragon" || unitId === "lion" || unitId === "scientist" || unitId === "nuke" || unitId === "money" || unitId === "missile"
+  const kind = unitId === "zuckerbird" || unitId === "airport" || unitId === "port" || unitId === "zoo" || unitId === "leader" || unitId === "capital" || unitId === "soldier" || unitId === "dragon" || unitId === "lion" || unitId === "scientist" || unitId === "nuke" || unitId === "money" || unitId === "missile"
     ? unitId
     : unitId === "bluesMusician"
       ? "blues-musician"
@@ -49,7 +50,7 @@ export const getProceduralModel = (assetId: string): ProceduralModelDescriptor =
               : "person";
   const healthBarHeight = kind === "capital"
     ? 1.68
-    : kind === "leader" || kind === "scientist" || kind === "blues-musician" || kind === "missile"
+    : kind === "zuckerbird" || kind === "leader" || kind === "scientist" || kind === "blues-musician" || kind === "missile"
       ? 1.52
       : kind === "airport" || kind === "construction-worker" || kind === "soldier" || kind === "dragon" || kind === "nuke"
         ? 1.42

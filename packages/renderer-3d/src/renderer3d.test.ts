@@ -184,6 +184,14 @@ describe("renderer-3d presentation behavior", () => {
     expect(getProceduralModel("unit:future-lion").kind).toBe("person");
   });
 
+  it("resolves Zuckerbird with clearance above its hair while retaining person fallbacks", () => {
+    for (const assetId of ["unit:zuckerbird", "zuckerbird"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "zuckerbird", healthBarHeight: 1.52, source: "project-owned-procedural" });
+    }
+    expect(getProceduralModel("unit:priest").kind).toBe("person");
+    expect(getProceduralModel("unit:future-zuckerbird").kind).toBe("person");
+  });
+
   it("resolves the scientist's distinct model with hair and flask clearance while retaining person fallbacks", () => {
     for (const assetId of ["unit:scientist", "scientist"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "scientist", healthBarHeight: 1.52, source: "project-owned-procedural" });
