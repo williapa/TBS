@@ -7,6 +7,7 @@ export type PrimitiveModelKind =
   | "dragon"
   | "leader"
   | "lion"
+  | "money"
   | "nuke"
   | "person"
   | "scientist"
@@ -30,7 +31,7 @@ const vehicleIds = new Set(["ambulance", "bigTruck", "sub", "truck"]);
 
 export const getProceduralModel = (assetId: string): ProceduralModelDescriptor => {
   const unitId = assetId.startsWith("unit:") ? assetId.slice("unit:".length) : assetId;
-  const kind = unitId === "zoo" || unitId === "leader" || unitId === "capital" || unitId === "soldier" || unitId === "dragon" || unitId === "lion" || unitId === "scientist" || unitId === "nuke"
+  const kind = unitId === "zoo" || unitId === "leader" || unitId === "capital" || unitId === "soldier" || unitId === "dragon" || unitId === "lion" || unitId === "scientist" || unitId === "nuke" || unitId === "money"
     ? unitId
     : unitId === "bluesMusician"
       ? "blues-musician"
