@@ -78,7 +78,7 @@ describe("renderer-3d presentation behavior", () => {
   });
 
   it("provides project-owned procedural fallbacks for known and future assets", () => {
-    expect(getProceduralModel("unit:bank").kind).toBe("building");
+    expect(getProceduralModel("unit:house").kind).toBe("building");
     expect(getProceduralModel("unit:pathfinder")).toEqual({ assetId: "unit:pathfinder", kind: "person", healthBarHeight: 1.18, source: "project-owned-procedural" });
   });
 
@@ -106,12 +106,21 @@ describe("renderer-3d presentation behavior", () => {
     expect(getProceduralModel("unit:future-nuke").kind).toBe("person");
   });
 
+  it("resolves the bank with health clearance above its rooftop coin", () => {
+    for (const assetId of ["unit:bank", "bank"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "bank", healthBarHeight: 1.55, source: "project-owned-procedural" });
+    }
+    expect(getProceduralModel("unit:capital").kind).toBe("capital");
+    expect(getProceduralModel("unit:house").kind).toBe("building");
+    expect(getProceduralModel("unit:future-bank").kind).toBe("person");
+  });
+
   it("resolves the airport with health clearance above its control tower", () => {
     for (const assetId of ["unit:airport", "airport"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "airport", healthBarHeight: 1.42, source: "project-owned-procedural" });
     }
     expect(getProceduralModel("unit:airplane").kind).toBe("aircraft");
-    expect(getProceduralModel("unit:bank").kind).toBe("building");
+    expect(getProceduralModel("unit:house").kind).toBe("building");
     expect(getProceduralModel("unit:future-airport").kind).toBe("person");
   });
 
@@ -119,7 +128,7 @@ describe("renderer-3d presentation behavior", () => {
     for (const assetId of ["unit:capital", "capital"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "capital", healthBarHeight: 1.68, source: "project-owned-procedural" });
     }
-    for (const unitId of ["bank", "church", "college", "factory", "house", "lab", "office"]) {
+    for (const unitId of ["church", "college", "factory", "house", "lab", "office"]) {
       expect(getProceduralModel(`unit:${unitId}`).kind).toBe("building");
     }
   });
@@ -128,7 +137,7 @@ describe("renderer-3d presentation behavior", () => {
     for (const assetId of ["unit:port", "port"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "port", healthBarHeight: 1.55, source: "project-owned-procedural" });
     }
-    expect(getProceduralModel("unit:bank").kind).toBe("building");
+    expect(getProceduralModel("unit:house").kind).toBe("building");
     expect(getProceduralModel("unit:future-port").kind).toBe("person");
   });
 
@@ -138,7 +147,7 @@ describe("renderer-3d presentation behavior", () => {
     }
     expect(getProceduralModel("unit:zookeeper").kind).toBe("person");
     expect(getProceduralModel("unit:future-zoo").kind).toBe("person");
-    expect(getProceduralModel("unit:bank").kind).toBe("building");
+    expect(getProceduralModel("unit:house").kind).toBe("building");
   });
 
   it("resolves the leader's distinct model without changing other people or unknown assets", () => {
