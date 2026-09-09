@@ -82,14 +82,20 @@ describe("renderer-3d presentation behavior", () => {
     expect(getProceduralModel("unit:pathfinder")).toEqual({ assetId: "unit:pathfinder", kind: "person", healthBarHeight: 1.18, source: "project-owned-procedural" });
   });
 
-  it("resolves the truck with clearance above its cab while retaining other vehicle fallbacks", () => {
+  it("resolves the truck with clearance above its cab while retaining the ambulance fallback", () => {
     for (const assetId of ["unit:truck", "truck"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "truck", healthBarHeight: 1.18, source: "project-owned-procedural" });
     }
-    for (const assetId of ["unit:ambulance", "unit:sub"]) {
-      expect(getProceduralModel(assetId).kind).toBe("vehicle");
-    }
+    expect(getProceduralModel("unit:ambulance").kind).toBe("vehicle");
     expect(getProceduralModel("unit:future-truck").kind).toBe("person");
+  });
+
+  it("resolves the partially surfaced submarine with clearance above its periscope", () => {
+    for (const assetId of ["unit:sub", "sub"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "sub", healthBarHeight: 1.18, source: "project-owned-procedural" });
+    }
+    expect(getProceduralModel("unit:ambulance").kind).toBe("vehicle");
+    expect(getProceduralModel("unit:future-sub").kind).toBe("person");
   });
 
   it("resolves the big truck as a semi with clearance above its trailer and exhaust stacks", () => {
@@ -153,7 +159,7 @@ describe("renderer-3d presentation behavior", () => {
     for (const assetId of ["unit:capital", "capital"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "capital", healthBarHeight: 1.68, source: "project-owned-procedural" });
     }
-    for (const unitId of ["house", "lab", "office"]) {
+    for (const unitId of ["house", "lab"]) {
       expect(getProceduralModel(`unit:${unitId}`).kind).toBe("building");
     }
   });
@@ -162,10 +168,20 @@ describe("renderer-3d presentation behavior", () => {
     for (const assetId of ["unit:college", "college"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "college", healthBarHeight: 1.55, source: "project-owned-procedural" });
     }
-    for (const unitId of ["house", "lab", "office"]) {
+    for (const unitId of ["house", "lab"]) {
       expect(getProceduralModel(`unit:${unitId}`).kind).toBe("building");
     }
     expect(getProceduralModel("unit:future-college").kind).toBe("person");
+  });
+
+  it("resolves the office with clearance above its rooftop equipment", () => {
+    for (const assetId of ["unit:office", "office"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "office", healthBarHeight: 1.68, source: "project-owned-procedural" });
+    }
+    for (const unitId of ["house", "lab"]) {
+      expect(getProceduralModel(`unit:${unitId}`).kind).toBe("building");
+    }
+    expect(getProceduralModel("unit:future-office").kind).toBe("person");
   });
 
   it("resolves the church with health clearance above its steeple cross", () => {
