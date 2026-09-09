@@ -18,6 +18,7 @@ import { DragonModel } from "../assets/DragonModel.js";
 import { getProceduralModel } from "../assets/modelManifest.js";
 import { LeaderModel } from "../assets/LeaderModel.js";
 import { LionModel } from "../assets/LionModel.js";
+import { MissileModel } from "../assets/MissileModel.js";
 import { MoneyModel } from "../assets/MoneyModel.js";
 import { NukeModel } from "../assets/NukeModel.js";
 import { PortModel } from "../assets/PortModel.js";
@@ -116,6 +117,7 @@ const PrimitiveModel = ({ entity }: Readonly<{ entity: BoardEntityViewModel }>) 
   if (model.kind === "dragon") return <DragonModel color={color} orientation={entity.orientation} />;
   if (model.kind === "leader") return <LeaderModel color={color} orientation={entity.orientation} />;
   if (model.kind === "lion") return <LionModel color={color} orientation={entity.orientation} />;
+  if (model.kind === "missile") return <MissileModel orientation={entity.orientation} />;
   if (model.kind === "money") return <MoneyModel orientation={entity.orientation} />;
   if (model.kind === "nuke") return <NukeModel orientation={entity.orientation} />;
   if (model.kind === "port") return <PortModel color={color} orientation={entity.orientation} />;

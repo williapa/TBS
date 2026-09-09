@@ -89,11 +89,20 @@ describe("renderer-3d presentation behavior", () => {
     expect(getProceduralModel("unit:future-money").kind).toBe("person");
   });
 
-  it("resolves the nuke's distinct bomb model while preserving missile routing", () => {
+  it("resolves the missile's distinct neutral model with clearance above its pointed nose", () => {
+    for (const assetId of ["unit:missile", "missile"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "missile", healthBarHeight: 1.52, source: "project-owned-procedural" });
+    }
+    for (const assetId of ["unit:airplane", "unit:helicopter"]) {
+      expect(getProceduralModel(assetId).kind).toBe("aircraft");
+    }
+    expect(getProceduralModel("unit:future-missile").kind).toBe("person");
+  });
+
+  it("resolves the nuke's distinct bomb model", () => {
     for (const assetId of ["unit:nuke", "nuke"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "nuke", healthBarHeight: 1.42, source: "project-owned-procedural" });
     }
-    expect(getProceduralModel("unit:missile").kind).toBe("aircraft");
     expect(getProceduralModel("unit:future-nuke").kind).toBe("person");
   });
 
