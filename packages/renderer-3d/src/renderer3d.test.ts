@@ -86,9 +86,18 @@ describe("renderer-3d presentation behavior", () => {
     for (const assetId of ["unit:capital", "capital"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "capital", healthBarHeight: 1.68, source: "project-owned-procedural" });
     }
-    for (const unitId of ["airport", "bank", "church", "college", "factory", "house", "lab", "office", "port", "zoo"]) {
+    for (const unitId of ["airport", "bank", "church", "college", "factory", "house", "lab", "office", "port"]) {
       expect(getProceduralModel(`unit:${unitId}`).kind).toBe("building");
     }
+  });
+
+  it("resolves the zoo's distinct enclosure with clearance above the giraffe and entrance", () => {
+    for (const assetId of ["unit:zoo", "zoo"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "zoo", healthBarHeight: 1.55, source: "project-owned-procedural" });
+    }
+    expect(getProceduralModel("unit:zookeeper").kind).toBe("person");
+    expect(getProceduralModel("unit:future-zoo").kind).toBe("person");
+    expect(getProceduralModel("unit:bank").kind).toBe("building");
   });
 
   it("resolves the leader's distinct model without changing other people or unknown assets", () => {

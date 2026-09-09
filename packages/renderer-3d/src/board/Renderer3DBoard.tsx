@@ -20,6 +20,7 @@ import { LeaderModel } from "../assets/LeaderModel.js";
 import { LionModel } from "../assets/LionModel.js";
 import { ScientistModel } from "../assets/ScientistModel.js";
 import { SoldierModel } from "../assets/SoldierModel.js";
+import { ZooModel } from "../assets/ZooModel.js";
 import { initialCameraState, type CameraIntent, type StrategyCameraState, updateCameraState } from "../camera/cameraState.js";
 import { cellHighlightRenderOrder, targetHighlightColor, targetHighlightContrastColor } from "./highlightColor.js";
 import { healthBarFill, healthBarTrack } from "./healthBarLayout.js";
@@ -114,6 +115,7 @@ const PrimitiveModel = ({ entity }: Readonly<{ entity: BoardEntityViewModel }>) 
   if (model.kind === "lion") return <LionModel color={color} orientation={entity.orientation} />;
   if (model.kind === "scientist") return <ScientistModel color={color} orientation={entity.orientation} />;
   if (model.kind === "soldier") return <SoldierModel color={color} orientation={entity.orientation} />;
+  if (model.kind === "zoo") return <ZooModel color={color} orientation={entity.orientation} />;
   if (model.kind === "building") return (
     <group>
       <mesh castShadow position={[0, 0.48, 0]}><boxGeometry args={[0.72, 0.9, 0.72]} /><meshStandardMaterial color={color} roughness={0.7} /></mesh>
