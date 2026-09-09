@@ -8,6 +8,7 @@ export type PrimitiveModelKind =
   | "capital"
   | "construction-worker"
   | "dragon"
+  | "factory"
   | "leader"
   | "lion"
   | "missile"
@@ -30,7 +31,7 @@ export type ProceduralModelDescriptor = Readonly<{
 }>;
 
 const buildingIds = new Set([
-  "church", "college", "factory", "house", "lab",
+  "church", "college", "house", "lab",
   "office",
 ]);
 const aircraftIds = new Set(["airplane", "helicopter"]);
@@ -38,7 +39,7 @@ const vehicleIds = new Set(["ambulance", "sub"]);
 
 export const getProceduralModel = (assetId: string): ProceduralModelDescriptor => {
   const unitId = assetId.startsWith("unit:") ? assetId.slice("unit:".length) : assetId;
-  const kind = unitId === "truck" || unitId === "bank" || unitId === "zuckerbird" || unitId === "airport" || unitId === "port" || unitId === "zoo" || unitId === "leader" || unitId === "capital" || unitId === "soldier" || unitId === "dragon" || unitId === "lion" || unitId === "scientist" || unitId === "nuke" || unitId === "money" || unitId === "missile"
+  const kind = unitId === "factory" || unitId === "truck" || unitId === "bank" || unitId === "zuckerbird" || unitId === "airport" || unitId === "port" || unitId === "zoo" || unitId === "leader" || unitId === "capital" || unitId === "soldier" || unitId === "dragon" || unitId === "lion" || unitId === "scientist" || unitId === "nuke" || unitId === "money" || unitId === "missile"
     ? unitId
     : unitId === "bigTruck"
       ? "big-truck"
@@ -59,7 +60,7 @@ export const getProceduralModel = (assetId: string): ProceduralModelDescriptor =
       ? 1.52
       : kind === "airport" || kind === "construction-worker" || kind === "soldier" || kind === "dragon" || kind === "nuke"
         ? 1.42
-        : kind === "bank" || kind === "zoo" || kind === "port"
+        : kind === "factory" || kind === "bank" || kind === "zoo" || kind === "port"
           ? 1.55
           : kind === "lion"
             ? 1.32

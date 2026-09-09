@@ -141,11 +141,19 @@ describe("renderer-3d presentation behavior", () => {
     expect(getProceduralModel("unit:future-airport").kind).toBe("person");
   });
 
+  it("resolves the factory with health clearance above its smokestacks", () => {
+    for (const assetId of ["unit:factory", "factory"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "factory", healthBarHeight: 1.55, source: "project-owned-procedural" });
+    }
+    expect(getProceduralModel("unit:house").kind).toBe("building");
+    expect(getProceduralModel("unit:future-factory").kind).toBe("person");
+  });
+
   it("resolves the capital's distinct model with health clearance while retaining other building fallbacks", () => {
     for (const assetId of ["unit:capital", "capital"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "capital", healthBarHeight: 1.68, source: "project-owned-procedural" });
     }
-    for (const unitId of ["church", "college", "factory", "house", "lab", "office"]) {
+    for (const unitId of ["church", "college", "house", "lab", "office"]) {
       expect(getProceduralModel(`unit:${unitId}`).kind).toBe("building");
     }
   });

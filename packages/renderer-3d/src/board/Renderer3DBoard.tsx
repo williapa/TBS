@@ -18,6 +18,7 @@ import { BluesMusicianModel } from "../assets/BluesMusicianModel.js";
 import { CapitalModel } from "../assets/CapitalModel.js";
 import { ConstructionWorkerModel } from "../assets/ConstructionWorkerModel.js";
 import { DragonModel } from "../assets/DragonModel.js";
+import { FactoryModel } from "../assets/FactoryModel.js";
 import { getProceduralModel } from "../assets/modelManifest.js";
 import { LeaderModel } from "../assets/LeaderModel.js";
 import { LionModel } from "../assets/LionModel.js";
@@ -123,6 +124,7 @@ const PrimitiveModel = ({ entity }: Readonly<{ entity: BoardEntityViewModel }>) 
   if (model.kind === "capital") return <CapitalModel color={color} orientation={entity.orientation} />;
   if (model.kind === "construction-worker") return <ConstructionWorkerModel color={color} orientation={entity.orientation} />;
   if (model.kind === "dragon") return <DragonModel color={color} orientation={entity.orientation} />;
+  if (model.kind === "factory") return <FactoryModel color={color} orientation={entity.orientation} />;
   if (model.kind === "leader") return <LeaderModel color={color} orientation={entity.orientation} />;
   if (model.kind === "lion") return <LionModel color={color} orientation={entity.orientation} />;
   if (model.kind === "missile") return <MissileModel orientation={entity.orientation} />;
