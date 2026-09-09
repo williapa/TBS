@@ -5,6 +5,7 @@ export type PrimitiveModelKind =
   | "construction-worker"
   | "leader"
   | "person"
+  | "soldier"
   | "vehicle";
 
 export type ProceduralModelDescriptor = Readonly<{
@@ -23,7 +24,7 @@ const vehicleIds = new Set(["ambulance", "bigTruck", "sub", "truck"]);
 
 export const getProceduralModel = (assetId: string): ProceduralModelDescriptor => {
   const unitId = assetId.startsWith("unit:") ? assetId.slice("unit:".length) : assetId;
-  const kind = unitId === "leader" || unitId === "capital"
+  const kind = unitId === "leader" || unitId === "capital" || unitId === "soldier"
     ? unitId
     : unitId === "constructionWorker"
       ? "construction-worker"
@@ -38,7 +39,7 @@ export const getProceduralModel = (assetId: string): ProceduralModelDescriptor =
     ? 1.68
     : kind === "leader"
       ? 1.52
-      : kind === "construction-worker"
+      : kind === "construction-worker" || kind === "soldier"
         ? 1.42
         : 1.18;
   return { assetId, kind, healthBarHeight, source: "project-owned-procedural" };

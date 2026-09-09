@@ -46,7 +46,7 @@ Never use a service-role key in browser or gateway tests.
 
 ## Distributed browser acceptance
 
-The standalone local-game checks can run without Supabase: after `pnpm build`, run `pnpm exec playwright test tests/e2e/solo-mode.spec.js tests/e2e/capital-model.spec.js`. The capital case checks mesh selection and the spawn menu before and after camera rotation, renderer switching, and browser errors; it attaches front and rotated screenshots showing both team colors alongside the generic building fallback.
+The standalone local-game checks can run without Supabase: after `pnpm build`, run `pnpm exec playwright test tests/e2e/solo-mode.spec.js tests/e2e/capital-model.spec.js tests/e2e/soldier-model.spec.js`. The model cases check mesh selection and action menus before and after camera rotation, renderer switching, and browser errors; they attach front and rotated screenshots showing both team colors alongside generic building/person fallbacks. The soldier manifest test also checks dedicated routing and helmet health-bar clearance.
 
 Install the pinned browser once with `pnpm exec playwright install chromium`, keep both local Supabase and `pnpm edge:serve` running, then run `pnpm test:e2e`. Its lifecycle pre-step rebuilds all workspace and Edge artifacts before Playwright starts, preventing ignored package output from becoming stale.
 

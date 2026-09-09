@@ -15,6 +15,7 @@ import { CapitalModel } from "../assets/CapitalModel.js";
 import { ConstructionWorkerModel } from "../assets/ConstructionWorkerModel.js";
 import { getProceduralModel } from "../assets/modelManifest.js";
 import { LeaderModel } from "../assets/LeaderModel.js";
+import { SoldierModel } from "../assets/SoldierModel.js";
 import { initialCameraState, type CameraIntent, type StrategyCameraState, updateCameraState } from "../camera/cameraState.js";
 import { cellHighlightRenderOrder, targetHighlightColor, targetHighlightContrastColor } from "./highlightColor.js";
 import { healthBarFill, healthBarTrack } from "./healthBarLayout.js";
@@ -104,6 +105,7 @@ const PrimitiveModel = ({ entity }: Readonly<{ entity: BoardEntityViewModel }>) 
   if (model.kind === "capital") return <CapitalModel color={color} orientation={entity.orientation} />;
   if (model.kind === "construction-worker") return <ConstructionWorkerModel color={color} orientation={entity.orientation} />;
   if (model.kind === "leader") return <LeaderModel color={color} orientation={entity.orientation} />;
+  if (model.kind === "soldier") return <SoldierModel color={color} orientation={entity.orientation} />;
   if (model.kind === "building") return (
     <group>
       <mesh castShadow position={[0, 0.48, 0]}><boxGeometry args={[0.72, 0.9, 0.72]} /><meshStandardMaterial color={color} roughness={0.7} /></mesh>

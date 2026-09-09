@@ -95,7 +95,7 @@ describe("renderer-3d presentation behavior", () => {
     for (const assetId of ["unit:leader", "leader"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "leader", healthBarHeight: 1.52, source: "project-owned-procedural" });
     }
-    for (const assetId of ["unit:soldier", "unit:priest", "unit:future-leader"]) {
+    for (const assetId of ["unit:worker", "unit:priest", "unit:future-leader"]) {
       expect(getProceduralModel(assetId).kind).toBe("person");
     }
   });
@@ -105,6 +105,15 @@ describe("renderer-3d presentation behavior", () => {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "construction-worker", healthBarHeight: 1.42, source: "project-owned-procedural" });
     }
     for (const assetId of ["unit:worker", "unit:engineer", "unit:future-constructionWorker"]) {
+      expect(getProceduralModel(assetId).kind).toBe("person");
+    }
+  });
+
+  it("resolves the soldier's distinct model with helmet clearance while retaining person fallbacks", () => {
+    for (const assetId of ["unit:soldier", "soldier"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "soldier", healthBarHeight: 1.42, source: "project-owned-procedural" });
+    }
+    for (const assetId of ["unit:warrior", "unit:priest", "unit:future-soldier"]) {
       expect(getProceduralModel(assetId).kind).toBe("person");
     }
   });
