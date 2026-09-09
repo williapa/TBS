@@ -101,9 +101,17 @@ describe("renderer-3d presentation behavior", () => {
     for (const assetId of ["unit:capital", "capital"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "capital", healthBarHeight: 1.68, source: "project-owned-procedural" });
     }
-    for (const unitId of ["airport", "bank", "church", "college", "factory", "house", "lab", "office", "port"]) {
+    for (const unitId of ["airport", "bank", "church", "college", "factory", "house", "lab", "office"]) {
       expect(getProceduralModel(`unit:${unitId}`).kind).toBe("building");
     }
+  });
+
+  it("resolves the port with health clearance above its crane", () => {
+    for (const assetId of ["unit:port", "port"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "port", healthBarHeight: 1.55, source: "project-owned-procedural" });
+    }
+    expect(getProceduralModel("unit:airport").kind).toBe("building");
+    expect(getProceduralModel("unit:future-port").kind).toBe("person");
   });
 
   it("resolves the zoo's distinct enclosure with clearance above the giraffe and entrance", () => {
