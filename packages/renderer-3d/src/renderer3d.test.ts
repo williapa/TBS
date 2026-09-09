@@ -82,6 +82,15 @@ describe("renderer-3d presentation behavior", () => {
     expect(getProceduralModel("unit:pathfinder")).toEqual({ assetId: "unit:pathfinder", kind: "person", healthBarHeight: 1.18, source: "project-owned-procedural" });
   });
 
+  it("resolves the nuke's distinct bomb model while preserving other object fallbacks", () => {
+    for (const assetId of ["unit:nuke", "nuke"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "nuke", healthBarHeight: 1.42, source: "project-owned-procedural" });
+    }
+    expect(getProceduralModel("unit:missile").kind).toBe("aircraft");
+    expect(getProceduralModel("unit:money").kind).toBe("person");
+    expect(getProceduralModel("unit:future-nuke").kind).toBe("person");
+  });
+
   it("resolves the capital's distinct model with health clearance while retaining other building fallbacks", () => {
     for (const assetId of ["unit:capital", "capital"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "capital", healthBarHeight: 1.68, source: "project-owned-procedural" });
