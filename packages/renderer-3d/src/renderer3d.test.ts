@@ -86,10 +86,17 @@ describe("renderer-3d presentation behavior", () => {
     for (const assetId of ["unit:truck", "truck"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "truck", healthBarHeight: 1.18, source: "project-owned-procedural" });
     }
-    for (const assetId of ["unit:bigTruck", "unit:ambulance", "unit:sub"]) {
+    for (const assetId of ["unit:ambulance", "unit:sub"]) {
       expect(getProceduralModel(assetId).kind).toBe("vehicle");
     }
     expect(getProceduralModel("unit:future-truck").kind).toBe("person");
+  });
+
+  it("resolves the big truck as a semi with clearance above its trailer and exhaust stacks", () => {
+    for (const assetId of ["unit:bigTruck", "bigTruck"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "big-truck", healthBarHeight: 1.52, source: "project-owned-procedural" });
+    }
+    expect(getProceduralModel("unit:truck").kind).toBe("truck");
   });
 
   it("resolves the moneybag with clearance above the tied neck", () => {

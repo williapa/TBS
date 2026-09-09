@@ -13,6 +13,7 @@ import type {
 import { entityWorldPosition } from "../animation/entityMotion.js";
 import { AirportModel } from "../assets/AirportModel.js";
 import { BankModel } from "../assets/BankModel.js";
+import { BigTruckModel } from "../assets/BigTruckModel.js";
 import { BluesMusicianModel } from "../assets/BluesMusicianModel.js";
 import { CapitalModel } from "../assets/CapitalModel.js";
 import { ConstructionWorkerModel } from "../assets/ConstructionWorkerModel.js";
@@ -117,6 +118,7 @@ const PrimitiveModel = ({ entity }: Readonly<{ entity: BoardEntityViewModel }>) 
   const color = teamColor(entity.teamId);
   if (model.kind === "airport") return <AirportModel color={color} orientation={entity.orientation} />;
   if (model.kind === "bank") return <BankModel color={color} orientation={entity.orientation} />;
+  if (model.kind === "big-truck") return <BigTruckModel color={color} orientation={entity.orientation} />;
   if (model.kind === "blues-musician") return <BluesMusicianModel color={color} orientation={entity.orientation} />;
   if (model.kind === "capital") return <CapitalModel color={color} orientation={entity.orientation} />;
   if (model.kind === "construction-worker") return <ConstructionWorkerModel color={color} orientation={entity.orientation} />;
