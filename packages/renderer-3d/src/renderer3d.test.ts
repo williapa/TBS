@@ -118,13 +118,20 @@ describe("renderer-3d presentation behavior", () => {
     }
   });
 
-  it("resolves the dragon's distinct model with wing clearance while retaining animal fallbacks", () => {
+  it("resolves the dragon's distinct model with wing clearance while retaining unknown asset fallbacks", () => {
     for (const assetId of ["unit:dragon", "dragon"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "dragon", healthBarHeight: 1.42, source: "project-owned-procedural" });
     }
-    for (const assetId of ["unit:lion", "unit:future-dragon"]) {
+    for (const assetId of ["unit:future-animal", "unit:future-dragon"]) {
       expect(getProceduralModel(assetId).kind).toBe("person");
     }
+  });
+
+  it("resolves the lion's distinct model with mane clearance while retaining unknown asset fallbacks", () => {
+    for (const assetId of ["unit:lion", "lion"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "lion", healthBarHeight: 1.32, source: "project-owned-procedural" });
+    }
+    expect(getProceduralModel("unit:future-lion").kind).toBe("person");
   });
 
   it("uses terrain-safe solid action colors while selection stays white", () => {
