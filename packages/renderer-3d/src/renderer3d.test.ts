@@ -82,6 +82,16 @@ describe("renderer-3d presentation behavior", () => {
     expect(getProceduralModel("unit:pathfinder")).toEqual({ assetId: "unit:pathfinder", kind: "person", healthBarHeight: 1.18, source: "project-owned-procedural" });
   });
 
+  it("resolves the truck with clearance above its cab while retaining other vehicle fallbacks", () => {
+    for (const assetId of ["unit:truck", "truck"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "truck", healthBarHeight: 1.18, source: "project-owned-procedural" });
+    }
+    for (const assetId of ["unit:bigTruck", "unit:ambulance", "unit:sub"]) {
+      expect(getProceduralModel(assetId).kind).toBe("vehicle");
+    }
+    expect(getProceduralModel("unit:future-truck").kind).toBe("person");
+  });
+
   it("resolves the moneybag with clearance above the tied neck", () => {
     for (const assetId of ["unit:money", "money"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "money", healthBarHeight: 1.18, source: "project-owned-procedural" });
