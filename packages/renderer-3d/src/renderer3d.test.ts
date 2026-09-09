@@ -153,9 +153,19 @@ describe("renderer-3d presentation behavior", () => {
     for (const assetId of ["unit:capital", "capital"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "capital", healthBarHeight: 1.68, source: "project-owned-procedural" });
     }
-    for (const unitId of ["college", "house", "lab", "office"]) {
+    for (const unitId of ["house", "lab", "office"]) {
       expect(getProceduralModel(`unit:${unitId}`).kind).toBe("building");
     }
+  });
+
+  it("resolves the college with clearance above its mortarboard and preserves other building fallbacks", () => {
+    for (const assetId of ["unit:college", "college"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "college", healthBarHeight: 1.55, source: "project-owned-procedural" });
+    }
+    for (const unitId of ["house", "lab", "office"]) {
+      expect(getProceduralModel(`unit:${unitId}`).kind).toBe("building");
+    }
+    expect(getProceduralModel("unit:future-college").kind).toBe("person");
   });
 
   it("resolves the church with health clearance above its steeple cross", () => {

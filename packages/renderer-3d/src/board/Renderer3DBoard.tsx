@@ -17,6 +17,7 @@ import { BigTruckModel } from "../assets/BigTruckModel.js";
 import { BluesMusicianModel } from "../assets/BluesMusicianModel.js";
 import { CapitalModel } from "../assets/CapitalModel.js";
 import { ChurchModel } from "../assets/ChurchModel.js";
+import { CollegeModel } from "../assets/CollegeModel.js";
 import { ConstructionWorkerModel } from "../assets/ConstructionWorkerModel.js";
 import { DragonModel } from "../assets/DragonModel.js";
 import { FactoryModel } from "../assets/FactoryModel.js";
@@ -124,6 +125,7 @@ const PrimitiveModel = ({ entity }: Readonly<{ entity: BoardEntityViewModel }>) 
   if (model.kind === "blues-musician") return <BluesMusicianModel color={color} orientation={entity.orientation} />;
   if (model.kind === "capital") return <CapitalModel color={color} orientation={entity.orientation} />;
   if (model.kind === "church") return <ChurchModel color={color} orientation={entity.orientation} />;
+  if (model.kind === "college") return <CollegeModel color={color} orientation={entity.orientation} />;
   if (model.kind === "construction-worker") return <ConstructionWorkerModel color={color} orientation={entity.orientation} />;
   if (model.kind === "dragon") return <DragonModel color={color} orientation={entity.orientation} />;
   if (model.kind === "factory") return <FactoryModel color={color} orientation={entity.orientation} />;

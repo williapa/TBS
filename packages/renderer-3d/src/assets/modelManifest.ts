@@ -7,6 +7,7 @@ export type PrimitiveModelKind =
   | "building"
   | "capital"
   | "church"
+  | "college"
   | "construction-worker"
   | "dragon"
   | "factory"
@@ -32,7 +33,7 @@ export type ProceduralModelDescriptor = Readonly<{
 }>;
 
 const buildingIds = new Set([
-  "college", "house", "lab",
+  "house", "lab",
   "office",
 ]);
 const aircraftIds = new Set(["airplane", "helicopter"]);
@@ -40,7 +41,7 @@ const vehicleIds = new Set(["ambulance", "sub"]);
 
 export const getProceduralModel = (assetId: string): ProceduralModelDescriptor => {
   const unitId = assetId.startsWith("unit:") ? assetId.slice("unit:".length) : assetId;
-  const kind = unitId === "church" || unitId === "factory" || unitId === "truck" || unitId === "bank" || unitId === "zuckerbird" || unitId === "airport" || unitId === "port" || unitId === "zoo" || unitId === "leader" || unitId === "capital" || unitId === "soldier" || unitId === "dragon" || unitId === "lion" || unitId === "scientist" || unitId === "nuke" || unitId === "money" || unitId === "missile"
+  const kind = unitId === "college" || unitId === "church" || unitId === "factory" || unitId === "truck" || unitId === "bank" || unitId === "zuckerbird" || unitId === "airport" || unitId === "port" || unitId === "zoo" || unitId === "leader" || unitId === "capital" || unitId === "soldier" || unitId === "dragon" || unitId === "lion" || unitId === "scientist" || unitId === "nuke" || unitId === "money" || unitId === "missile"
     ? unitId
     : unitId === "bigTruck"
       ? "big-truck"
@@ -63,7 +64,7 @@ export const getProceduralModel = (assetId: string): ProceduralModelDescriptor =
         ? 1.52
         : kind === "airport" || kind === "construction-worker" || kind === "soldier" || kind === "dragon" || kind === "nuke"
           ? 1.42
-          : kind === "factory" || kind === "bank" || kind === "zoo" || kind === "port"
+          : kind === "college" || kind === "factory" || kind === "bank" || kind === "zoo" || kind === "port"
             ? 1.55
             : kind === "lion"
               ? 1.32
