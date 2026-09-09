@@ -17,6 +17,7 @@ import { DragonModel } from "../assets/DragonModel.js";
 import { getProceduralModel } from "../assets/modelManifest.js";
 import { LeaderModel } from "../assets/LeaderModel.js";
 import { LionModel } from "../assets/LionModel.js";
+import { ScientistModel } from "../assets/ScientistModel.js";
 import { SoldierModel } from "../assets/SoldierModel.js";
 import { initialCameraState, type CameraIntent, type StrategyCameraState, updateCameraState } from "../camera/cameraState.js";
 import { cellHighlightRenderOrder, targetHighlightColor, targetHighlightContrastColor } from "./highlightColor.js";
@@ -109,6 +110,7 @@ const PrimitiveModel = ({ entity }: Readonly<{ entity: BoardEntityViewModel }>) 
   if (model.kind === "dragon") return <DragonModel color={color} orientation={entity.orientation} />;
   if (model.kind === "leader") return <LeaderModel color={color} orientation={entity.orientation} />;
   if (model.kind === "lion") return <LionModel color={color} orientation={entity.orientation} />;
+  if (model.kind === "scientist") return <ScientistModel color={color} orientation={entity.orientation} />;
   if (model.kind === "soldier") return <SoldierModel color={color} orientation={entity.orientation} />;
   if (model.kind === "building") return (
     <group>

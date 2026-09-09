@@ -7,6 +7,7 @@ export type PrimitiveModelKind =
   | "leader"
   | "lion"
   | "person"
+  | "scientist"
   | "soldier"
   | "vehicle";
 
@@ -26,7 +27,7 @@ const vehicleIds = new Set(["ambulance", "bigTruck", "sub", "truck"]);
 
 export const getProceduralModel = (assetId: string): ProceduralModelDescriptor => {
   const unitId = assetId.startsWith("unit:") ? assetId.slice("unit:".length) : assetId;
-  const kind = unitId === "leader" || unitId === "capital" || unitId === "soldier" || unitId === "dragon" || unitId === "lion"
+  const kind = unitId === "leader" || unitId === "capital" || unitId === "soldier" || unitId === "dragon" || unitId === "lion" || unitId === "scientist"
     ? unitId
     : unitId === "constructionWorker"
       ? "construction-worker"
@@ -39,7 +40,7 @@ export const getProceduralModel = (assetId: string): ProceduralModelDescriptor =
             : "person";
   const healthBarHeight = kind === "capital"
     ? 1.68
-    : kind === "leader"
+    : kind === "leader" || kind === "scientist"
       ? 1.52
       : kind === "construction-worker" || kind === "soldier" || kind === "dragon"
         ? 1.42

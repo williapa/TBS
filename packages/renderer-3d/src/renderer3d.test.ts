@@ -134,6 +134,15 @@ describe("renderer-3d presentation behavior", () => {
     expect(getProceduralModel("unit:future-lion").kind).toBe("person");
   });
 
+  it("resolves the scientist's distinct model with hair and flask clearance while retaining person fallbacks", () => {
+    for (const assetId of ["unit:scientist", "scientist"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "scientist", healthBarHeight: 1.52, source: "project-owned-procedural" });
+    }
+    for (const assetId of ["unit:worker", "unit:engineer", "unit:priest", "unit:future-scientist"]) {
+      expect(getProceduralModel(assetId).kind).toBe("person");
+    }
+  });
+
   it("uses terrain-safe solid action colors while selection stays white", () => {
     const targets = [
       ["attack", "#ff3b5c"],
