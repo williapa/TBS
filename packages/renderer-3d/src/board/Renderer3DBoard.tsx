@@ -25,6 +25,7 @@ import { DoctorModel } from "../assets/DoctorModel.js";
 import { DragonModel } from "../assets/DragonModel.js";
 import { FactoryModel } from "../assets/FactoryModel.js";
 import { getProceduralModel } from "../assets/modelManifest.js";
+import { HelicopterModel } from "../assets/HelicopterModel.js";
 import { LabModel } from "../assets/LabModel.js";
 import { LeaderModel } from "../assets/LeaderModel.js";
 import { LionModel } from "../assets/LionModel.js";
@@ -127,6 +128,7 @@ const TerrainInstances = ({ batch, onIntent }: Readonly<{ batch: TerrainBatch; o
 const PrimitiveModel = ({ entity }: Readonly<{ entity: BoardEntityViewModel }>) => {
   const model = getProceduralModel(entity.assetId);
   const color = teamColor(entity.teamId);
+  if (model.kind === "helicopter") return <HelicopterModel color={color} orientation={entity.orientation} />;
   if (model.kind === "airplane") return <AirplaneModel color={color} orientation={entity.orientation} />;
   if (model.kind === "airport") return <AirportModel color={color} orientation={entity.orientation} />;
   if (model.kind === "bank") return <BankModel color={color} orientation={entity.orientation} />;
@@ -160,12 +162,6 @@ const PrimitiveModel = ({ entity }: Readonly<{ entity: BoardEntityViewModel }>) 
     <group>
       <mesh castShadow position={[0, 0.48, 0]}><boxGeometry args={[0.72, 0.9, 0.72]} /><meshStandardMaterial color={color} roughness={0.7} /></mesh>
       <mesh castShadow position={[0, 1.02, 0]} rotation={[0, Math.PI / 4, 0]}><coneGeometry args={[0.56, 0.45, 4]} /><meshStandardMaterial color="#d7dce2" /></mesh>
-    </group>
-  );
-  if (model.kind === "aircraft") return (
-    <group position={[0, 0.68, 0]} rotation={[0, entity.orientation * Math.PI / 3, 0]}>
-      <mesh castShadow rotation={[Math.PI / 2, 0, 0]}><coneGeometry args={[0.25, 1.05, 4]} /><meshStandardMaterial color={color} metalness={0.15} /></mesh>
-      <mesh castShadow scale={[0.95, 0.1, 0.28]}><boxGeometry /><meshStandardMaterial color="#e2e8f0" /></mesh>
     </group>
   );
   if (model.kind === "vehicle") return (

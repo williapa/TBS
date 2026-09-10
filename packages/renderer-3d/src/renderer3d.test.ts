@@ -71,12 +71,21 @@ describe("renderer-3d presentation behavior", () => {
     from: { q: 0, r: 0 }, to: entity.coordinate, durationMs: 300,
   } as const satisfies MoveEntityCue;
 
+  it("routes helicopters to their dedicated model with clearance above the main rotor", () => {
+    for (const assetId of ["unit:helicopter", "helicopter"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "helicopter", healthBarHeight: 1.32, source: "project-owned-procedural" });
+      expect(getProceduralModel(assetId).healthBarHeight).toBeGreaterThan(1.105);
+    }
+    expect(getProceduralModel("unit:future-helicopter").kind).toBe("person");
+    expect(getProceduralModel("unit:airplane").kind).toBe("airplane");
+  });
+
   it("routes airplanes to their dedicated model with clearance above the tail", () => {
     for (const assetId of ["unit:airplane", "airplane"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "airplane", healthBarHeight: 1.18, source: "project-owned-procedural" });
       expect(getProceduralModel(assetId).healthBarHeight).toBeGreaterThan(1.04);
     }
-    expect(getProceduralModel("unit:helicopter").kind).toBe("aircraft");
+    expect(getProceduralModel("unit:helicopter").kind).toBe("helicopter");
     expect(getProceduralModel("unit:future-airplane").kind).toBe("person");
   });
 
@@ -133,7 +142,7 @@ describe("renderer-3d presentation behavior", () => {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "missile", healthBarHeight: 1.52, source: "project-owned-procedural" });
     }
     expect(getProceduralModel("unit:airplane").kind).toBe("airplane");
-    expect(getProceduralModel("unit:helicopter").kind).toBe("aircraft");
+    expect(getProceduralModel("unit:helicopter").kind).toBe("helicopter");
     expect(getProceduralModel("unit:future-missile").kind).toBe("person");
   });
 
