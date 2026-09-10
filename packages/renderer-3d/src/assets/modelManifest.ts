@@ -13,6 +13,7 @@ export type PrimitiveModelKind =
   | "doctor"
   | "dragon"
   | "engineer"
+  | "house"
   | "helicopter"
   | "factory"
   | "lab"
@@ -43,13 +44,9 @@ export type ProceduralModelDescriptor = Readonly<{
   source: "project-owned-procedural";
 }>;
 
-const buildingIds = new Set([
-  "house",
-]);
-
 export const getProceduralModel = (assetId: string): ProceduralModelDescriptor => {
   const unitId = assetId.startsWith("unit:") ? assetId.slice("unit:".length) : assetId;
-  const kind = unitId === "worker" || unitId === "engineer" || unitId === "helicopter" || unitId === "airplane" || unitId === "priest" || unitId === "pilot" || unitId === "doctor" || unitId === "ambulance" || unitId === "lab" || unitId === "office" || unitId === "college" || unitId === "church" || unitId === "factory" || unitId === "truck" || unitId === "bank" || unitId === "zuckerbird" || unitId === "airport" || unitId === "port" || unitId === "zoo" || unitId === "leader" || unitId === "capital" || unitId === "soldier" || unitId === "sub" || unitId === "dragon" || unitId === "lion" || unitId === "scientist" || unitId === "nuke" || unitId === "money" || unitId === "missile"
+  const kind = unitId === "house" || unitId === "worker" || unitId === "engineer" || unitId === "helicopter" || unitId === "airplane" || unitId === "priest" || unitId === "pilot" || unitId === "doctor" || unitId === "ambulance" || unitId === "lab" || unitId === "office" || unitId === "college" || unitId === "church" || unitId === "factory" || unitId === "truck" || unitId === "bank" || unitId === "zuckerbird" || unitId === "airport" || unitId === "port" || unitId === "zoo" || unitId === "leader" || unitId === "capital" || unitId === "soldier" || unitId === "sub" || unitId === "dragon" || unitId === "lion" || unitId === "scientist" || unitId === "nuke" || unitId === "money" || unitId === "missile"
     ? unitId
     : unitId === "studentAthlete"
       ? "student-athlete"
@@ -59,9 +56,7 @@ export const getProceduralModel = (assetId: string): ProceduralModelDescriptor =
         ? "blues-musician"
         : unitId === "constructionWorker"
           ? "construction-worker"
-          : buildingIds.has(unitId)
-            ? "building"
-            : "person";
+          : "person";
   const healthBarHeight = kind === "church"
     ? 1.85
     : kind === "priest" || kind === "capital" || kind === "office"
@@ -72,7 +67,7 @@ export const getProceduralModel = (assetId: string): ProceduralModelDescriptor =
           ? 1.42
           : kind === "lab" || kind === "college" || kind === "factory" || kind === "bank" || kind === "zoo" || kind === "port"
             ? 1.55
-            : kind === "lion" || kind === "helicopter"
+            : kind === "house" || kind === "lion" || kind === "helicopter"
               ? 1.32
               : 1.18;
   return { assetId, kind, healthBarHeight, source: "project-owned-procedural" };

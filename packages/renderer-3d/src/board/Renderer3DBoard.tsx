@@ -28,6 +28,7 @@ import { EngineerModel } from "../assets/EngineerModel.js";
 import { FactoryModel } from "../assets/FactoryModel.js";
 import { getProceduralModel } from "../assets/modelManifest.js";
 import { HelicopterModel } from "../assets/HelicopterModel.js";
+import { HouseModel } from "../assets/HouseModel.js";
 import { LabModel } from "../assets/LabModel.js";
 import { LeaderModel } from "../assets/LeaderModel.js";
 import { LionModel } from "../assets/LionModel.js";
@@ -164,6 +165,7 @@ const PrimitiveModel = ({ entity }: Readonly<{ entity: BoardEntityViewModel }>) 
   if (model.kind === "truck") return <TruckModel color={color} orientation={entity.orientation} />;
   if (model.kind === "zuckerbird") return <ZuckerbirdModel color={color} orientation={entity.orientation} />;
   if (model.kind === "zoo") return <ZooModel color={color} orientation={entity.orientation} />;
+  if (model.kind === "house") return <HouseModel color={color} orientation={entity.orientation} />;
   if (model.kind === "building") return (
     <group>
       <mesh castShadow position={[0, 0.48, 0]}><boxGeometry args={[0.72, 0.9, 0.72]} /><meshStandardMaterial color={color} roughness={0.7} /></mesh>

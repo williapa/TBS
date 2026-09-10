@@ -96,8 +96,16 @@ describe("renderer-3d presentation behavior", () => {
   });
 
   it("provides project-owned procedural fallbacks for known and future assets", () => {
-    expect(getProceduralModel("unit:house").kind).toBe("building");
+    expect(getProceduralModel("unit:house").kind).toBe("house");
     expect(getProceduralModel("unit:pathfinder")).toEqual({ assetId: "unit:pathfinder", kind: "person", healthBarHeight: 1.18, source: "project-owned-procedural" });
+  });
+
+  it("resolves houses with health clearance above the chimney", () => {
+    for (const assetId of ["unit:house", "house"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "house", healthBarHeight: 1.32, source: "project-owned-procedural" });
+      expect(getProceduralModel(assetId).healthBarHeight).toBeGreaterThan(1.132);
+    }
+    expect(getProceduralModel("unit:future-house").kind).toBe("person");
   });
 
   it("resolves the ambulance with clearance above its emergency light bar", () => {
@@ -158,7 +166,7 @@ describe("renderer-3d presentation behavior", () => {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "bank", healthBarHeight: 1.55, source: "project-owned-procedural" });
     }
     expect(getProceduralModel("unit:capital").kind).toBe("capital");
-    expect(getProceduralModel("unit:house").kind).toBe("building");
+    expect(getProceduralModel("unit:house").kind).toBe("house");
     expect(getProceduralModel("unit:future-bank").kind).toBe("person");
   });
 
@@ -167,7 +175,7 @@ describe("renderer-3d presentation behavior", () => {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "airport", healthBarHeight: 1.42, source: "project-owned-procedural" });
     }
     expect(getProceduralModel("unit:airplane").kind).toBe("airplane");
-    expect(getProceduralModel("unit:house").kind).toBe("building");
+    expect(getProceduralModel("unit:house").kind).toBe("house");
     expect(getProceduralModel("unit:future-airport").kind).toBe("person");
   });
 
@@ -175,7 +183,7 @@ describe("renderer-3d presentation behavior", () => {
     for (const assetId of ["unit:lab", "lab"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "lab", healthBarHeight: 1.55, source: "project-owned-procedural" });
     }
-    expect(getProceduralModel("unit:house").kind).toBe("building");
+    expect(getProceduralModel("unit:house").kind).toBe("house");
     expect(getProceduralModel("unit:future-lab").kind).toBe("person");
   });
 
@@ -183,22 +191,22 @@ describe("renderer-3d presentation behavior", () => {
     for (const assetId of ["unit:factory", "factory"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "factory", healthBarHeight: 1.55, source: "project-owned-procedural" });
     }
-    expect(getProceduralModel("unit:house").kind).toBe("building");
+    expect(getProceduralModel("unit:house").kind).toBe("house");
     expect(getProceduralModel("unit:future-factory").kind).toBe("person");
   });
 
-  it("resolves the capital's distinct model with health clearance while retaining other building fallbacks", () => {
+  it("resolves the capital's distinct model with health clearance alongside the distinct house", () => {
     for (const assetId of ["unit:capital", "capital"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "capital", healthBarHeight: 1.68, source: "project-owned-procedural" });
     }
-    expect(getProceduralModel("unit:house").kind).toBe("building");
+    expect(getProceduralModel("unit:house").kind).toBe("house");
   });
 
-  it("resolves the college with clearance above its mortarboard and preserves other building fallbacks", () => {
+  it("resolves the college with clearance above its mortarboard alongside the distinct house", () => {
     for (const assetId of ["unit:college", "college"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "college", healthBarHeight: 1.55, source: "project-owned-procedural" });
     }
-    expect(getProceduralModel("unit:house").kind).toBe("building");
+    expect(getProceduralModel("unit:house").kind).toBe("house");
     expect(getProceduralModel("unit:future-college").kind).toBe("person");
   });
 
@@ -206,7 +214,7 @@ describe("renderer-3d presentation behavior", () => {
     for (const assetId of ["unit:office", "office"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "office", healthBarHeight: 1.68, source: "project-owned-procedural" });
     }
-    expect(getProceduralModel("unit:house").kind).toBe("building");
+    expect(getProceduralModel("unit:house").kind).toBe("house");
     expect(getProceduralModel("unit:future-office").kind).toBe("person");
   });
 
@@ -214,7 +222,7 @@ describe("renderer-3d presentation behavior", () => {
     for (const assetId of ["unit:church", "church"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "church", healthBarHeight: 1.85, source: "project-owned-procedural" });
     }
-    expect(getProceduralModel("unit:house").kind).toBe("building");
+    expect(getProceduralModel("unit:house").kind).toBe("house");
     expect(getProceduralModel("unit:worker").kind).toBe("worker");
     expect(getProceduralModel("unit:future-church").kind).toBe("person");
   });
@@ -223,7 +231,7 @@ describe("renderer-3d presentation behavior", () => {
     for (const assetId of ["unit:port", "port"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "port", healthBarHeight: 1.55, source: "project-owned-procedural" });
     }
-    expect(getProceduralModel("unit:house").kind).toBe("building");
+    expect(getProceduralModel("unit:house").kind).toBe("house");
     expect(getProceduralModel("unit:future-port").kind).toBe("person");
   });
 
@@ -233,7 +241,7 @@ describe("renderer-3d presentation behavior", () => {
     }
     expect(getProceduralModel("unit:zookeeper").kind).toBe("person");
     expect(getProceduralModel("unit:future-zoo").kind).toBe("person");
-    expect(getProceduralModel("unit:house").kind).toBe("building");
+    expect(getProceduralModel("unit:house").kind).toBe("house");
   });
 
   it("resolves the leader's distinct model without changing other people or unknown assets", () => {
