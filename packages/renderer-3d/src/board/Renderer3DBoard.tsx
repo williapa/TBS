@@ -45,6 +45,7 @@ import { StudentAthleteModel } from "../assets/StudentAthleteModel.js";
 import { SubModel } from "../assets/SubModel.js";
 import { TruckModel } from "../assets/TruckModel.js";
 import { ZuckerbirdModel } from "../assets/ZuckerbirdModel.js";
+import { ZookeeperModel } from "../assets/ZookeeperModel.js";
 import { ZooModel } from "../assets/ZooModel.js";
 import { initialCameraState, type CameraIntent, type StrategyCameraState, updateCameraState } from "../camera/cameraState.js";
 import { cellHighlightRenderOrder, targetHighlightColor, targetHighlightContrastColor } from "./highlightColor.js";
@@ -164,6 +165,7 @@ const PrimitiveModel = ({ entity }: Readonly<{ entity: BoardEntityViewModel }>) 
   if (model.kind === "ambulance") return <AmbulanceModel color={color} orientation={entity.orientation} />;
   if (model.kind === "truck") return <TruckModel color={color} orientation={entity.orientation} />;
   if (model.kind === "zuckerbird") return <ZuckerbirdModel color={color} orientation={entity.orientation} />;
+  if (model.kind === "zookeeper") return <ZookeeperModel color={color} orientation={entity.orientation} />;
   if (model.kind === "zoo") return <ZooModel color={color} orientation={entity.orientation} />;
   if (model.kind === "house") return <HouseModel color={color} orientation={entity.orientation} />;
   if (model.kind === "building") return (

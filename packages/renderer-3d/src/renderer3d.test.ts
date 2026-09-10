@@ -235,11 +235,18 @@ describe("renderer-3d presentation behavior", () => {
     expect(getProceduralModel("unit:future-port").kind).toBe("person");
   });
 
+  it("resolves the zookeeper with health clearance above its safari hat", () => {
+    for (const assetId of ["unit:zookeeper", "zookeeper"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "zookeeper", healthBarHeight: 1.52, source: "project-owned-procedural" });
+    }
+    expect(getProceduralModel("unit:future-zookeeper").kind).toBe("person");
+  });
+
   it("resolves the zoo's distinct enclosure with clearance above the giraffe and entrance", () => {
     for (const assetId of ["unit:zoo", "zoo"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "zoo", healthBarHeight: 1.55, source: "project-owned-procedural" });
     }
-    expect(getProceduralModel("unit:zookeeper").kind).toBe("person");
+    expect(getProceduralModel("unit:zookeeper").kind).toBe("zookeeper");
     expect(getProceduralModel("unit:future-zoo").kind).toBe("person");
     expect(getProceduralModel("unit:house").kind).toBe("house");
   });
