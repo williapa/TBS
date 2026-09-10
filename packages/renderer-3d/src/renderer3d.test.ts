@@ -237,6 +237,14 @@ describe("renderer-3d presentation behavior", () => {
     }
   });
 
+  it("resolves pilots with clearance above the flight helmet", () => {
+    for (const assetId of ["unit:pilot", "pilot"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "pilot", healthBarHeight: 1.42, source: "project-owned-procedural" });
+    }
+    expect(getProceduralModel("unit:future-pilot").kind).toBe("person");
+    expect(getProceduralModel("unit:airplane").kind).toBe("aircraft");
+  });
+
   it("resolves the soldier's distinct model with helmet clearance while retaining person fallbacks", () => {
     for (const assetId of ["unit:soldier", "soldier"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "soldier", healthBarHeight: 1.42, source: "project-owned-procedural" });

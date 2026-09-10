@@ -33,6 +33,7 @@ import { NukeModel } from "../assets/NukeModel.js";
 import { OfficeModel } from "../assets/OfficeModel.js";
 import { PortModel } from "../assets/PortModel.js";
 import { ScientistModel } from "../assets/ScientistModel.js";
+import { PilotModel } from "../assets/PilotModel.js";
 import { SoldierModel } from "../assets/SoldierModel.js";
 import { SubModel } from "../assets/SubModel.js";
 import { TruckModel } from "../assets/TruckModel.js";
@@ -144,6 +145,7 @@ const PrimitiveModel = ({ entity }: Readonly<{ entity: BoardEntityViewModel }>) 
   if (model.kind === "port") return <PortModel color={color} orientation={entity.orientation} />;
   if (model.kind === "doctor") return <DoctorModel color={color} orientation={entity.orientation} />;
   if (model.kind === "scientist") return <ScientistModel color={color} orientation={entity.orientation} />;
+  if (model.kind === "pilot") return <PilotModel color={color} orientation={entity.orientation} />;
   if (model.kind === "soldier") return <SoldierModel color={color} orientation={entity.orientation} />;
   if (model.kind === "sub") return <SubModel color={color} orientation={entity.orientation} />;
   if (model.kind === "ambulance") return <AmbulanceModel color={color} orientation={entity.orientation} />;

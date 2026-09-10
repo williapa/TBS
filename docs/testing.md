@@ -75,3 +75,5 @@ The lab model case checks mesh selection, spawning access, camera rotation, and 
 The ambulance model case checks mesh selection, attack-menu access, camera rotation, and renderer switching with both teams beside a pickup. Front and rotated screenshots cover the medical crosses, light bar, rear doors, and team stripes. Its manifest test checks dedicated routing and health-bar clearance above the light bar.
 
 The doctor model case checks mesh selection, action-menu access, camera rotation, and 2D/3D switching with both teams beside a scientist. Front and rotated screenshots cover the cap, mask, stethoscope, medical case, and team colors. Its manifest test checks dedicated routing and health-bar clearance above the cap.
+
+The pilot model case (`tests/e2e/pilot-model.spec.js`) checks mesh selection, attack-menu access, camera rotation, and renderer switching with both teams. Front and rotated screenshots cover the goggles, flight helmet, scarf, and team colors. The manifest test checks dedicated routing, helmet clearance, and aircraft and unknown-unit fallbacks.
