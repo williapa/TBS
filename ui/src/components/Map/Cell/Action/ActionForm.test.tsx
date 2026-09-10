@@ -11,7 +11,7 @@ describe("ActionForm", () => {
   test("flips an anchored menu back inside the board near its right and bottom edges", () => {
     const view = render(
       <div data-testid="board" style={{ position: "relative" }}>
-        <ActionForm left={290} onAction={vi.fn()} options={options} placement="anchored" top={290} />
+        <ActionForm left={290} onAction={vi.fn()} options={options} placement="anchored" title="Soldier options" top={290} />
       </div>,
     );
     const board = screen.getByTestId("board");
@@ -35,7 +35,7 @@ describe("ActionForm", () => {
 
     view.rerender(
       <div data-testid="board" style={{ position: "relative" }}>
-        <ActionForm left={291} onAction={vi.fn()} options={options} placement="anchored" top={291} />
+        <ActionForm left={291} onAction={vi.fn()} options={options} placement="anchored" title="Soldier options" top={291} />
       </div>,
     );
 
@@ -43,17 +43,18 @@ describe("ActionForm", () => {
   });
 
   test("uses the docked tray without an inline screen position", () => {
-    render(<ActionForm left={120} onAction={vi.fn()} options={options} placement="docked" top={160} />);
+    render(<ActionForm left={120} onAction={vi.fn()} options={options} placement="docked" title="Soldier options" top={160} />);
 
     const menu = screen.getByRole("dialog", { name: "Available actions" });
     expect(menu).toHaveClass("game-action-menu--docked");
     expect(menu).not.toHaveAttribute("style");
+    expect(screen.getByText("Soldier options")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Move" })).toHaveFocus();
   });
 
   test("maps Escape to the typed cancel action", () => {
     const onAction = vi.fn();
-    render(<ActionForm left={0} onAction={onAction} options={options} placement="docked" top={0} />);
+    render(<ActionForm left={0} onAction={onAction} options={options} placement="docked" title="Soldier options" top={0} />);
 
     fireEvent.keyDown(screen.getByRole("dialog", { name: "Available actions" }), { key: "Escape" });
     expect(onAction).toHaveBeenCalledWith("cancel");
@@ -70,6 +71,7 @@ describe("ActionForm", () => {
           { id: "cancel", label: "Cancel" },
         ]}
         placement="docked"
+        title="Capital options"
         top={0}
       />,
     );

@@ -256,6 +256,7 @@ describe("GameMap renderer lifecycle", () => {
     const anchored = screen.getByRole("dialog", { name: "Available actions" });
     expect(anchored).toHaveClass("game-action-menu--anchored");
     expect(anchored).toHaveStyle({ left: "132px", top: "172px" });
+    expect(screen.getByText("Soldier options")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Move" })).toHaveFocus();
 
     fireEvent.keyDown(anchored, { key: "Escape" });

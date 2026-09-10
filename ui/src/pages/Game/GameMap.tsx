@@ -4,6 +4,7 @@ import {
   createGameInteractionPreview,
   createInitialGameInteractionState,
   presentBoard,
+  presentUnitPanel,
   type BoardCellViewModel,
   type BoardInteractionAnchor,
   type BoardIntent,
@@ -102,6 +103,9 @@ const GameMap = ({
     events: animationEvents,
     interaction: interactionView,
   }), [animationEvents, interactionView, state]);
+  const selectedUnit = interactionState.selectedEntityId
+    ? presentUnitPanel(state, interactionState.selectedEntityId)
+    : null;
 
   const handleIntent = useCallback((intent: BoardIntent, anchor?: BoardInteractionAnchor) => {
     const menuPosition = anchor
@@ -160,6 +164,7 @@ const GameMap = ({
           onAction={(actionType) => handleIntent({ type: "choose-action", actionType })}
           options={interactionState.menu.options}
           placement={menuPlacement}
+          title={`${selectedUnit?.label ?? "Unit"} options`}
           top={interactionState.menu.position.top}
         />
       )}

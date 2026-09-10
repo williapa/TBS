@@ -17,6 +17,7 @@ const ActionForm = ({
   onAction,
   options,
   placement = "anchored",
+  title,
   top,
 }: ActionFormProps) => {
   const menuRef = useRef<HTMLFormElement>(null);
@@ -76,7 +77,7 @@ const ActionForm = ({
       role="dialog"
       style={placement === "anchored" ? position : undefined}
     >
-      <p className="game-action-menu__title">Options</p>
+      <p className="game-action-menu__title">{title}</p>
       {options.map(({ disabled, id, label, unitTypeId }) => (
         <button
           key={id}

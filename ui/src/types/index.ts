@@ -132,6 +132,7 @@ export type ActionFormProps = Readonly<{
   placement?: "anchored" | "docked";
   onAction: (action: GameMenuActionId) => void;
   options: readonly GameMenuOption[];
+  title: string;
   top: number;
   left: number;
 }>;
