@@ -82,11 +82,18 @@ describe("renderer-3d presentation behavior", () => {
     expect(getProceduralModel("unit:pathfinder")).toEqual({ assetId: "unit:pathfinder", kind: "person", healthBarHeight: 1.18, source: "project-owned-procedural" });
   });
 
-  it("resolves the truck with clearance above its cab while retaining the ambulance fallback", () => {
+  it("resolves the ambulance with clearance above its emergency light bar", () => {
+    for (const assetId of ["unit:ambulance", "ambulance"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "ambulance", healthBarHeight: 1.42, source: "project-owned-procedural" });
+    }
+    expect(getProceduralModel("unit:future-ambulance").kind).toBe("person");
+  });
+
+  it("resolves the truck with clearance above its cab alongside the distinct ambulance", () => {
     for (const assetId of ["unit:truck", "truck"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "truck", healthBarHeight: 1.18, source: "project-owned-procedural" });
     }
-    expect(getProceduralModel("unit:ambulance").kind).toBe("vehicle");
+    expect(getProceduralModel("unit:ambulance").kind).toBe("ambulance");
     expect(getProceduralModel("unit:future-truck").kind).toBe("person");
   });
 
@@ -94,7 +101,7 @@ describe("renderer-3d presentation behavior", () => {
     for (const assetId of ["unit:sub", "sub"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "sub", healthBarHeight: 1.18, source: "project-owned-procedural" });
     }
-    expect(getProceduralModel("unit:ambulance").kind).toBe("vehicle");
+    expect(getProceduralModel("unit:ambulance").kind).toBe("ambulance");
     expect(getProceduralModel("unit:future-sub").kind).toBe("person");
   });
 

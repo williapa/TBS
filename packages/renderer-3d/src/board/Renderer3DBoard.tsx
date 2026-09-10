@@ -11,6 +11,7 @@ import type {
 } from "@TBS/presentation";
 
 import { entityWorldPosition } from "../animation/entityMotion.js";
+import { AmbulanceModel } from "../assets/AmbulanceModel.js";
 import { AirportModel } from "../assets/AirportModel.js";
 import { BankModel } from "../assets/BankModel.js";
 import { BigTruckModel } from "../assets/BigTruckModel.js";
@@ -143,6 +144,7 @@ const PrimitiveModel = ({ entity }: Readonly<{ entity: BoardEntityViewModel }>) 
   if (model.kind === "scientist") return <ScientistModel color={color} orientation={entity.orientation} />;
   if (model.kind === "soldier") return <SoldierModel color={color} orientation={entity.orientation} />;
   if (model.kind === "sub") return <SubModel color={color} orientation={entity.orientation} />;
+  if (model.kind === "ambulance") return <AmbulanceModel color={color} orientation={entity.orientation} />;
   if (model.kind === "truck") return <TruckModel color={color} orientation={entity.orientation} />;
   if (model.kind === "zuckerbird") return <ZuckerbirdModel color={color} orientation={entity.orientation} />;
   if (model.kind === "zoo") return <ZooModel color={color} orientation={entity.orientation} />;
