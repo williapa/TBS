@@ -12,6 +12,7 @@ export type PrimitiveModelKind =
   | "construction-worker"
   | "doctor"
   | "dragon"
+  | "engineer"
   | "helicopter"
   | "factory"
   | "lab"
@@ -46,7 +47,7 @@ const buildingIds = new Set([
 
 export const getProceduralModel = (assetId: string): ProceduralModelDescriptor => {
   const unitId = assetId.startsWith("unit:") ? assetId.slice("unit:".length) : assetId;
-  const kind = unitId === "helicopter" || unitId === "airplane" || unitId === "priest" || unitId === "pilot" || unitId === "doctor" || unitId === "ambulance" || unitId === "lab" || unitId === "office" || unitId === "college" || unitId === "church" || unitId === "factory" || unitId === "truck" || unitId === "bank" || unitId === "zuckerbird" || unitId === "airport" || unitId === "port" || unitId === "zoo" || unitId === "leader" || unitId === "capital" || unitId === "soldier" || unitId === "sub" || unitId === "dragon" || unitId === "lion" || unitId === "scientist" || unitId === "nuke" || unitId === "money" || unitId === "missile"
+  const kind = unitId === "engineer" || unitId === "helicopter" || unitId === "airplane" || unitId === "priest" || unitId === "pilot" || unitId === "doctor" || unitId === "ambulance" || unitId === "lab" || unitId === "office" || unitId === "college" || unitId === "church" || unitId === "factory" || unitId === "truck" || unitId === "bank" || unitId === "zuckerbird" || unitId === "airport" || unitId === "port" || unitId === "zoo" || unitId === "leader" || unitId === "capital" || unitId === "soldier" || unitId === "sub" || unitId === "dragon" || unitId === "lion" || unitId === "scientist" || unitId === "nuke" || unitId === "money" || unitId === "missile"
     ? unitId
     : unitId === "bigTruck"
       ? "big-truck"
@@ -61,7 +62,7 @@ export const getProceduralModel = (assetId: string): ProceduralModelDescriptor =
     ? 1.85
     : kind === "priest" || kind === "capital" || kind === "office"
       ? 1.68
-      : kind === "big-truck" || kind === "zuckerbird" || kind === "leader" || kind === "scientist" || kind === "blues-musician" || kind === "missile"
+      : kind === "engineer" || kind === "big-truck" || kind === "zuckerbird" || kind === "leader" || kind === "scientist" || kind === "blues-musician" || kind === "missile"
         ? 1.52
         : kind === "pilot" || kind === "doctor" || kind === "ambulance" || kind === "airport" || kind === "construction-worker" || kind === "soldier" || kind === "dragon" || kind === "nuke"
           ? 1.42

@@ -249,9 +249,18 @@ describe("renderer-3d presentation behavior", () => {
     for (const assetId of ["unit:constructionWorker", "constructionWorker"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "construction-worker", healthBarHeight: 1.42, source: "project-owned-procedural" });
     }
-    for (const assetId of ["unit:worker", "unit:engineer", "unit:future-constructionWorker"]) {
+    for (const assetId of ["unit:worker", "unit:future-constructionWorker"]) {
       expect(getProceduralModel(assetId).kind).toBe("person");
     }
+  });
+
+  it("resolves engineers with hard-hat and wrench clearance while preserving other workers", () => {
+    for (const assetId of ["unit:engineer", "engineer"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "engineer", healthBarHeight: 1.52, source: "project-owned-procedural" });
+    }
+    expect(getProceduralModel("unit:constructionWorker").kind).toBe("construction-worker");
+    expect(getProceduralModel("unit:scientist").kind).toBe("scientist");
+    expect(getProceduralModel("unit:future-engineer").kind).toBe("person");
   });
 
   it("resolves pilots with clearance above the flight helmet", () => {
@@ -316,7 +325,7 @@ describe("renderer-3d presentation behavior", () => {
     for (const assetId of ["unit:scientist", "scientist"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "scientist", healthBarHeight: 1.52, source: "project-owned-procedural" });
     }
-    for (const assetId of ["unit:worker", "unit:engineer", "unit:future-scientist"]) {
+    for (const assetId of ["unit:worker", "unit:future-scientist"]) {
       expect(getProceduralModel(assetId).kind).toBe("person");
     }
   });

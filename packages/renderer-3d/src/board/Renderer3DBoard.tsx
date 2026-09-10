@@ -23,6 +23,7 @@ import { CollegeModel } from "../assets/CollegeModel.js";
 import { ConstructionWorkerModel } from "../assets/ConstructionWorkerModel.js";
 import { DoctorModel } from "../assets/DoctorModel.js";
 import { DragonModel } from "../assets/DragonModel.js";
+import { EngineerModel } from "../assets/EngineerModel.js";
 import { FactoryModel } from "../assets/FactoryModel.js";
 import { getProceduralModel } from "../assets/modelManifest.js";
 import { HelicopterModel } from "../assets/HelicopterModel.js";
@@ -139,6 +140,7 @@ const PrimitiveModel = ({ entity }: Readonly<{ entity: BoardEntityViewModel }>) 
   if (model.kind === "college") return <CollegeModel color={color} orientation={entity.orientation} />;
   if (model.kind === "construction-worker") return <ConstructionWorkerModel color={color} orientation={entity.orientation} />;
   if (model.kind === "dragon") return <DragonModel color={color} orientation={entity.orientation} />;
+  if (model.kind === "engineer") return <EngineerModel color={color} orientation={entity.orientation} />;
   if (model.kind === "factory") return <FactoryModel color={color} orientation={entity.orientation} />;
   if (model.kind === "lab") return <LabModel color={color} orientation={entity.orientation} />;
   if (model.kind === "leader") return <LeaderModel color={color} orientation={entity.orientation} />;
