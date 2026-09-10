@@ -263,6 +263,15 @@ describe("renderer-3d presentation behavior", () => {
     expect(getProceduralModel("unit:future-engineer").kind).toBe("person");
   });
 
+  it("resolves student athletes with graduation-cap clearance and preserves other people", () => {
+    for (const assetId of ["unit:studentAthlete", "studentAthlete"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "student-athlete", healthBarHeight: 1.52, source: "project-owned-procedural" });
+      expect(getProceduralModel(assetId).healthBarHeight).toBeGreaterThan(1.367);
+    }
+    expect(getProceduralModel("unit:worker").kind).toBe("person");
+    expect(getProceduralModel("unit:future-studentAthlete").kind).toBe("person");
+  });
+
   it("resolves pilots with clearance above the flight helmet", () => {
     for (const assetId of ["unit:pilot", "pilot"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "pilot", healthBarHeight: 1.42, source: "project-owned-procedural" });

@@ -39,6 +39,7 @@ import { PortModel } from "../assets/PortModel.js";
 import { ScientistModel } from "../assets/ScientistModel.js";
 import { PilotModel } from "../assets/PilotModel.js";
 import { SoldierModel } from "../assets/SoldierModel.js";
+import { StudentAthleteModel } from "../assets/StudentAthleteModel.js";
 import { SubModel } from "../assets/SubModel.js";
 import { TruckModel } from "../assets/TruckModel.js";
 import { ZuckerbirdModel } from "../assets/ZuckerbirdModel.js";
@@ -155,6 +156,7 @@ const PrimitiveModel = ({ entity }: Readonly<{ entity: BoardEntityViewModel }>) 
   if (model.kind === "scientist") return <ScientistModel color={color} orientation={entity.orientation} />;
   if (model.kind === "pilot") return <PilotModel color={color} orientation={entity.orientation} />;
   if (model.kind === "soldier") return <SoldierModel color={color} orientation={entity.orientation} />;
+  if (model.kind === "student-athlete") return <StudentAthleteModel color={color} orientation={entity.orientation} />;
   if (model.kind === "sub") return <SubModel color={color} orientation={entity.orientation} />;
   if (model.kind === "ambulance") return <AmbulanceModel color={color} orientation={entity.orientation} />;
   if (model.kind === "truck") return <TruckModel color={color} orientation={entity.orientation} />;
