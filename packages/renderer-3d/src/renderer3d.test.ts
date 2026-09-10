@@ -270,6 +270,14 @@ describe("renderer-3d presentation behavior", () => {
     expect(getProceduralModel("unit:future-zuckerbird").kind).toBe("person");
   });
 
+  it("resolves the doctor's distinct model with clearance above the surgical cap", () => {
+    for (const assetId of ["unit:doctor", "doctor"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "doctor", healthBarHeight: 1.42, source: "project-owned-procedural" });
+    }
+    expect(getProceduralModel("unit:scientist").kind).toBe("scientist");
+    expect(getProceduralModel("unit:priest").kind).toBe("person");
+  });
+
   it("resolves the scientist's distinct model with hair and flask clearance while retaining person fallbacks", () => {
     for (const assetId of ["unit:scientist", "scientist"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "scientist", healthBarHeight: 1.52, source: "project-owned-procedural" });

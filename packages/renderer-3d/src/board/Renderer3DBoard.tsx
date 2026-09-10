@@ -20,6 +20,7 @@ import { CapitalModel } from "../assets/CapitalModel.js";
 import { ChurchModel } from "../assets/ChurchModel.js";
 import { CollegeModel } from "../assets/CollegeModel.js";
 import { ConstructionWorkerModel } from "../assets/ConstructionWorkerModel.js";
+import { DoctorModel } from "../assets/DoctorModel.js";
 import { DragonModel } from "../assets/DragonModel.js";
 import { FactoryModel } from "../assets/FactoryModel.js";
 import { getProceduralModel } from "../assets/modelManifest.js";
@@ -141,6 +142,7 @@ const PrimitiveModel = ({ entity }: Readonly<{ entity: BoardEntityViewModel }>) 
   if (model.kind === "nuke") return <NukeModel orientation={entity.orientation} />;
   if (model.kind === "office") return <OfficeModel color={color} orientation={entity.orientation} />;
   if (model.kind === "port") return <PortModel color={color} orientation={entity.orientation} />;
+  if (model.kind === "doctor") return <DoctorModel color={color} orientation={entity.orientation} />;
   if (model.kind === "scientist") return <ScientistModel color={color} orientation={entity.orientation} />;
   if (model.kind === "soldier") return <SoldierModel color={color} orientation={entity.orientation} />;
   if (model.kind === "sub") return <SubModel color={color} orientation={entity.orientation} />;
