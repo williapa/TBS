@@ -198,7 +198,7 @@ describe("renderer-3d presentation behavior", () => {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "church", healthBarHeight: 1.85, source: "project-owned-procedural" });
     }
     expect(getProceduralModel("unit:house").kind).toBe("building");
-    expect(getProceduralModel("unit:priest").kind).toBe("person");
+    expect(getProceduralModel("unit:worker").kind).toBe("person");
     expect(getProceduralModel("unit:future-church").kind).toBe("person");
   });
 
@@ -223,7 +223,7 @@ describe("renderer-3d presentation behavior", () => {
     for (const assetId of ["unit:leader", "leader"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "leader", healthBarHeight: 1.52, source: "project-owned-procedural" });
     }
-    for (const assetId of ["unit:worker", "unit:priest", "unit:future-leader"]) {
+    for (const assetId of ["unit:worker", "unit:future-leader"]) {
       expect(getProceduralModel(assetId).kind).toBe("person");
     }
   });
@@ -249,7 +249,7 @@ describe("renderer-3d presentation behavior", () => {
     for (const assetId of ["unit:soldier", "soldier"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "soldier", healthBarHeight: 1.42, source: "project-owned-procedural" });
     }
-    for (const assetId of ["unit:warrior", "unit:priest", "unit:future-soldier"]) {
+    for (const assetId of ["unit:warrior", "unit:worker", "unit:future-soldier"]) {
       expect(getProceduralModel(assetId).kind).toBe("person");
     }
   });
@@ -274,8 +274,17 @@ describe("renderer-3d presentation behavior", () => {
     for (const assetId of ["unit:zuckerbird", "zuckerbird"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "zuckerbird", healthBarHeight: 1.52, source: "project-owned-procedural" });
     }
-    expect(getProceduralModel("unit:priest").kind).toBe("person");
+    expect(getProceduralModel("unit:worker").kind).toBe("person");
     expect(getProceduralModel("unit:future-zuckerbird").kind).toBe("person");
+  });
+
+  it("resolves priests with clearance above the mitre and cross staff", () => {
+    for (const assetId of ["unit:priest", "priest"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "priest", healthBarHeight: 1.68, source: "project-owned-procedural" });
+    }
+    expect(getProceduralModel("unit:future-priest").kind).toBe("person");
+    expect(getProceduralModel("unit:doctor").kind).toBe("doctor");
+    expect(getProceduralModel("unit:worker").kind).toBe("person");
   });
 
   it("resolves the doctor's distinct model with clearance above the surgical cap", () => {
@@ -283,14 +292,14 @@ describe("renderer-3d presentation behavior", () => {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "doctor", healthBarHeight: 1.42, source: "project-owned-procedural" });
     }
     expect(getProceduralModel("unit:scientist").kind).toBe("scientist");
-    expect(getProceduralModel("unit:priest").kind).toBe("person");
+    expect(getProceduralModel("unit:worker").kind).toBe("person");
   });
 
   it("resolves the scientist's distinct model with hair and flask clearance while retaining person fallbacks", () => {
     for (const assetId of ["unit:scientist", "scientist"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "scientist", healthBarHeight: 1.52, source: "project-owned-procedural" });
     }
-    for (const assetId of ["unit:worker", "unit:engineer", "unit:priest", "unit:future-scientist"]) {
+    for (const assetId of ["unit:worker", "unit:engineer", "unit:future-scientist"]) {
       expect(getProceduralModel(assetId).kind).toBe("person");
     }
   });
@@ -299,7 +308,7 @@ describe("renderer-3d presentation behavior", () => {
     for (const assetId of ["unit:bluesMusician", "bluesMusician"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "blues-musician", healthBarHeight: 1.52, source: "project-owned-procedural" });
     }
-    for (const assetId of ["unit:michaelJackson", "unit:priest", "unit:future-bluesMusician"]) {
+    for (const assetId of ["unit:michaelJackson", "unit:worker", "unit:future-bluesMusician"]) {
       expect(getProceduralModel(assetId).kind).toBe("person");
     }
   });

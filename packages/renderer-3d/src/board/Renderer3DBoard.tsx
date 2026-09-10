@@ -31,6 +31,7 @@ import { MissileModel } from "../assets/MissileModel.js";
 import { MoneyModel } from "../assets/MoneyModel.js";
 import { NukeModel } from "../assets/NukeModel.js";
 import { OfficeModel } from "../assets/OfficeModel.js";
+import { PriestModel } from "../assets/PriestModel.js";
 import { PortModel } from "../assets/PortModel.js";
 import { ScientistModel } from "../assets/ScientistModel.js";
 import { PilotModel } from "../assets/PilotModel.js";
@@ -142,6 +143,7 @@ const PrimitiveModel = ({ entity }: Readonly<{ entity: BoardEntityViewModel }>) 
   if (model.kind === "money") return <MoneyModel orientation={entity.orientation} />;
   if (model.kind === "nuke") return <NukeModel orientation={entity.orientation} />;
   if (model.kind === "office") return <OfficeModel color={color} orientation={entity.orientation} />;
+  if (model.kind === "priest") return <PriestModel color={color} orientation={entity.orientation} />;
   if (model.kind === "port") return <PortModel color={color} orientation={entity.orientation} />;
   if (model.kind === "doctor") return <DoctorModel color={color} orientation={entity.orientation} />;
   if (model.kind === "scientist") return <ScientistModel color={color} orientation={entity.orientation} />;

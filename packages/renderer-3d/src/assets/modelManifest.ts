@@ -23,6 +23,7 @@ export type PrimitiveModelKind =
   | "pilot"
   | "person"
   | "port"
+  | "priest"
   | "scientist"
   | "soldier"
   | "sub"
@@ -45,7 +46,7 @@ const aircraftIds = new Set(["airplane", "helicopter"]);
 
 export const getProceduralModel = (assetId: string): ProceduralModelDescriptor => {
   const unitId = assetId.startsWith("unit:") ? assetId.slice("unit:".length) : assetId;
-  const kind = unitId === "pilot" || unitId === "doctor" || unitId === "ambulance" || unitId === "lab" || unitId === "office" || unitId === "college" || unitId === "church" || unitId === "factory" || unitId === "truck" || unitId === "bank" || unitId === "zuckerbird" || unitId === "airport" || unitId === "port" || unitId === "zoo" || unitId === "leader" || unitId === "capital" || unitId === "soldier" || unitId === "sub" || unitId === "dragon" || unitId === "lion" || unitId === "scientist" || unitId === "nuke" || unitId === "money" || unitId === "missile"
+  const kind = unitId === "priest" || unitId === "pilot" || unitId === "doctor" || unitId === "ambulance" || unitId === "lab" || unitId === "office" || unitId === "college" || unitId === "church" || unitId === "factory" || unitId === "truck" || unitId === "bank" || unitId === "zuckerbird" || unitId === "airport" || unitId === "port" || unitId === "zoo" || unitId === "leader" || unitId === "capital" || unitId === "soldier" || unitId === "sub" || unitId === "dragon" || unitId === "lion" || unitId === "scientist" || unitId === "nuke" || unitId === "money" || unitId === "missile"
     ? unitId
     : unitId === "bigTruck"
       ? "big-truck"
@@ -60,7 +61,7 @@ export const getProceduralModel = (assetId: string): ProceduralModelDescriptor =
               : "person";
   const healthBarHeight = kind === "church"
     ? 1.85
-    : kind === "capital" || kind === "office"
+    : kind === "priest" || kind === "capital" || kind === "office"
       ? 1.68
       : kind === "big-truck" || kind === "zuckerbird" || kind === "leader" || kind === "scientist" || kind === "blues-musician" || kind === "missile"
         ? 1.52
