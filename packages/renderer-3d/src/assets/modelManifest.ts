@@ -11,6 +11,7 @@ export type PrimitiveModelKind =
   | "construction-worker"
   | "dragon"
   | "factory"
+  | "lab"
   | "leader"
   | "lion"
   | "missile"
@@ -35,14 +36,14 @@ export type ProceduralModelDescriptor = Readonly<{
 }>;
 
 const buildingIds = new Set([
-  "house", "lab",
+  "house",
 ]);
 const aircraftIds = new Set(["airplane", "helicopter"]);
 const vehicleIds = new Set(["ambulance"]);
 
 export const getProceduralModel = (assetId: string): ProceduralModelDescriptor => {
   const unitId = assetId.startsWith("unit:") ? assetId.slice("unit:".length) : assetId;
-  const kind = unitId === "office" || unitId === "college" || unitId === "church" || unitId === "factory" || unitId === "truck" || unitId === "bank" || unitId === "zuckerbird" || unitId === "airport" || unitId === "port" || unitId === "zoo" || unitId === "leader" || unitId === "capital" || unitId === "soldier" || unitId === "sub" || unitId === "dragon" || unitId === "lion" || unitId === "scientist" || unitId === "nuke" || unitId === "money" || unitId === "missile"
+  const kind = unitId === "lab" || unitId === "office" || unitId === "college" || unitId === "church" || unitId === "factory" || unitId === "truck" || unitId === "bank" || unitId === "zuckerbird" || unitId === "airport" || unitId === "port" || unitId === "zoo" || unitId === "leader" || unitId === "capital" || unitId === "soldier" || unitId === "sub" || unitId === "dragon" || unitId === "lion" || unitId === "scientist" || unitId === "nuke" || unitId === "money" || unitId === "missile"
     ? unitId
     : unitId === "bigTruck"
       ? "big-truck"
@@ -65,7 +66,7 @@ export const getProceduralModel = (assetId: string): ProceduralModelDescriptor =
         ? 1.52
         : kind === "airport" || kind === "construction-worker" || kind === "soldier" || kind === "dragon" || kind === "nuke"
           ? 1.42
-          : kind === "college" || kind === "factory" || kind === "bank" || kind === "zoo" || kind === "port"
+          : kind === "lab" || kind === "college" || kind === "factory" || kind === "bank" || kind === "zoo" || kind === "port"
             ? 1.55
             : kind === "lion"
               ? 1.32

@@ -147,6 +147,14 @@ describe("renderer-3d presentation behavior", () => {
     expect(getProceduralModel("unit:future-airport").kind).toBe("person");
   });
 
+  it("resolves the lab with health clearance above its rooftop flask", () => {
+    for (const assetId of ["unit:lab", "lab"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "lab", healthBarHeight: 1.55, source: "project-owned-procedural" });
+    }
+    expect(getProceduralModel("unit:house").kind).toBe("building");
+    expect(getProceduralModel("unit:future-lab").kind).toBe("person");
+  });
+
   it("resolves the factory with health clearance above its smokestacks", () => {
     for (const assetId of ["unit:factory", "factory"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "factory", healthBarHeight: 1.55, source: "project-owned-procedural" });
@@ -159,18 +167,14 @@ describe("renderer-3d presentation behavior", () => {
     for (const assetId of ["unit:capital", "capital"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "capital", healthBarHeight: 1.68, source: "project-owned-procedural" });
     }
-    for (const unitId of ["house", "lab"]) {
-      expect(getProceduralModel(`unit:${unitId}`).kind).toBe("building");
-    }
+    expect(getProceduralModel("unit:house").kind).toBe("building");
   });
 
   it("resolves the college with clearance above its mortarboard and preserves other building fallbacks", () => {
     for (const assetId of ["unit:college", "college"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "college", healthBarHeight: 1.55, source: "project-owned-procedural" });
     }
-    for (const unitId of ["house", "lab"]) {
-      expect(getProceduralModel(`unit:${unitId}`).kind).toBe("building");
-    }
+    expect(getProceduralModel("unit:house").kind).toBe("building");
     expect(getProceduralModel("unit:future-college").kind).toBe("person");
   });
 
@@ -178,9 +182,7 @@ describe("renderer-3d presentation behavior", () => {
     for (const assetId of ["unit:office", "office"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "office", healthBarHeight: 1.68, source: "project-owned-procedural" });
     }
-    for (const unitId of ["house", "lab"]) {
-      expect(getProceduralModel(`unit:${unitId}`).kind).toBe("building");
-    }
+    expect(getProceduralModel("unit:house").kind).toBe("building");
     expect(getProceduralModel("unit:future-office").kind).toBe("person");
   });
 
