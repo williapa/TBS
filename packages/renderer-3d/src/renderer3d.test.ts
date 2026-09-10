@@ -71,6 +71,15 @@ describe("renderer-3d presentation behavior", () => {
     from: { q: 0, r: 0 }, to: entity.coordinate, durationMs: 300,
   } as const satisfies MoveEntityCue;
 
+  it("routes airplanes to their dedicated model with clearance above the tail", () => {
+    for (const assetId of ["unit:airplane", "airplane"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "airplane", healthBarHeight: 1.18, source: "project-owned-procedural" });
+      expect(getProceduralModel(assetId).healthBarHeight).toBeGreaterThan(1.04);
+    }
+    expect(getProceduralModel("unit:helicopter").kind).toBe("aircraft");
+    expect(getProceduralModel("unit:future-airplane").kind).toBe("person");
+  });
+
   it("interpolates accepted movement and settles immediately for reduced motion", () => {
     expect(entityWorldPosition(entity, cue, 0, false)).toEqual(projectHexToWorld(cue.from));
     expect(entityWorldPosition(entity, cue, 300, false)).toEqual(projectHexToWorld(entity.coordinate));
@@ -123,9 +132,8 @@ describe("renderer-3d presentation behavior", () => {
     for (const assetId of ["unit:missile", "missile"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "missile", healthBarHeight: 1.52, source: "project-owned-procedural" });
     }
-    for (const assetId of ["unit:airplane", "unit:helicopter"]) {
-      expect(getProceduralModel(assetId).kind).toBe("aircraft");
-    }
+    expect(getProceduralModel("unit:airplane").kind).toBe("airplane");
+    expect(getProceduralModel("unit:helicopter").kind).toBe("aircraft");
     expect(getProceduralModel("unit:future-missile").kind).toBe("person");
   });
 
@@ -149,7 +157,7 @@ describe("renderer-3d presentation behavior", () => {
     for (const assetId of ["unit:airport", "airport"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "airport", healthBarHeight: 1.42, source: "project-owned-procedural" });
     }
-    expect(getProceduralModel("unit:airplane").kind).toBe("aircraft");
+    expect(getProceduralModel("unit:airplane").kind).toBe("airplane");
     expect(getProceduralModel("unit:house").kind).toBe("building");
     expect(getProceduralModel("unit:future-airport").kind).toBe("person");
   });
@@ -242,7 +250,7 @@ describe("renderer-3d presentation behavior", () => {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "pilot", healthBarHeight: 1.42, source: "project-owned-procedural" });
     }
     expect(getProceduralModel("unit:future-pilot").kind).toBe("person");
-    expect(getProceduralModel("unit:airplane").kind).toBe("aircraft");
+    expect(getProceduralModel("unit:airplane").kind).toBe("airplane");
   });
 
   it("resolves the soldier's distinct model with helmet clearance while retaining person fallbacks", () => {

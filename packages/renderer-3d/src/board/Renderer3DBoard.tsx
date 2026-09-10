@@ -12,6 +12,7 @@ import type {
 
 import { entityWorldPosition } from "../animation/entityMotion.js";
 import { AmbulanceModel } from "../assets/AmbulanceModel.js";
+import { AirplaneModel } from "../assets/AirplaneModel.js";
 import { AirportModel } from "../assets/AirportModel.js";
 import { BankModel } from "../assets/BankModel.js";
 import { BigTruckModel } from "../assets/BigTruckModel.js";
@@ -126,6 +127,7 @@ const TerrainInstances = ({ batch, onIntent }: Readonly<{ batch: TerrainBatch; o
 const PrimitiveModel = ({ entity }: Readonly<{ entity: BoardEntityViewModel }>) => {
   const model = getProceduralModel(entity.assetId);
   const color = teamColor(entity.teamId);
+  if (model.kind === "airplane") return <AirplaneModel color={color} orientation={entity.orientation} />;
   if (model.kind === "airport") return <AirportModel color={color} orientation={entity.orientation} />;
   if (model.kind === "bank") return <BankModel color={color} orientation={entity.orientation} />;
   if (model.kind === "big-truck") return <BigTruckModel color={color} orientation={entity.orientation} />;
