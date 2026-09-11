@@ -71,11 +71,6 @@ test("two same-member stale tabs commit once and exact action-ID retry is idempo
     await identityPage.goto("/");
     await expect(orange.getByRole("heading", { name: "🎖️ Hostile Hexagons 🎖️" })).toBeVisible();
     await expect(identityPage.getByRole("heading", { name: "🎖️ Hostile Hexagons 🎖️" })).toBeVisible();
-    const sharedIdentity = await identityContext.storageState();
-    twinContext = await browser.newContext({ storageState: sharedIdentity });
-    const twinPage = await twinContext.newPage();
-    await twinPage.goto("/");
-    await expect(twinPage.getByRole("heading", { name: "🎖️ Hostile Hexagons 🎖️" })).toBeVisible();
 
     const initialState = actionScenarios()[0].state;
     const created = await gatewayCall(orange, "createGame", {
@@ -83,8 +78,16 @@ test("two same-member stale tabs commit once and exact action-ID retry is idempo
       initialState,
       mapName: "Race battlefield",
     });
-    await gatewayCall(identityPage, "joinGame", created.inviteToken, "player", "Race challenger");
-    await gatewayCall(twinPage, "joinGame", created.inviteToken, "player", "Race challenger");
+    const joined = await gatewayCall(identityPage, "joinGame", created.inviteToken, "player", "Race challenger");
+    expect(joined).toMatchObject({ role: "purple" });
+
+    const sharedIdentity = await identityContext.storageState();
+    twinContext = await browser.newContext({ storageState: sharedIdentity });
+    const twinPage = await twinContext.newPage();
+    await twinPage.goto("/");
+    await expect(twinPage.getByRole("heading", { name: "🎖️ Hostile Hexagons 🎖️" })).toBeVisible();
+    const rejoined = await gatewayCall(twinPage, "joinGame", created.inviteToken, "player", "Race challenger");
+    expect(rejoined).toMatchObject({ memberId: joined.memberId, role: "purple" });
 
     const requests = [
       {
