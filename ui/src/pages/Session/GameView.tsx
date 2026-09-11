@@ -11,7 +11,7 @@ import {
 import type { ReactNode } from "react";
 import { useState } from "react";
 
-import type { GamePanelState } from "../../types";
+import type { GameMapControlsState, GamePanelState } from "../../types";
 import GameMap from "../Game/GameMap";
 import GamePanel from "../Game/GamePanel";
 import "../Game/Game.css";
@@ -62,6 +62,7 @@ export const GameView = ({
   turnAnnouncement,
 }: GameViewProps) => {
   const [panelState, setPanelState] = useState<GamePanelState | null>(null);
+  const [controlsState, setControlsState] = useState<GameMapControlsState | null>(null);
   const orangeTeamId = Object.values(state.teams).find(({ id }) => id === "orange")?.id;
   const purpleTeamId = Object.values(state.teams).find(({ id }) => id === "purple")?.id;
   if (!orangeTeamId || !purpleTeamId) {
@@ -116,6 +117,7 @@ export const GameView = ({
           active={canAct}
           events={events}
           onAction={onAction}
+          onControlsStateChange={setControlsState}
           onPanelStateChange={setPanelState}
           perspective={perspective}
           state={state}
@@ -136,7 +138,7 @@ export const GameView = ({
         />
       </div>
       <div className="r2">
-        <GamePanel state={panelState} winCondition={winCondition} />
+        <GamePanel controls={controlsState} state={panelState} winCondition={winCondition} />
         <SessionEventsPanel actions={actions} />
       </div>
     </main>

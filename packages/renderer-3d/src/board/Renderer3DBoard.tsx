@@ -1,5 +1,5 @@
 import { Canvas, type ThreeEvent, useFrame, useThree } from "@react-three/fiber";
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Group, InstancedMesh, OrthographicCamera } from "three";
 import { Object3D } from "three";
 import type {
@@ -56,6 +56,7 @@ import { cellForTerrainInstance, createTerrainBatches, type TerrainBatch } from 
 
 export type Renderer3DBoardProps = Readonly<{
   board: BoardViewModel;
+  cameraCommand?: Readonly<{ id: number; intent: CameraIntent }>;
   onIntent: BoardIntentHandler;
   onViewChange?: () => void;
   reducedMotion?: boolean;
@@ -330,37 +331,30 @@ const BoardScene = ({ board, camera, onIntent, reducedMotion }: Readonly<{
   );
 };
 
-const controls: readonly Readonly<{ intent: CameraIntent; label: string; text: string }>[] = [
-  { intent: "pan-left", label: "Pan camera left", text: "←" },
-  { intent: "pan-up", label: "Pan camera up", text: "↑" },
-  { intent: "pan-down", label: "Pan camera down", text: "↓" },
-  { intent: "pan-right", label: "Pan camera right", text: "→" },
-  { intent: "zoom-in", label: "Zoom camera in", text: "+" },
-  { intent: "zoom-out", label: "Zoom camera out", text: "−" },
-  { intent: "rotate", label: "Rotate camera clockwise", text: "↻" },
-];
-
 export const Renderer3DBoard = ({
   board,
+  cameraCommand,
   className,
   onIntent,
   onViewChange,
   reducedMotion = false,
 }: Renderer3DBoardProps) => {
   const [camera, setCamera] = useState(() => initialCameraState(board.cameraBounds));
-  const applyCameraIntent = (intent: CameraIntent) => {
+  const lastCameraCommandId = useRef<number>();
+
+  useEffect(() => {
+    if (!cameraCommand || lastCameraCommandId.current === cameraCommand.id) return;
+    lastCameraCommandId.current = cameraCommand.id;
     onViewChange?.();
-    setCamera((state) => updateCameraState(state, intent, board.cameraBounds));
-  };
+    setCamera((state) => updateCameraState(state, cameraCommand.intent, board.cameraBounds));
+  }, [board.cameraBounds, cameraCommand, onViewChange]);
+
   return (
     <div aria-label={`Three-dimensional game board, revision ${board.revision}`} className={className} role="application" style={{ height: "100%", minHeight: 360, position: "relative", width: "100%" }}>
       <Canvas camera={{ far: 100, near: 0.1, position: [8, 10, 8], zoom: 40 }} dpr={[1, 1.75]} frameloop={board.animationCues.length > 0 && !reducedMotion ? "always" : "demand"} gl={{ antialias: true, powerPreference: "high-performance" }} orthographic shadows>
         <color args={["#111827"]} attach="background" />
         <BoardScene board={board} camera={camera} onIntent={onIntent} reducedMotion={reducedMotion} />
       </Canvas>
-      <div aria-label="3D camera controls" role="toolbar" style={{ background: "rgba(12, 18, 28, 0.82)", borderRadius: 8, bottom: 10, display: "flex", gap: 4, padding: 6, position: "absolute", right: 10 }}>
-        {controls.map((control) => <button aria-label={control.label} key={control.intent} onClick={() => applyCameraIntent(control.intent)} type="button">{control.text}</button>)}
-      </div>
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import GamePanel from "./GamePanel";
 
 const winCondition = {
@@ -13,7 +13,7 @@ describe("GamePanel", () => {
 
     expect(screen.getByText("Win condition")).toBeInTheDocument();
     expect(screen.getByText(winCondition.description)).toBeInTheDocument();
-    expect(screen.getByText("Select a cell to see its details.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Selected cell" })).toBeDisabled();
   });
 
   test("renders rows, section headers, and action descriptions", () => {
@@ -51,5 +51,12 @@ describe("GamePanel", () => {
     expect(screen.getByText("Traverse empty map cells.")).toBeInTheDocument();
     expect(screen.getByText("Carrying Doctor (person)")).toBeInTheDocument();
     expect(screen.queryByText(winCondition.description)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Map controls" }));
+    expect(screen.getByText(winCondition.description)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Selected cell" })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Selected cell" }));
+    expect(screen.getByText("Soldier (person)")).toBeInTheDocument();
   });
 });

@@ -50,43 +50,6 @@
   z-index: 1;
 }
 
-.game-renderer-toggle {
-  background: rgba(12, 18, 28, 0.88);
-  border-radius: 0 0 8px 8px;
-  display: flex;
-  gap: 4px;
-  left: 50%;
-  padding: 5px;
-  position: absolute;
-  top: 38px;
-  transform: translateX(-50%);
-  z-index: 5;
-}
-
-.game-renderer-toggle button[aria-pressed="true"] {
-  outline: 2px solid white;
-  outline-offset: -2px;
-}
-
-.game-board-keyboard-controls {
-  background: rgba(12, 18, 28, 0.94);
-  bottom: 8px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  left: 8px;
-  max-width: min(70%, 620px);
-  padding: 7px;
-  position: absolute;
-  z-index: 4;
-}
-
-.game-board-keyboard-controls p {
-  font-size: 0.75rem;
-  margin: 0;
-  width: 100%;
-}
-
 .game-renderer-error,
 .game-renderer-loading {
   margin: auto;

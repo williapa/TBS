@@ -1,9 +1,70 @@
 .game-panel {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 12px;
+  gap: 8px;
+  padding: 8px 12px;
   width: 100%;
+}
+
+.game-panel__view-toggle {
+  align-self: flex-start;
+  display: flex;
+  gap: 4px;
+}
+
+.game-renderer-toggle {
+  display: flex;
+  gap: 4px;
+}
+
+.game-panel__default {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 3fr);
+}
+
+.game-panel__default .game-panel__section {
+  gap: 6px;
+  padding-bottom: 0;
+}
+
+.game-panel__view-toggle button,
+.game-renderer-toggle button,
+.game-camera-controls button {
+  min-height: 28px;
+}
+
+.game-panel__view-toggle button[aria-pressed="true"],
+.game-renderer-toggle button[aria-pressed="true"] {
+  outline: 2px solid white;
+  outline-offset: -2px;
+}
+
+.game-camera-controls,
+.game-board-keyboard-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.game-panel__control-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.game-board-keyboard-controls {
+  align-items: center;
+}
+
+.game-board-keyboard-controls p {
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
 }
 
 .game-panel__section {
@@ -69,7 +130,8 @@
   overflow-wrap: anywhere;
 }
 
-.game-panel__hint {
-  color: #5f6b7a;
-  margin: 0;
+@media (max-width: 760px) {
+  .game-panel__default {
+    grid-template-columns: 1fr;
+  }
 }

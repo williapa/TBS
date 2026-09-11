@@ -3,9 +3,12 @@ import { applyStandardAction } from "@TBS/game-rules";
 import { mapUnitOptions } from "@TBS/game-setup";
 import type * as PresentationModule from "@TBS/presentation";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useCallback, useRef, useState } from "react";
 
 import GameMap from "./GameMap";
+import GamePanel from "./GamePanel";
 import { createActionEnvelope } from "../../multiplayer/createActionEnvelope";
+import type { ActiveMapProps, GameMapControlsState, GamePanelState } from "../../types";
 
 const rendererLifecycle = vi.hoisted(() => ({ disposed: vi.fn() }));
 const interactionPreviewCalls = vi.hoisted(() => vi.fn());
@@ -25,21 +28,54 @@ vi.mock("@TBS/renderer-3d", async () => {
   const { useEffect } = await import("react");
   return {
     Renderer3DBoard: ({
+      cameraCommand,
       onViewChange,
       reducedMotion,
     }: Readonly<{
+      cameraCommand?: Readonly<{ id: number }>;
       onViewChange?: () => void;
       reducedMotion?: boolean;
     }>) => {
+      const lastCameraCommandId = useRef<number>();
+      useEffect(() => {
+        if (!cameraCommand || lastCameraCommandId.current === cameraCommand.id) return;
+        lastCameraCommandId.current = cameraCommand.id;
+        onViewChange?.();
+      }, [cameraCommand, onViewChange]);
       useEffect(() => () => rendererLifecycle.disposed(), []);
       return (
-        <div aria-label="Mock three-dimensional board" data-reduced-motion={String(reducedMotion)}>
-          <button onClick={onViewChange} type="button">Move mock camera</button>
-        </div>
+        <div aria-label="Mock three-dimensional board" data-reduced-motion={String(reducedMotion)} />
       );
     },
   };
 });
+
+const winCondition = {
+  description: "Eliminate every enemy unit that can move and attack.",
+  includesCapitalVictory: false,
+  includesEliminationVictory: true,
+} as const;
+
+const GameMapHarness = (props: ActiveMapProps) => {
+  const { onPanelStateChange, ...mapProps } = props;
+  const [controls, setControls] = useState<GameMapControlsState | null>(null);
+  const [panelState, setPanelState] = useState<GamePanelState | null>(null);
+  const publishPanelState = useCallback((state: GamePanelState | null) => {
+    setPanelState(state);
+    onPanelStateChange?.(state);
+  }, [onPanelStateChange]);
+
+  return (
+    <>
+      <GameMap
+        {...mapProps}
+        onControlsStateChange={setControls}
+        onPanelStateChange={publishPanelState}
+      />
+      <GamePanel controls={controls} state={panelState} winCondition={winCondition} />
+    </>
+  );
+};
 
 const gameProps = () => {
   const state = createActiveGameStateFixture();
@@ -48,7 +84,7 @@ const gameProps = () => {
   return { perspective, state };
 };
 
-const renderGameMap = () => render(<GameMap active {...gameProps()} />);
+const renderGameMap = () => render(<GameMapHarness active {...gameProps()} />);
 
 const transportGameProps = () => {
   const state = createActiveGameStateFixture();
@@ -135,6 +171,7 @@ describe("GameMap renderer lifecycle", () => {
     fireEvent.click(moveTargetCell());
     expect(screen.getByRole("button", { name: "Move" })).toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole("button", { name: "Map controls" }));
     fireEvent.click(screen.getByRole("button", { name: "Use 3D board" }));
     expect(await screen.findByLabelText("Mock three-dimensional board")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Move" })).toBeInTheDocument();
@@ -284,11 +321,12 @@ describe("GameMap renderer lifecycle", () => {
       "game-action-menu--anchored",
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "Map controls" }));
     fireEvent.click(screen.getByRole("button", { name: "Use 3D board" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Move mock camera" }));
-    expect(screen.getByRole("dialog", { name: "Available actions" })).toHaveClass(
+    fireEvent.click(await screen.findByRole("button", { name: "Pan camera left" }));
+    await waitFor(() => expect(screen.getByRole("dialog", { name: "Available actions" })).toHaveClass(
       "game-action-menu--docked",
-    );
+    ));
   });
 
   test("persists the renderer preference and forwards reduced-motion preference", async () => {
@@ -313,7 +351,7 @@ describe("GameMap renderer lifecycle", () => {
   test("offers a bounded keyboard cell navigator for the WebGL view", async () => {
     const onPanelStateChange = vi.fn();
     render(
-      <GameMap
+      <GameMapHarness
         active
         onPanelStateChange={onPanelStateChange}
         {...gameProps()}

@@ -10,11 +10,11 @@ import {
   type BoardIntent,
 } from "@TBS/presentation";
 import { Renderer2DBoard } from "@TBS/renderer-2d";
+import type { CameraIntent } from "@TBS/renderer-3d";
 import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import ActionForm from "../../components/Map/Cell/Action/ActionForm";
 import type { ActiveMapProps, MenuPosition } from "../../types";
-import { AccessibleBoardNavigator } from "./AccessibleBoardNavigator";
 import { buildGamePanelState } from "./gamePanelState";
 import { RendererErrorBoundary } from "./RendererErrorBoundary";
 import { readRendererPreference, writeRendererPreference } from "./rendererPreference";
@@ -48,6 +48,7 @@ const GameMap = ({
   active = false,
   events = [],
   onAction,
+  onControlsStateChange,
   onPanelStateChange,
   perspective,
   state,
@@ -62,6 +63,10 @@ const GameMap = ({
   const [menuPlacement, setMenuPlacement] = useState<"anchored" | "docked">("docked");
   const [renderer, setRenderer] = useState(readRendererPreference);
   const [rendererError, setRendererError] = useState(false);
+  const [cameraCommand, setCameraCommand] = useState<Readonly<{
+    id: number;
+    intent: CameraIntent;
+  }> | undefined>();
   const reducedMotion = useReducedMotion();
   latestEvents.current = events;
 
@@ -128,18 +133,31 @@ const GameMap = ({
     }
     if (result.command) onAction?.(result.command);
   }, [active, interactionPreview, interactionState, onAction, perspective, state]);
-  const selectRenderer = (nextRenderer: "2d" | "3d") => {
+  const selectRenderer = useCallback((nextRenderer: "2d" | "3d") => {
     setAnimationEvents([]);
+    setCameraCommand(undefined);
     setRendererError(false);
     setRenderer(nextRenderer);
-  };
+  }, []);
+  const handleCameraIntent = useCallback((intent: CameraIntent) => {
+    setCameraCommand((command) => ({ id: (command?.id ?? 0) + 1, intent }));
+  }, []);
+
+  useEffect(() => {
+    onControlsStateChange?.({
+      board,
+      onBoardIntent: handleIntent,
+      onCameraIntent: handleCameraIntent,
+      onRendererChange: selectRenderer,
+      renderer,
+      rendererAvailable: !rendererError,
+    });
+  }, [board, handleCameraIntent, handleIntent, onControlsStateChange, renderer, rendererError, selectRenderer]);
+
+  useEffect(() => () => onControlsStateChange?.(null), [onControlsStateChange]);
 
   return (
     <div className="game special-panel" ref={parentRef}>
-      <div aria-label="Board view" className="game-renderer-toggle" role="group">
-        <button aria-pressed={renderer === "2d"} onClick={() => selectRenderer("2d")} type="button">Use 2D board</button>
-        <button aria-pressed={renderer === "3d"} onClick={() => selectRenderer("3d")} type="button">Use 3D board</button>
-      </div>
       {renderer === "2d" ? (
         <Renderer2DBoard board={board} onIntent={handleIntent} reducedMotion={reducedMotion} />
       ) : (
@@ -150,6 +168,7 @@ const GameMap = ({
           <Suspense fallback={<p className="game-renderer-loading" role="status">Loading 3D board…</p>}>
             <Renderer3DBoard
               board={board}
+              cameraCommand={cameraCommand}
               onIntent={handleIntent}
               onViewChange={() => setMenuPlacement("docked")}
               reducedMotion={reducedMotion}
@@ -157,7 +176,6 @@ const GameMap = ({
           </Suspense>
         </RendererErrorBoundary>
       )}
-      {renderer === "3d" && !rendererError && <AccessibleBoardNavigator board={board} onIntent={handleIntent} />}
       {interactionState.menu && (
         <ActionForm
           left={interactionState.menu.position.left}

@@ -14,6 +14,8 @@ import type {
 } from "@TBS/game-setup";
 import type {
   BoardCellViewModel,
+  BoardIntentHandler,
+  BoardViewModel,
   GameActionMenuState,
   GameInteractionMode,
   GameInteractionState,
@@ -22,6 +24,7 @@ import type {
   MenuPosition,
   StandardActionDraft,
 } from "@TBS/presentation";
+import type { CameraIntent } from "@TBS/renderer-3d";
 import type { ReactNode } from "react";
 
 export type MapItem = MapCell;
@@ -71,6 +74,15 @@ export type GamePanelState = Readonly<{
   focus: "actor" | "cell";
   rows: readonly GamePanelRow[];
   transportRows?: readonly GamePanelRow[];
+}>;
+
+export type GameMapControlsState = Readonly<{
+  board: BoardViewModel;
+  onBoardIntent: BoardIntentHandler;
+  onCameraIntent: (intent: CameraIntent) => void;
+  onRendererChange: (renderer: "2d" | "3d") => void;
+  renderer: "2d" | "3d";
+  rendererAvailable: boolean;
 }>;
 
 export type CellProps = RowCol & Readonly<{
@@ -161,6 +173,7 @@ export type ActiveMapProps = Readonly<{
   transitionId?: StandardAppliedAction["actionId"];
   onAction?: (action: StandardActionDraft) => void;
   onPanelStateChange?: (state: GamePanelState | null) => void;
+  onControlsStateChange?: (state: GameMapControlsState | null) => void;
   perspective: Exclude<SessionRole, "spectator">;
   state: StandardGameSnapshot["state"];
 }>;

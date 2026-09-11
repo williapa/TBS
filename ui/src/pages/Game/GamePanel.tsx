@@ -1,6 +1,23 @@
 import "./GamePanel.css";
 import type { WinConditionViewModel } from "@TBS/presentation";
-import type { GamePanelRow, GamePanelState } from "../../types";
+import type { CameraIntent } from "@TBS/renderer-3d";
+import { useEffect, useState } from "react";
+import type { GameMapControlsState, GamePanelRow, GamePanelState } from "../../types";
+import { AccessibleBoardNavigator } from "./AccessibleBoardNavigator";
+
+const cameraControls: readonly Readonly<{
+  intent: CameraIntent;
+  label: string;
+  text: string;
+}>[] = [
+  { intent: "pan-left", label: "Pan camera left", text: "←" },
+  { intent: "pan-up", label: "Pan camera up", text: "↑" },
+  { intent: "pan-down", label: "Pan camera down", text: "↓" },
+  { intent: "pan-right", label: "Pan camera right", text: "→" },
+  { intent: "zoom-in", label: "Zoom camera in", text: "+" },
+  { intent: "zoom-out", label: "Zoom camera out", text: "−" },
+  { intent: "rotate", label: "Rotate camera clockwise", text: "↻" },
+];
 
 const renderRowValue = (row: GamePanelRow) => {
   if (row.type === "actions") {
@@ -42,32 +59,78 @@ const renderSection = (title: string, rows: readonly GamePanelRow[]) => (
 );
 
 const GamePanel = ({
+  controls,
   state,
   winCondition,
 }: Readonly<{
+  controls?: GameMapControlsState | null;
   state: GamePanelState | null;
   winCondition: WinConditionViewModel;
-}>) => (
-  <div className="game panel">
-    {!state ? (
+}>) => {
+  const [view, setView] = useState<"default" | "selection">(state ? "selection" : "default");
+
+  useEffect(() => setView(state ? "selection" : "default"), [state]);
+
+  const showSelection = view === "selection" && state;
+  return (
+    <div aria-label="Game details" className="game panel" role="region">
       <div className="game-panel">
-        {renderSection("Details", [{
-          id: "win-condition",
-          label: "Win condition",
-          type: "text",
-          value: winCondition.description,
-        }])}
-        <p className="game-panel__hint">Select a cell to see its details.</p>
+        <div aria-label="Details view" className="game-panel__view-toggle" role="group">
+          <button
+            aria-pressed={!showSelection}
+            onClick={() => setView("default")}
+            type="button"
+          >
+            Map controls
+          </button>
+          <button
+            aria-pressed={Boolean(showSelection)}
+            disabled={!state}
+            onClick={() => setView("selection")}
+            type="button"
+          >
+            Selected cell
+          </button>
+        </div>
+        {showSelection ? (
+          <>
+            {renderSection("Details", state.rows)}
+            {state.transportRows && state.transportRows.length > 0
+              ? renderSection("Cargo", state.transportRows)
+              : null}
+          </>
+        ) : (
+          <div className="game-panel__default">
+            <section className="game-panel__section">
+              <h3 className="game-panel__title">Win condition</h3>
+              <div className="game-panel__value">{winCondition.description}</div>
+            </section>
+            {controls && (
+              <section aria-labelledby="map-controls-title" className="game-panel__section">
+                <h3 className="game-panel__title" id="map-controls-title">Map controls</h3>
+                <div className="game-panel__control-row">
+                  <div aria-label="Board view" className="game-renderer-toggle" role="group">
+                    <button aria-pressed={controls.renderer === "2d"} onClick={() => controls.onRendererChange("2d")} type="button">Use 2D board</button>
+                    <button aria-pressed={controls.renderer === "3d"} onClick={() => controls.onRendererChange("3d")} type="button">Use 3D board</button>
+                  </div>
+                  {controls.renderer === "3d" && controls.rendererAvailable && (
+                    <div aria-label="3D camera controls" className="game-camera-controls" role="toolbar">
+                      {cameraControls.map((control) => (
+                        <button aria-label={control.label} key={control.intent} onClick={() => controls.onCameraIntent(control.intent)} type="button">{control.text}</button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {controls.renderer === "3d" && controls.rendererAvailable && (
+                  <AccessibleBoardNavigator board={controls.board} onIntent={controls.onBoardIntent} />
+                )}
+              </section>
+            )}
+          </div>
+        )}
       </div>
-    ) : (
-      <div className="game-panel">
-        {renderSection("Details", state.rows)}
-        {state.transportRows && state.transportRows.length > 0
-          ? renderSection("Cargo", state.transportRows)
-          : null}
-      </div>
-    )}
-  </div>
-);
+    </div>
+  );
+};
 
 export default GamePanel;

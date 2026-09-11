@@ -43,6 +43,8 @@ K. "Transport" - IF LOADED, list subset of detail sections (excluding G. Actions
 ## UI Visual Requirements
 
 - details will need to scroll as some unit types will require significant space. the GamePanel.tsx should not expand to make the entire page scrollable, it should scroll with the available space in the window.
+- The default details view contains the canonical win condition and renderer controls. Camera and keyboard navigation controls appear there only while the 3D renderer is active, keeping controls off the board surface.
+- A compact view switcher changes between the default view and selected-cell details. The selected-cell option is disabled when no cell is selected.
 - The section should be built using a cloudscape container, with each field populating a "key value pair" component. However, you should confirm that the cloudscape container will not conflict with the previous requirement related to scrolling.
 - for "Actions", use the cloudscape "popover" component and a child cloudscape Button (without a display icon). when the action is clicked, the appropriate details text should be displayed as the popover text.
 
