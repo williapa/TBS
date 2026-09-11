@@ -99,8 +99,23 @@ test("creator, challenger, and spectator complete a live game and all action fam
     await expect(spectator.getByRole("heading", { name: winnerStatus })).toBeVisible();
     await expect(spectator.locator(".game-view__metadata").getByText("Winner")
       .locator("xpath=following-sibling::*[1]")).toHaveText("purple");
-    await expect(spectator.getByRole("complementary", { name: "purple player" }))
-      .toContainText("Winner");
+    const winningPanel = spectator.getByRole("complementary", { name: "purple player" });
+    await expect(winningPanel).toContainText("Winner");
+    const winnerOverlay = await winningPanel.evaluate((panel) => {
+      const styles = getComputedStyle(panel, "::after");
+      return {
+        boxShadow: styles.boxShadow,
+        pointerEvents: styles.pointerEvents,
+        position: styles.position,
+        zIndex: styles.zIndex,
+      };
+    });
+    expect(winnerOverlay).toMatchObject({
+      pointerEvents: "none",
+      position: "absolute",
+      zIndex: "1",
+    });
+    expect(winnerOverlay.boxShadow).toContain("rgb(255, 213, 74)");
     for (const page of [creator, challenger, spectator]) {
       const committedEvents = page.locator('[data-revision="1"]');
       await expect(committedEvents).toHaveCount(2);
