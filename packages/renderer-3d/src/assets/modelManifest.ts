@@ -19,6 +19,7 @@ export type PrimitiveModelKind =
   | "lab"
   | "leader"
   | "lion"
+  | "michael-jackson"
   | "missile"
   | "money"
   | "nuke"
@@ -53,7 +54,9 @@ export const getProceduralModel = (assetId: string): ProceduralModelDescriptor =
       ? "student-athlete"
       : unitId === "bigTruck"
       ? "big-truck"
-      : unitId === "bluesMusician"
+      : unitId === "michaelJackson"
+        ? "michael-jackson"
+        : unitId === "bluesMusician"
         ? "blues-musician"
         : unitId === "constructionWorker"
           ? "construction-worker"
@@ -62,7 +65,7 @@ export const getProceduralModel = (assetId: string): ProceduralModelDescriptor =
     ? 1.85
     : kind === "priest" || kind === "capital" || kind === "office"
       ? 1.68
-      : kind === "zookeeper" || kind === "student-athlete" || kind === "engineer" || kind === "big-truck" || kind === "zuckerbird" || kind === "leader" || kind === "scientist" || kind === "blues-musician" || kind === "missile"
+      : kind === "zookeeper" || kind === "student-athlete" || kind === "engineer" || kind === "big-truck" || kind === "zuckerbird" || kind === "leader" || kind === "scientist" || kind === "blues-musician" || kind === "michael-jackson" || kind === "missile"
         ? 1.52
         : kind === "worker" || kind === "pilot" || kind === "doctor" || kind === "ambulance" || kind === "airport" || kind === "construction-worker" || kind === "soldier" || kind === "dragon" || kind === "nuke"
           ? 1.42

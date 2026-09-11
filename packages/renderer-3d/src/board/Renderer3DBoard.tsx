@@ -32,6 +32,7 @@ import { HouseModel } from "../assets/HouseModel.js";
 import { LabModel } from "../assets/LabModel.js";
 import { LeaderModel } from "../assets/LeaderModel.js";
 import { LionModel } from "../assets/LionModel.js";
+import { MichaelJacksonModel } from "../assets/MichaelJacksonModel.js";
 import { MissileModel } from "../assets/MissileModel.js";
 import { MoneyModel } from "../assets/MoneyModel.js";
 import { NukeModel } from "../assets/NukeModel.js";
@@ -138,6 +139,7 @@ const PrimitiveModel = ({ entity }: Readonly<{ entity: BoardEntityViewModel }>) 
   if (model.kind === "airport") return <AirportModel color={color} orientation={entity.orientation} />;
   if (model.kind === "bank") return <BankModel color={color} orientation={entity.orientation} />;
   if (model.kind === "big-truck") return <BigTruckModel color={color} orientation={entity.orientation} />;
+  if (model.kind === "michael-jackson") return <MichaelJacksonModel color={color} orientation={entity.orientation} />;
   if (model.kind === "blues-musician") return <BluesMusicianModel color={color} orientation={entity.orientation} />;
   if (model.kind === "capital") return <CapitalModel color={color} orientation={entity.orientation} />;
   if (model.kind === "church") return <ChurchModel color={color} orientation={entity.orientation} />;

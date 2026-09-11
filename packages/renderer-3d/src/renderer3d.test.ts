@@ -364,11 +364,20 @@ describe("renderer-3d presentation behavior", () => {
     }
   });
 
+  it("resolves the costume dancer with clearance above the mannequin head", () => {
+    for (const assetId of ["unit:michaelJackson", "michaelJackson"]) {
+      expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "michael-jackson", healthBarHeight: 1.52, source: "project-owned-procedural" });
+      expect(getProceduralModel(assetId).healthBarHeight).toBeGreaterThan(1.38);
+    }
+    expect(getProceduralModel("unit:future-michaelJackson").kind).toBe("person");
+    expect(getProceduralModel("unit:bluesMusician").kind).toBe("blues-musician");
+  });
+
   it("resolves the blues musician's distinct model with fedora and guitar clearance", () => {
     for (const assetId of ["unit:bluesMusician", "bluesMusician"]) {
       expect(getProceduralModel(assetId)).toEqual({ assetId, kind: "blues-musician", healthBarHeight: 1.52, source: "project-owned-procedural" });
     }
-    for (const assetId of ["unit:michaelJackson", "unit:future-bluesMusician"]) {
+    for (const assetId of ["unit:future-bluesMusician"]) {
       expect(getProceduralModel(assetId).kind).toBe("person");
     }
   });
