@@ -6,7 +6,7 @@ import { getProceduralModel } from "./assets/modelManifest.js";
 import { cellHighlightColor, cellHighlightRenderOrder, targetHighlightContrastColor } from "./board/highlightColor.js";
 import { HEX_WORLD_ORIENTATION, projectHexToWorld } from "./board/projection.js";
 import { cellForTerrainInstance, createTerrainBatches } from "./board/terrainBatches.js";
-import { initialCameraState, updateCameraState } from "./camera/cameraState.js";
+import { cameraPosition, initialCameraState, updateCameraState } from "./camera/cameraState.js";
 
 const cellId = (value: string) => value as BoardCellViewModel["id"];
 
@@ -411,5 +411,14 @@ describe("renderer-3d presentation behavior", () => {
     let zoomed = initial;
     for (let index = 0; index < 20; index += 1) zoomed = updateCameraState(zoomed, "zoom-in", board.cameraBounds);
     expect(zoomed.zoom).toBe(2.2);
+  });
+
+  it("starts directly in front of units without changing camera height or distance", () => {
+    const initial = initialCameraState(board.cameraBounds);
+    const position = cameraPosition(initial);
+
+    expect(position.x).toBeCloseTo(initial.targetX);
+    expect(position.y).toBe(11);
+    expect(position.z - initial.targetZ).toBeCloseTo(12);
   });
 });

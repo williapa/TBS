@@ -48,7 +48,7 @@ import { TruckModel } from "../assets/TruckModel.js";
 import { ZuckerbirdModel } from "../assets/ZuckerbirdModel.js";
 import { ZookeeperModel } from "../assets/ZookeeperModel.js";
 import { ZooModel } from "../assets/ZooModel.js";
-import { initialCameraState, type CameraIntent, type StrategyCameraState, updateCameraState } from "../camera/cameraState.js";
+import { cameraPosition, initialCameraState, type CameraIntent, type StrategyCameraState, updateCameraState } from "../camera/cameraState.js";
 import { cellHighlightRenderOrder, targetHighlightColor, targetHighlightContrastColor } from "./highlightColor.js";
 import { healthBarFill, healthBarTrack } from "./healthBarLayout.js";
 import { HEX_WORLD_ORIENTATION, projectHexToWorld } from "./projection.js";
@@ -90,13 +90,8 @@ const StrategyCamera = ({ state }: Readonly<{ state: StrategyCameraState }>) => 
   const { camera, size } = useThree();
   useLayoutEffect(() => {
     const orthographic = camera as OrthographicCamera;
-    const azimuth = (Math.PI / 4) + (state.rotationStep * Math.PI / 3);
-    const distance = 12;
-    orthographic.position.set(
-      state.targetX + (Math.cos(azimuth) * distance),
-      11,
-      state.targetZ + (Math.sin(azimuth) * distance),
-    );
+    const position = cameraPosition(state);
+    orthographic.position.set(position.x, position.y, position.z);
     orthographic.lookAt(state.targetX, 0, state.targetZ);
     orthographic.zoom = Math.max(28, Math.min(size.width, size.height) * 0.075) * state.zoom;
     orthographic.updateProjectionMatrix();

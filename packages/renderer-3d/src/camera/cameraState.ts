@@ -14,10 +14,22 @@ export type CameraIntent = "pan-down" | "pan-left" | "pan-right" | "pan-up" | "r
 const MINIMUM_ZOOM = 0.65;
 const MAXIMUM_ZOOM = 2.2;
 const PAN_STEP = 0.85;
+const CAMERA_DISTANCE = 12;
+const CAMERA_HEIGHT = 11;
+const INITIAL_CAMERA_AZIMUTH = Math.PI / 2;
 
 export const initialCameraState = (bounds: BoardCameraBounds): StrategyCameraState => {
   const { center } = projectCameraBounds(bounds);
   return { targetX: center.x, targetZ: center.z, zoom: 1, rotationStep: 0 };
+};
+
+export const cameraPosition = (state: StrategyCameraState): Readonly<{ x: number; y: number; z: number }> => {
+  const azimuth = INITIAL_CAMERA_AZIMUTH + (state.rotationStep * Math.PI / 3);
+  return {
+    x: state.targetX + (Math.cos(azimuth) * CAMERA_DISTANCE),
+    y: CAMERA_HEIGHT,
+    z: state.targetZ + (Math.sin(azimuth) * CAMERA_DISTANCE),
+  };
 };
 
 export const updateCameraState = (
