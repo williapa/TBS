@@ -39,7 +39,10 @@ const createGame = async (store: InMemoryGameSessionStore) => {
 };
 
 describe("new session create and join flow", () => {
-  beforeEach(() => window.localStorage.clear());
+  beforeEach(() => {
+    window.localStorage.clear();
+    window.localStorage.setItem("TBS.board-renderer.v2", "2d");
+  });
 
   test("renders the restored Hostile Hexagons homepage", () => {
     renderFlow(new InMemoryGameSessionGateway(createStore(), "visitor"));

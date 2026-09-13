@@ -152,6 +152,7 @@ const moveTargetCell = () => {
 describe("GameMap renderer lifecycle", () => {
   beforeEach(() => {
     window.localStorage.clear();
+    window.localStorage.setItem("TBS.board-renderer.v2", "2d");
     interactionPreviewCalls.mockClear();
     rendererLifecycle.disposed.mockClear();
     Object.defineProperty(window, "matchMedia", {
@@ -329,7 +330,7 @@ describe("GameMap renderer lifecycle", () => {
     ));
   });
 
-  test("persists the renderer preference and forwards reduced-motion preference", async () => {
+  test("defaults to 3D, forwards reduced motion, and persists an explicit 2D preference", async () => {
     Object.defineProperty(window, "matchMedia", {
       configurable: true,
       value: vi.fn().mockReturnValue({
@@ -338,14 +339,16 @@ describe("GameMap renderer lifecycle", () => {
         removeEventListener: vi.fn(),
       }),
     });
+    window.localStorage.clear();
     const first = renderGameMap();
-    fireEvent.click(screen.getByRole("button", { name: "Use 3D board" }));
     expect(await screen.findByLabelText("Mock three-dimensional board")).toHaveAttribute("data-reduced-motion", "true");
+    expect(screen.getByRole("button", { name: "Use 3D board" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Use 2D board" }));
     first.unmount();
 
     renderGameMap();
-    expect(await screen.findByLabelText("Mock three-dimensional board")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Use 3D board" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("grid", { name: /Two-dimensional game board/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Use 2D board" })).toHaveAttribute("aria-pressed", "true");
   });
 
   test("offers a bounded keyboard cell navigator for the WebGL view", async () => {

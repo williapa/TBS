@@ -23,7 +23,6 @@ test("the zoo remains selectable through its 3D model and after camera rotation"
   // A lion costs more than starting money; collect the bank's ordinary turn income.
   await page.getByRole("button", { name: "End turn", exact: true }).click();
   await page.getByRole("button", { name: "End turn", exact: true }).click();
-  await page.getByRole("button", { name: "Use 3D board" }).click();
   const board = page.getByRole("application", { name: /Three-dimensional game board/ });
   const canvas = board.locator("canvas");
   await expect(canvas).toBeVisible();

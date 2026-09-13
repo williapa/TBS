@@ -19,12 +19,13 @@ test("test mode plays both teams without contacting Supabase", async ({ page }) 
   const boardViewToggle = detailsPanel.getByRole("group", { name: "Board view" });
   await expect(boardViewToggle).toBeVisible();
   await expect(boardViewToggle.getByRole("button", { name: "Use 2D board" }))
-    .toHaveAttribute("aria-pressed", "true");
+    .toHaveAttribute("aria-pressed", "false");
   await expect(boardViewToggle.getByRole("button", { name: "Use 3D board" }))
+    .toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("application", { name: /Three-dimensional game board/ }))
     .toBeVisible();
   await expect(page.locator(".game.special-panel").getByRole("group", { name: "Board view" }))
     .toHaveCount(0);
-  await boardViewToggle.getByRole("button", { name: "Use 3D board" }).click();
   await expect(detailsPanel.getByRole("toolbar", { name: "3D camera controls" }))
     .toBeVisible();
   await expect(detailsPanel.getByRole("region", { name: "Keyboard board controls" }))

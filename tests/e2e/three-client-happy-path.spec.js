@@ -29,6 +29,7 @@ test("creator, challenger, and spectator complete a live game and all action fam
   const openClient = async (name, storage) => {
     const context = await browser.newContext();
     contexts.push(context);
+    await context.addInitScript(() => localStorage.setItem("TBS.board-renderer.v2", "2d"));
     if (storage) await context.addInitScript((value) => localStorage.setItem("TBS.maps.v1", JSON.stringify(value)), storage);
     const page = await context.newPage();
     page.on("console", (message) => logs.push(`[${name}] console.${message.type()}: ${message.text()}`));

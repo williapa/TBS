@@ -20,7 +20,6 @@ test("blues musicians remain selectable through their 3D models across camera an
   await page.getByRole("button", { name: /Map.*Default battlefield/ }).click();
   await page.getByRole("option", { name: /Blues musician model/ }).click();
   await page.getByRole("button", { name: "Test mode" }).click();
-  await page.getByRole("button", { name: "Use 3D board" }).click();
   const board = page.getByRole("application", { name: /Three-dimensional game board/ });
   const canvas = board.locator("canvas");
   await expect(canvas).toBeVisible();
