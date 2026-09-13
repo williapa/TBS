@@ -4,6 +4,16 @@ import type { StandardRuleServices } from "../actions/types";
 
 export type CombatStats = Readonly<{ attack: number; defense: number }>;
 
+export const getDefaultCombatStats = (
+  entity: EntityState,
+  services: StandardRuleServices,
+): CombatStats | undefined => {
+  const definition = services.getUnit(entity.unitTypeId);
+  if (!definition) return undefined;
+  const boost = entity.statuses.some(({ type }) => type === "boosted") ? 10 : 0;
+  return { attack: definition.base.attack + boost, defense: definition.base.defense + boost };
+};
+
 export const getEffectiveCombatStats = (
   entity: EntityState,
   opponent: EntityState,
@@ -24,8 +34,7 @@ export const getEffectiveCombatStats = (
   if (entity.unitTypeId === "zuckerbird" && opponent.unitTypeId === "dragon") {
     return { attack: 8, defense: 100 };
   }
-  const boost = entity.statuses.some(({ type }) => type === "boosted") ? 10 : 0;
-  return { attack: definition.base.attack + boost, defense: definition.base.defense + boost };
+  return getDefaultCombatStats(entity, services);
 };
 
 export const calculateCombatDamage = (

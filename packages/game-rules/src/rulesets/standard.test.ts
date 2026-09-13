@@ -14,7 +14,7 @@ import {
 import { describe, expect, it } from "vitest";
 
 import { parseMoveAction } from "../actions/move";
-import { calculateCombatDamage, getEffectiveCombatStats } from "../content/combat";
+import { calculateCombatDamage, getDefaultCombatStats, getEffectiveCombatStats } from "../content/combat";
 import {
   getActionableEntityIds,
   getAttackTargetIds,
@@ -507,6 +507,10 @@ describe("standard ruleset action registry", () => {
     if (!actor || !defender) throw new Error("missing test combatants");
     expect(getEffectiveCombatStats(actor, defender, standardRuleServices)).toEqual({ attack: 30, defense: 15 });
     expect(calculateCombatDamage(actor, defender, standardRuleServices)).toBe(15);
+    expect(getDefaultCombatStats({
+      ...actor,
+      statuses: [...actor.statuses, { type: "boosted" }],
+    }, standardRuleServices)).toEqual({ attack: 40, defense: 25 });
 
     const bankId = entityId("bank-income");
     const withBank = placeEntity(base, {

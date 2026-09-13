@@ -155,6 +155,7 @@ describe("board presenter", () => {
       label: "Soldier",
       attack: 30,
       defense: 15,
+      boosted: false,
       movement: 2,
       movementCosts: [
         { terrainTypeId: "beach", terrainLabel: "Beach", cost: 1 },
@@ -189,6 +190,26 @@ describe("board presenter", () => {
       ...createState(),
       lifecycle: { phase: "finished", winnerTeamId: orange },
     }, orange)).toMatchObject({ active: false, winner: true });
+  });
+
+  test("presents boosted default combat stats and state", () => {
+    const state = createState();
+    const boostedState: GameState = {
+      ...state,
+      entities: {
+        ...state.entities,
+        [orangeSoldier]: {
+          ...state.entities[orangeSoldier],
+          statuses: [{ type: "boosted" }],
+        },
+      },
+    };
+
+    expect(presentUnitPanel(boostedState, orangeSoldier)).toMatchObject({
+      attack: 40,
+      defense: 25,
+      boosted: true,
+    });
   });
 
   test("presents detailed action copy and unit-specific valid targets", () => {

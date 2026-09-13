@@ -7,9 +7,11 @@ import type {
 } from "@TBS/game-core";
 import {
   getEntityCapabilities,
+  getDefaultCombatStats,
   getMovementCost,
   getTeamIncome,
   getUnitDefinition,
+  standardRuleServices,
   standardTerrainTypeIds,
   type UnitCapability,
 } from "@TBS/game-rules";
@@ -26,6 +28,7 @@ export type UnitPanelViewModel = Readonly<{
   health: Readonly<{ current: number; maximum: number }> | null;
   attack: number;
   defense: number;
+  boosted: boolean;
   movement: number;
   movementCosts: readonly Readonly<{
     terrainTypeId: TerrainTypeId;
@@ -60,14 +63,18 @@ export const presentUnitPanel = (
   if (!entity) return null;
   const definition = getUnitDefinition(entity.unitTypeId);
   if (!definition) return null;
+  const combatStats = getDefaultCombatStats(entity, standardRuleServices);
+  if (!combatStats) return null;
+  const boosted = entity.statuses.some(({ type }) => type === "boosted");
   return {
     entityId,
     unitTypeId: entity.unitTypeId,
     label: assets.unit(entity.unitTypeId).label,
     teamId: entity.ownerTeamId ?? null,
     health: entity.health ?? null,
-    attack: definition.base.attack,
-    defense: definition.base.defense,
+    attack: combatStats.attack,
+    defense: combatStats.defense,
+    boosted,
     movement: definition.base.movement,
     movementCosts: definition.capabilities.includes("move")
       ? standardTerrainTypeIds.flatMap((terrainTypeId) => {

@@ -51,6 +51,12 @@ const unitRows = (
     type: "text",
     value: `Attack ${unit.attack}, Defense ${unit.defense}`,
   },
+  ...(unit.boosted ? [{
+    id: "boosted",
+    label: "Boosted",
+    type: "text" as const,
+    value: "Yes — cannot be boosted again",
+  }] : []),
   ...(unit.movementCosts.length > 0 ? [{
     id: "energy",
     label: "Energy",

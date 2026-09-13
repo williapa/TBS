@@ -79,6 +79,39 @@ describe("buildGamePanelState", () => {
     });
   });
 
+  test("shows boosted combat stats and prevents another boost in the details", () => {
+    const { actor, state } = fixture();
+    const boostedState = {
+      ...state,
+      entities: {
+        ...state.entities,
+        [actor.id]: {
+          ...state.entities[actor.id],
+          statuses: [{ type: "boosted" }],
+        },
+      },
+    };
+    const panel = buildGamePanelState({
+      interactionState: {
+        ...createInitialGameInteractionState(),
+        mode: "unit-selected",
+        selectedEntityId: actor.id,
+      },
+      lastInspectedCellId: null,
+      state: boostedState,
+    });
+
+    expect(panel?.rows).toEqual(expect.arrayContaining([
+      { id: "stats", label: "Stats", type: "text", value: "Attack 40, Defense 25" },
+      {
+        id: "boosted",
+        label: "Boosted",
+        type: "text",
+        value: "Yes — cannot be boosted again",
+      },
+    ]));
+  });
+
   test("returns null without a selected entity or inspected cell", () => {
     const { state } = fixture();
     expect(buildGamePanelState({
