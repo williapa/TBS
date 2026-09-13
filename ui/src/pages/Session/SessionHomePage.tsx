@@ -137,7 +137,7 @@ export const SessionHomePage = () => {
         header={(
           <Header
             variant="h1"
-            description="Play both teams locally in test mode, or create a multiplayer match and share its invite link."
+            description="Play both teams locally in test mode, or create a multiplayer match your opponent can join via link."
           >
             Start a game
           </Header>
