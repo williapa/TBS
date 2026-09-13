@@ -47,9 +47,9 @@ test("the neutral nuke remains selectable across camera and renderer changes", a
     await page.getByRole("button", { name: "Rotate camera clockwise" }).click();
   }
   await testInfo.attach("nuke-model-front", { body: await board.screenshot({ path: testInfo.outputPath("nuke-model-front.png") }), contentType: "image/png" });
-  await page.getByRole("button", { name: "Use 2D board" }).click();
+  await page.getByRole("button", { name: "2D Board" }).click();
   await expect(page.getByRole("button", { name: "Nuke, neutral", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Use 3D board" }).click();
+  await page.getByRole("button", { name: "3D Board" }).click();
   await expect(canvas).toBeVisible();
   await expect(selectNuke).toPass();
   expect(errors).toEqual([]);

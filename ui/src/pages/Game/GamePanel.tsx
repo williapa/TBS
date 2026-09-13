@@ -7,7 +7,7 @@ import {
 } from "@TBS/presentation";
 import { getEmojiForUnit } from "@TBS/renderer-2d";
 import type { CameraIntent } from "@TBS/renderer-3d";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   GameMapControlsState,
   GamePanelRow,
@@ -26,6 +26,8 @@ const initialDictionaryUnitTypeId = unitDictionaryUnits[0]?.unitTypeId ?? null;
 
 const isDictionaryUnitTypeId = (value: string): value is DictionaryUnitTypeId =>
   unitDictionaryUnits.some(({ unitTypeId }) => unitTypeId === value);
+
+type OpenUnitDictionary = (unitTypeId: DictionaryUnitTypeId) => void;
 
 const cameraControls: readonly Readonly<{
   intent: CameraIntent;
@@ -53,16 +55,37 @@ const renderTerrain = (terrain: GamePanelTerrain, cost?: number) => (
   </span>
 );
 
-const renderRowValue = (row: GamePanelRow) => {
+const renderRowValue = (row: GamePanelRow, openUnitDictionary: OpenUnitDictionary) => {
   if (row.type === "actions") {
     return (
       <div className="game-panel__actions">
-        {row.actions.map((action) => (
-          <details className="game-panel__action" key={action.id}>
-            <summary>{action.label}</summary>
-            <div className="game-panel__action-description">{action.description}</div>
-          </details>
-        ))}
+        {row.actions.map((action) => {
+          const unitList = action.unitList;
+          return (
+            <details className="game-panel__action" key={action.id}>
+              <summary>{action.label}</summary>
+              <div className="game-panel__action-description">{action.description}</div>
+              {unitList ? (
+                <div className="game-panel__action-unit-list">
+                  <span>{unitList.label} </span>
+                  {unitList.units.map((unit, index) => (
+                    <span key={unit.unitTypeId}>
+                      <button
+                        aria-label={`View ${unit.label} in unit dictionary`}
+                        className="game-panel__action-unit-link"
+                        onClick={() => openUnitDictionary(unit.unitTypeId)}
+                        type="button"
+                      >
+                        {unit.label}
+                      </button>
+                      {index < unitList.units.length - 1 ? ", " : "."}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </details>
+          );
+        })}
       </div>
     );
   }
@@ -91,18 +114,22 @@ const renderRowValue = (row: GamePanelRow) => {
   );
 };
 
-const renderRows = (rows: readonly GamePanelRow[]) =>
+const renderRows = (rows: readonly GamePanelRow[], openUnitDictionary: OpenUnitDictionary) =>
   rows.map((row) => (
     <div className="game-panel__item" key={row.id}>
       <div className="game-panel__label">{row.label}</div>
-      {renderRowValue(row)}
+      {renderRowValue(row, openUnitDictionary)}
     </div>
   ));
 
-const renderSection = (rows: readonly GamePanelRow[], title?: string) => (
+const renderSection = (
+  rows: readonly GamePanelRow[],
+  openUnitDictionary: OpenUnitDictionary,
+  title?: string,
+) => (
   <section className="game-panel__section">
     {title && <h3 className="game-panel__title">{title}</h3>}
-    <div className="game-panel__grid">{renderRows(rows)}</div>
+    <div className="game-panel__grid">{renderRows(rows, openUnitDictionary)}</div>
   </section>
 );
 
@@ -120,9 +147,26 @@ const GamePanel = ({
   const [view, setView] = useState<DetailsView>(state ? "selection" : "default");
   const [dictionaryUnitTypeId, setDictionaryUnitTypeId] =
     useState<DictionaryUnitTypeId | null>(initialDictionaryUnitTypeId);
+  const dictionarySelectRef = useRef<HTMLSelectElement>(null);
+  const focusDictionaryAfterNavigation = useRef(false);
 
   useEffect(() => setView((current) =>
     current === "dictionary" ? current : state ? "selection" : "default"), [state]);
+
+  useEffect(() => {
+    if (view !== "dictionary" || !focusDictionaryAfterNavigation.current) return;
+    dictionarySelectRef.current?.focus();
+    focusDictionaryAfterNavigation.current = false;
+  }, [dictionaryUnitTypeId, view]);
+
+  const openUnitDictionary: OpenUnitDictionary = (unitTypeId) => {
+    if (!isDictionaryUnitTypeId(unitTypeId)) {
+      throw new Error("Action referenced a unit outside the unit dictionary");
+    }
+    focusDictionaryAfterNavigation.current = true;
+    setDictionaryUnitTypeId(unitTypeId);
+    setView("dictionary");
+  };
 
   const showSelection = view === "selection" && state;
   const dictionaryUnit = dictionaryUnitTypeId
@@ -158,9 +202,9 @@ const GamePanel = ({
         </div>
         {showSelection ? (
           <>
-            {renderSection(state.rows)}
+            {renderSection(state.rows, openUnitDictionary)}
             {state.transportRows && state.transportRows.length > 0
-              ? renderSection(state.transportRows, "Cargo")
+              ? renderSection(state.transportRows, openUnitDictionary, "Cargo")
               : null}
           </>
         ) : view === "dictionary" ? (
@@ -170,6 +214,7 @@ const GamePanel = ({
               <select
                 id="unit-dictionary-select"
                 name="unit-dictionary"
+                ref={dictionarySelectRef}
                 value={dictionaryUnitTypeId ?? ""}
                 onChange={(event) => {
                   const nextUnitTypeId = event.currentTarget.value;
@@ -190,7 +235,9 @@ const GamePanel = ({
                 ))}
               </select>
             </div>
-            {dictionaryUnit ? renderSection(dictionaryRows, dictionaryUnit.label) : null}
+            {dictionaryUnit
+              ? renderSection(dictionaryRows, openUnitDictionary)
+              : null}
           </div>
         ) : (
           <div className="game-panel__default">
@@ -203,8 +250,8 @@ const GamePanel = ({
                 <h3 className="game-panel__title" id="map-controls-title">Map controls</h3>
                 <div className="game-panel__control-row">
                   <div aria-label="Board view" className="game-renderer-toggle" role="group">
-                    <button aria-pressed={controls.renderer === "2d"} onClick={() => controls.onRendererChange("2d")} type="button">Use 2D board</button>
-                    <button aria-pressed={controls.renderer === "3d"} onClick={() => controls.onRendererChange("3d")} type="button">Use 3D board</button>
+                    <button aria-pressed={controls.renderer === "2d"} onClick={() => controls.onRendererChange("2d")} type="button">2D Board</button>
+                    <button aria-pressed={controls.renderer === "3d"} onClick={() => controls.onRendererChange("3d")} type="button">3D Board</button>
                   </div>
                   {controls.renderer === "3d" && controls.rendererAvailable && (
                     <div aria-label="3D camera controls" className="game-camera-controls" role="toolbar">

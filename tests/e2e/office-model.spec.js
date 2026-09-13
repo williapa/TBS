@@ -50,9 +50,9 @@ test("the office remains selectable through its 3D model and after camera rotati
     await page.getByRole("button", { name: "Rotate camera clockwise" }).click();
   }
   await testInfo.attach("office-model-front", { body: await board.screenshot(), contentType: "image/png" });
-  await page.getByRole("button", { name: "Use 2D board" }).click();
+  await page.getByRole("button", { name: "2D Board" }).click();
   await expect(page.getByRole("button", { name: /Office, purple team/ })).toBeVisible();
-  await page.getByRole("button", { name: "Use 3D board" }).click();
+  await page.getByRole("button", { name: "3D Board" }).click();
   await expect(canvas).toBeVisible();
   await expect(async () => {
     await clickOffice();

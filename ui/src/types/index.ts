@@ -23,6 +23,7 @@ import type {
   GameMenuOption,
   MenuPosition,
   StandardActionDraft,
+  UnitPanelActionViewModel,
 } from "@TBS/presentation";
 import type { CameraIntent } from "@TBS/renderer-3d";
 import type { ReactNode } from "react";
@@ -59,11 +60,7 @@ export type ModeType = "editor" | "game";
 export type Dimensions = Readonly<{ width: number; height: number }>;
 export type MapCellEditState = "editable" | "axis" | "disabled";
 
-export type GamePanelAction = Readonly<{
-  id: string;
-  label: string;
-  description: string;
-}>;
+export type GamePanelAction = UnitPanelActionViewModel;
 
 export type GamePanelTerrain = Readonly<{
   color: string;

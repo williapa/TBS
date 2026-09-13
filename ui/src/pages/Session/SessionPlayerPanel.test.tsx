@@ -20,8 +20,7 @@ describe("SessionPlayerPanel", () => {
     );
 
     expect(screen.getByText("Money:").closest("p")).toHaveTextContent("Money: $1000");
-    expect(screen.getByText("Income per turn:").closest("p"))
-      .toHaveTextContent("Income per turn: $25");
-    expect(screen.queryByText("Income/turn:")).not.toBeInTheDocument();
+    expect(screen.getByText("Income:").closest("p"))
+      .toHaveTextContent("Income: $25");
   });
 });

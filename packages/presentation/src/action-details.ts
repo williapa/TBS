@@ -31,6 +31,13 @@ export type UnitPanelActionViewModel = Readonly<{
   id: UnitPanelActionId;
   label: string;
   description: string;
+  unitList: Readonly<{
+    label: string;
+    units: readonly Readonly<{
+      unitTypeId: UnitTypeId;
+      label: string;
+    }>[];
+  }> | null;
 }>;
 
 const actionDetails: Readonly<Record<UnitPanelActionId, Readonly<{
@@ -122,26 +129,33 @@ const targetGroupByAbility: Readonly<Record<string, string | undefined>> = {
 
 const descriptionForAction = (
   actionId: UnitPanelActionId,
-  unitTypeId: UnitTypeId,
   abilities: readonly string[],
-  assets: PresentationAssetManifest,
 ): string => {
   const baseText = actionDetails[actionId].description;
-  if (actionId === "construct") {
-    const labels = getConstructionOptions()
-      .map(({ unitTypeId: optionUnitTypeId }) => assets.unit(optionUnitTypeId).label);
-    return labels.length > 0 ? `${baseText} Can construct: ${labels.join(", ")}.` : baseText;
-  }
-  if (actionId === "spawn") {
-    const labels = getProductionOptions(unitTypeId)
-      .map(({ unitTypeId: optionUnitTypeId }) => assets.unit(optionUnitTypeId).label);
-    return labels.length > 0 ? `${baseText} Can spawn: ${labels.join(", ")}.` : baseText;
-  }
   if (actionId !== "boost" && actionId !== "heal") return baseText;
   const targetGroup = abilities.map((ability) => targetGroupByAbility[ability]).find(Boolean);
   return targetGroup
     ? `${baseText} Valid targets: adjacent allied ${targetGroup}.`
     : baseText;
+};
+
+const unitListForAction = (
+  actionId: UnitPanelActionId,
+  unitTypeId: UnitTypeId,
+  assets: PresentationAssetManifest,
+): UnitPanelActionViewModel["unitList"] => {
+  if (actionId !== "construct" && actionId !== "spawn") return null;
+  const options = actionId === "construct"
+    ? getConstructionOptions()
+    : getProductionOptions(unitTypeId);
+  if (options.length === 0) return null;
+  return {
+    label: actionId === "construct" ? "Can construct:" : "Can spawn:",
+    units: options.map(({ unitTypeId: optionUnitTypeId }) => ({
+      unitTypeId: optionUnitTypeId,
+      label: assets.unit(optionUnitTypeId).label,
+    })),
+  };
 };
 
 export const presentUnitActions = (
@@ -162,6 +176,7 @@ export const presentUnitActions = (
     .map((actionId) => ({
       id: actionId,
       label: actionDetails[actionId].label,
-      description: descriptionForAction(actionId, unitTypeId, definition.abilities, assets),
+      description: descriptionForAction(actionId, definition.abilities),
+      unitList: unitListForAction(actionId, unitTypeId, assets),
     }));
 };

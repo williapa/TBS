@@ -51,10 +51,10 @@ test("ambulances remain selectable through their 3D models across camera and ren
     await page.getByRole("button", { name: "Rotate camera clockwise" }).click();
   }
   await testInfo.attach("ambulance-model-front", { body: await board.screenshot({ path: testInfo.outputPath("ambulance-model-front.png") }), contentType: "image/png" });
-  await page.getByRole("button", { name: "Use 2D board" }).click();
+  await page.getByRole("button", { name: "2D Board" }).click();
   await expect(page.getByRole("button", { name: /^Ambulance, purple team/ })).toBeVisible();
   await expect(page.getByRole("button", { name: /^Ambulance, orange team/ })).toBeVisible();
-  await page.getByRole("button", { name: "Use 3D board" }).click();
+  await page.getByRole("button", { name: "3D Board" }).click();
   await expect(canvas).toBeVisible();
   await expect(async () => {
     await clickAmbulance();

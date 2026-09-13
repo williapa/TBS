@@ -53,10 +53,10 @@ test("the house remains selectable through its 3D model and after camera rotatio
     await page.getByRole("button", { name: "Rotate camera clockwise" }).click();
   }
   await testInfo.attach("house-model-front", { body: await board.screenshot({ path: testInfo.outputPath("house-model-front.png") }), contentType: "image/png" });
-  await page.getByRole("button", { name: "Use 2D board" }).click();
+  await page.getByRole("button", { name: "2D Board" }).click();
   await expect(page.getByRole("button", { name: /House, purple team/ })).toBeVisible();
   await expect(page.getByRole("button", { name: /House, orange team/ })).toBeVisible();
-  await page.getByRole("button", { name: "Use 3D board" }).click();
+  await page.getByRole("button", { name: "3D Board" }).click();
   await expect(canvas).toBeVisible();
   await expect(async () => {
     await clickHouse();

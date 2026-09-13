@@ -19,9 +19,9 @@ test("test mode plays both teams without contacting Supabase", async ({ page }) 
   const detailsPanel = page.getByRole("region", { name: "Game details" });
   const boardViewToggle = detailsPanel.getByRole("group", { name: "Board view" });
   await expect(boardViewToggle).toBeVisible();
-  await expect(boardViewToggle.getByRole("button", { name: "Use 2D board" }))
+  await expect(boardViewToggle.getByRole("button", { name: "2D Board" }))
     .toHaveAttribute("aria-pressed", "false");
-  await expect(boardViewToggle.getByRole("button", { name: "Use 3D board" }))
+  await expect(boardViewToggle.getByRole("button", { name: "3D Board" }))
     .toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("application", { name: /Three-dimensional game board/ }))
     .toBeVisible();
@@ -33,7 +33,7 @@ test("test mode plays both teams without contacting Supabase", async ({ page }) 
     .toBeVisible();
   await expect(page.locator(".game.special-panel").getByRole("toolbar", { name: "3D camera controls" }))
     .toHaveCount(0);
-  await boardViewToggle.getByRole("button", { name: "Use 2D board" }).click();
+  await boardViewToggle.getByRole("button", { name: "2D Board" }).click();
   await expect(detailsPanel.getByRole("toolbar", { name: "3D camera controls" }))
     .toHaveCount(0);
   await expect(detailsPanel.getByRole("region", { name: "Keyboard board controls" }))

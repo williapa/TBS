@@ -50,7 +50,7 @@ test("the capital remains selectable through its 3D model and after camera rotat
     await page.getByRole("button", { name: "Rotate camera clockwise" }).click();
   }
   await testInfo.attach("capital-model-front", { body: await board.screenshot(), contentType: "image/png" });
-  await page.getByRole("button", { name: "Use 2D board" }).click();
+  await page.getByRole("button", { name: "2D Board" }).click();
   await expect(page.getByRole("button", { name: /Capital, purple team/ })).toBeVisible();
   expect(errors).toEqual([]);
 });

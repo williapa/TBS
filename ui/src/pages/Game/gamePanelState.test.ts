@@ -112,11 +112,13 @@ describe("buildGamePanelState", () => {
           id: "attack",
           label: "Attack",
           description: "Initiate combat with an adjacent unit, dealing damage first. If enemy is not killed, it will deal retaliatory damage.",
+          unitList: null,
         },
         {
           id: "move",
           label: "Move",
           description: "Traverse empty map cells based on the unit's available energy and the energy cost of the terrain of cells in its path.",
+          unitList: null,
         },
       ]),
     });

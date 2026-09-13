@@ -181,12 +181,12 @@ describe("GameMap renderer lifecycle", () => {
     expect(screen.getByRole("button", { name: "Move" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Map controls" }));
-    fireEvent.click(screen.getByRole("button", { name: "Use 3D board" }));
+    fireEvent.click(screen.getByRole("button", { name: "3D Board" }));
     expect(await screen.findByLabelText("Mock three-dimensional board")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Move" })).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Keyboard board controls" })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Use 2D board" }));
+    fireEvent.click(screen.getByRole("button", { name: "2D Board" }));
     await waitFor(() => expect(rendererLifecycle.disposed).toHaveBeenCalledOnce());
     expect(screen.getByRole("grid", { name: /Two-dimensional game board/ })).toBeInTheDocument();
   });
@@ -331,7 +331,7 @@ describe("GameMap renderer lifecycle", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Map controls" }));
-    fireEvent.click(screen.getByRole("button", { name: "Use 3D board" }));
+    fireEvent.click(screen.getByRole("button", { name: "3D Board" }));
     fireEvent.click(await screen.findByRole("button", { name: "Pan camera left" }));
     await waitFor(() => expect(screen.getByRole("dialog", { name: "Available actions" })).toHaveClass(
       "game-action-menu--docked",
@@ -350,13 +350,13 @@ describe("GameMap renderer lifecycle", () => {
     window.localStorage.clear();
     const first = renderGameMap();
     expect(await screen.findByLabelText("Mock three-dimensional board")).toHaveAttribute("data-reduced-motion", "true");
-    expect(screen.getByRole("button", { name: "Use 3D board" })).toHaveAttribute("aria-pressed", "true");
-    fireEvent.click(screen.getByRole("button", { name: "Use 2D board" }));
+    expect(screen.getByRole("button", { name: "3D Board" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "2D Board" }));
     first.unmount();
 
     renderGameMap();
     expect(screen.getByRole("grid", { name: /Two-dimensional game board/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Use 2D board" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "2D Board" })).toHaveAttribute("aria-pressed", "true");
   });
 
   test("offers a bounded keyboard cell navigator for the WebGL view", async () => {
@@ -369,7 +369,7 @@ describe("GameMap renderer lifecycle", () => {
         {...gameProps()}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Use 3D board" }));
+    fireEvent.click(screen.getByRole("button", { name: "3D Board" }));
     const currentCell = await screen.findByRole("button", { name: /Current cell:/ });
     const initialLabel = currentCell.getAttribute("aria-label");
     fireEvent.keyDown(currentCell, { key: "ArrowRight" });

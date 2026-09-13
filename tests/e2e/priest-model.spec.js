@@ -51,10 +51,10 @@ test("priests remain selectable through their 3D models across camera and render
     await page.getByRole("button", { name: "Rotate camera clockwise" }).click();
   }
   await testInfo.attach("priest-model-front", { body: await board.screenshot({ path: testInfo.outputPath("priest-model-front.png") }), contentType: "image/png" });
-  await page.getByRole("button", { name: "Use 2D board" }).click();
+  await page.getByRole("button", { name: "2D Board" }).click();
   await expect(page.getByRole("button", { name: /Priest, purple team/ })).toBeVisible();
   await expect(page.getByRole("button", { name: /Priest, orange team/ })).toBeVisible();
-  await page.getByRole("button", { name: "Use 3D board" }).click();
+  await page.getByRole("button", { name: "3D Board" }).click();
   await expect(canvas).toBeVisible();
   await expect(async () => {
     await clickPriest();

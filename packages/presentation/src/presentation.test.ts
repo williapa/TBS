@@ -183,11 +183,13 @@ describe("board presenter", () => {
           id: "attack",
           label: "Attack",
           description: "Initiate combat with an adjacent unit, dealing damage first. If enemy is not killed, it will deal retaliatory damage.",
+          unitList: null,
         },
         {
           id: "load",
           label: "Load",
           description: "occupy an allied vehicle unit, moving wherever it goes until unloaded.",
+          unitList: null,
         },
       ]),
     });
@@ -276,11 +278,13 @@ describe("board presenter", () => {
       id: "boost",
       label: "Boost",
       description: "Boost the combat stats of an allied unit. Valid targets: adjacent allied buildings that are not already boosted.",
+      unitList: null,
     });
     expect(presentUnitActions(unitTypeId("worker"))).toContainEqual({
       id: "heal",
       label: "Heal",
       description: "Increase the health of a damaged unit Valid targets: adjacent allied damaged ground vehicles.",
+      unitList: null,
     });
   });
 
@@ -319,21 +323,29 @@ describe("board presenter", () => {
         [orange]: { id: orange, money: 0 },
       },
     };
-    const spawnLabels = getProductionOptions(airport)
-      .map(({ unitTypeId: optionUnitTypeId }) => testAssets.unit(optionUnitTypeId).label);
+    const spawnUnits = getProductionOptions(airport)
+      .map(({ unitTypeId: optionUnitTypeId }) => ({
+        unitTypeId: optionUnitTypeId,
+        label: testAssets.unit(optionUnitTypeId).label,
+      }));
     expect(presentUnitPanel(unaffordableWaterState, orangeSoldier, testAssets)?.actions)
       .toContainEqual({
         id: "spawn",
         label: "Spawn",
-        description: `Create a new unit on an empty adjacent cell for a monetary cost. Can spawn: ${spawnLabels.join(", ")}.`,
+        description: "Create a new unit on an empty adjacent cell for a monetary cost.",
+        unitList: { label: "Can spawn:", units: spawnUnits },
       });
 
-    const constructionLabels = getConstructionOptions()
-      .map(({ unitTypeId: optionUnitTypeId }) => testAssets.unit(optionUnitTypeId).label);
+    const constructionUnits = getConstructionOptions()
+      .map(({ unitTypeId: optionUnitTypeId }) => ({
+        unitTypeId: optionUnitTypeId,
+        label: testAssets.unit(optionUnitTypeId).label,
+      }));
     expect(presentUnitActions(constructionWorker, testAssets)).toContainEqual({
       id: "construct",
       label: "Construct",
-      description: `Create a building at an adjacent target cell for a monetary cost. Can construct: ${constructionLabels.join(", ")}.`,
+      description: "Create a building at an adjacent target cell for a monetary cost.",
+      unitList: { label: "Can construct:", units: constructionUnits },
     });
     expect(presentUnitActions(unitTypeId("bank")).some(({ id }) => id === "spawn")).toBe(false);
   });

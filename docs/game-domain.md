@@ -54,7 +54,7 @@ Rules expose shared selectors for legal entities, destinations, targets, choices
 
 Unit details describe every unit type that an actor can potentially spawn or construct from the rules-owned production registry. These informational lists are independent of current money, terrain, occupancy, and turn-specific legality.
 
-The game-details panel also provides a unit dictionary for every concrete unit in the standard content registry. Its category-grouped selector presents registry-derived income, purchase or construction cost, base combat stats, movement energy and terrain costs, and actions without requiring an entity to exist in the current game.
+The game-details panel also provides a unit dictionary for every concrete unit in the standard content registry. Its category-grouped selector presents registry-derived income, purchase or construction cost, base combat stats, movement energy and terrain costs, and actions without requiring an entity to exist in the current game. Spawn and construct option lists link to this dictionary from both selected-cell details and dictionary details, selecting the referenced unit without applying current money, terrain, occupancy, or turn-specific filters.
 
 ## Money and income
 

@@ -1,12 +1,28 @@
 import { mapUnitOptions } from "@TBS/game-setup";
+import { presentUnitDictionary, presentUnitTypeDetails } from "@TBS/presentation";
 import { fireEvent, render, screen } from "@testing-library/react";
 import GamePanel from "./GamePanel";
+import { buildUnitDictionaryRows } from "./gamePanelState";
 
 const winCondition = {
   description: "Eliminate every enemy unit that can move and attack.",
   includesCapitalVictory: false,
   includesEliminationVictory: true,
 } as const;
+
+const dictionaryUnitTypeId = (value: string) => {
+  const unit = presentUnitDictionary()
+    .flatMap(({ units }) => units)
+    .find(({ unitTypeId }) => unitTypeId === value);
+  if (!unit) throw new Error(`Expected ${value} in the unit dictionary`);
+  return unit.unitTypeId;
+};
+
+const dictionaryRows = (unitTypeId: string) => {
+  const unit = presentUnitTypeDetails(dictionaryUnitTypeId(unitTypeId));
+  if (!unit) throw new Error(`Expected details for ${unitTypeId}`);
+  return buildUnitDictionaryRows(unit);
+};
 
 describe("GamePanel", () => {
   test("renders the win condition when no cell is selected", () => {
@@ -49,8 +65,18 @@ describe("GamePanel", () => {
             },
             {
               actions: [
-                { description: "Initiate combat.", id: "attack", label: "Attack" },
-                { description: "Traverse empty map cells.", id: "move", label: "Move" },
+                {
+                  description: "Initiate combat.",
+                  id: "attack",
+                  label: "Attack",
+                  unitList: null,
+                },
+                {
+                  description: "Traverse empty map cells.",
+                  id: "move",
+                  label: "Move",
+                  unitList: null,
+                },
               ],
               id: "actions",
               label: "Actions",
@@ -104,20 +130,38 @@ describe("GamePanel", () => {
       "person",
       "vehicle",
     ]);
-    expect(screen.getByRole("heading", { name: "Dragon" })).toBeInTheDocument();
+    expect(select).toHaveValue("dragon");
+    expect(screen.queryByRole("heading", { name: "Dragon" })).not.toBeInTheDocument();
 
     fireEvent.change(select, { target: { value: "airport" } });
 
-    expect(screen.getByRole("heading", { name: "Airport" })).toBeInTheDocument();
+    expect(select).toHaveValue("airport");
     expect(screen.getByText("$100")).toBeInTheDocument();
     expect(screen.getByText("$1000")).toBeInTheDocument();
     expect(screen.getByText("Spawn")).toBeInTheDocument();
-    expect(screen.getByText(/Can spawn: Airplane, Helicopter, Pilot\./)).toBeInTheDocument();
+    expect(screen.getByText("Can spawn:")).toBeInTheDocument();
+    expect(screen.getByRole("button", {
+      name: "View Airplane in unit dictionary",
+    })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", {
+      name: "View Helicopter in unit dictionary",
+    }));
+
+    expect(select).toHaveValue("helicopter");
+    expect(select).toHaveFocus();
 
     fireEvent.change(select, { target: { value: "constructionWorker" } });
-    expect(screen.getByRole("heading", { name: "Construction Worker" })).toBeInTheDocument();
+    expect(select).toHaveValue("constructionWorker");
     expect(screen.getByText("Construct")).toBeInTheDocument();
-    expect(screen.getByText(/Can construct: Airport, Bank, Capital/)).toBeInTheDocument();
+    expect(screen.getByText("Can construct:")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", {
+      name: "View Bank in unit dictionary",
+    }));
+
+    expect(select).toHaveValue("bank");
+    expect(select).toHaveFocus();
 
     fireEvent.change(select, { target: { value: "airport" } });
 
@@ -132,6 +176,52 @@ describe("GamePanel", () => {
       "aria-pressed",
       "true",
     );
-    expect(screen.getByRole("heading", { name: "Airport" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Unit" })).toHaveValue("airport");
+  });
+
+  test("opens linked spawn and construction units from selected-cell details", () => {
+    const { rerender } = render(
+      <GamePanel
+        state={{
+          coords: { q: 0, r: 0 },
+          focus: "cell",
+          rows: dictionaryRows("airport"),
+        }}
+        winCondition={winCondition}
+      />,
+    );
+
+    fireEvent.click(screen.getByText("Spawn"));
+    fireEvent.click(screen.getByRole("button", {
+      name: "View Pilot in unit dictionary",
+    }));
+
+    const select = screen.getByRole("combobox", { name: "Unit" });
+    expect(screen.getByRole("button", { name: "Unit dictionary" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(select).toHaveValue("pilot");
+    expect(select).toHaveFocus();
+
+    rerender(
+      <GamePanel
+        state={{
+          coords: { q: 1, r: 0 },
+          focus: "cell",
+          rows: dictionaryRows("constructionWorker"),
+        }}
+        winCondition={winCondition}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Selected cell" }));
+    fireEvent.click(screen.getByText("Construct"));
+    fireEvent.click(screen.getByRole("button", {
+      name: "View Capital in unit dictionary",
+    }));
+
+    const constructionSelect = screen.getByRole("combobox", { name: "Unit" });
+    expect(constructionSelect).toHaveValue("capital");
+    expect(constructionSelect).toHaveFocus();
   });
 });
