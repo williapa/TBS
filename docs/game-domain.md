@@ -52,6 +52,8 @@ The current action families are:
 
 Rules expose shared selectors for legal entities, destinations, targets, choices, and affordability. Presentation turns those results into labels, panels, overlays, and semantic action drafts; React and the renderers do not reproduce the rules.
 
+Unit details describe every unit type that an actor can potentially spawn or construct from the rules-owned production registry. These informational lists are independent of current money, terrain, occupancy, and turn-specific legality.
+
 ## Money and income
 
 Each team starts with 1,000 money. Construction and production spend the costs defined in the rules registry. At turn transition, income from the next team's on-board buildings is calculated and credited deterministically. Income values are part of unit definitions, so setup, previews, and trusted execution share one source.

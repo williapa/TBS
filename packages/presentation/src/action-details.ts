@@ -1,5 +1,6 @@
 import type { UnitTypeId } from "@TBS/game-core";
 import {
+  getConstructionOptions,
   getProductionOptions,
   getUnitDefinition,
   MISSILE_OBJECT_DAMAGE,
@@ -7,6 +8,9 @@ import {
   NUKE_OBJECT_TARGET_DAMAGE,
   type UnitCapability,
 } from "@TBS/game-rules";
+
+import { identityAssetManifest } from "./assets/manifest";
+import type { PresentationAssetManifest } from "./board/contracts";
 
 export type UnitPanelActionId =
   | "attack"
@@ -43,7 +47,7 @@ const actionDetails: Readonly<Record<UnitPanelActionId, Readonly<{
   },
   construct: {
     label: "Construct",
-    description: "create a building at an adjacent target cell for a monetary cost.",
+    description: "Create a building at an adjacent target cell for a monetary cost.",
   },
   heal: {
     label: "Heal",
@@ -118,9 +122,21 @@ const targetGroupByAbility: Readonly<Record<string, string | undefined>> = {
 
 const descriptionForAction = (
   actionId: UnitPanelActionId,
+  unitTypeId: UnitTypeId,
   abilities: readonly string[],
+  assets: PresentationAssetManifest,
 ): string => {
   const baseText = actionDetails[actionId].description;
+  if (actionId === "construct") {
+    const labels = getConstructionOptions()
+      .map(({ unitTypeId: optionUnitTypeId }) => assets.unit(optionUnitTypeId).label);
+    return labels.length > 0 ? `${baseText} Can construct: ${labels.join(", ")}.` : baseText;
+  }
+  if (actionId === "spawn") {
+    const labels = getProductionOptions(unitTypeId)
+      .map(({ unitTypeId: optionUnitTypeId }) => assets.unit(optionUnitTypeId).label);
+    return labels.length > 0 ? `${baseText} Can spawn: ${labels.join(", ")}.` : baseText;
+  }
   if (actionId !== "boost" && actionId !== "heal") return baseText;
   const targetGroup = abilities.map((ability) => targetGroupByAbility[ability]).find(Boolean);
   return targetGroup
@@ -128,7 +144,10 @@ const descriptionForAction = (
     : baseText;
 };
 
-export const presentUnitActions = (unitTypeId: UnitTypeId): readonly UnitPanelActionViewModel[] => {
+export const presentUnitActions = (
+  unitTypeId: UnitTypeId,
+  assets: PresentationAssetManifest = identityAssetManifest,
+): readonly UnitPanelActionViewModel[] => {
   const definition = getUnitDefinition(unitTypeId);
   if (!definition) return [];
   const actionIds = definition.capabilities.flatMap((capability) => {
@@ -143,6 +162,6 @@ export const presentUnitActions = (unitTypeId: UnitTypeId): readonly UnitPanelAc
     .map((actionId) => ({
       id: actionId,
       label: actionDetails[actionId].label,
-      description: descriptionForAction(actionId, definition.abilities),
+      description: descriptionForAction(actionId, unitTypeId, definition.abilities, assets),
     }));
 };

@@ -87,7 +87,7 @@ export const presentUnitPanel = (
     income: definition.income,
     capabilities: getEntityCapabilities(state, entityId),
     abilities: definition.abilities,
-    actions: presentUnitActions(entity.unitTypeId),
+    actions: presentUnitActions(entity.unitTypeId, assets),
     cargo: (entity.cargo?.entityIds ?? []).flatMap((cargoId) => {
       const cargo = state.entities[cargoId];
       return cargo

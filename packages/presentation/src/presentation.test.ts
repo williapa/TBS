@@ -9,6 +9,8 @@ import {
 } from "@TBS/game-core";
 import {
   applyStandardAction,
+  getConstructionOptions,
+  getProductionOptions,
   STANDARD_CONTENT_VERSION,
   STANDARD_RULESET_VERSION,
 } from "@TBS/game-rules";
@@ -27,6 +29,7 @@ import {
   presentWinCondition,
   type AnimationCue,
   type AnimationDriver,
+  type PresentationAssetManifest,
 } from "./index";
 
 const orange = teamId("orange");
@@ -38,6 +41,11 @@ const origin = hexCoord(0, 0);
 const destination = hexCoord(1, 0);
 const enemyPosition = hexCoord(2, 0);
 const truckPosition = hexCoord(1, -1);
+
+const testAssets: PresentationAssetManifest = {
+  terrain: (id) => ({ assetId: `test-terrain:${id}`, label: `Terrain ${id}` }),
+  unit: (id) => ({ assetId: `test-unit:${id}`, label: `Unit ${id}` }),
+};
 
 const createState = (): GameState => ({
   schemaVersion: 2,
@@ -223,6 +231,60 @@ describe("board presenter", () => {
       label: "Heal",
       description: "Increase the health of a damaged unit Valid targets: adjacent allied damaged ground vehicles.",
     });
+  });
+
+  test("presents every registry-defined spawn and construction option", () => {
+    const airport = unitTypeId("airport");
+    const constructionWorker = unitTypeId("constructionWorker");
+    const state = createState();
+    const unaffordableWaterState: GameState = {
+      ...state,
+      board: {
+        cells: {
+          ...state.board.cells,
+          [hexKey(origin)]: {
+            ...state.board.cells[hexKey(origin)],
+            terrainTypeId: terrainTypeId("water"),
+          },
+          [hexKey(destination)]: {
+            ...state.board.cells[hexKey(destination)],
+            terrainTypeId: terrainTypeId("water"),
+          },
+          [hexKey(enemyPosition)]: {
+            ...state.board.cells[hexKey(enemyPosition)],
+            terrainTypeId: terrainTypeId("water"),
+          },
+        },
+      },
+      entities: {
+        ...state.entities,
+        [orangeSoldier]: {
+          ...state.entities[orangeSoldier],
+          unitTypeId: airport,
+        },
+      },
+      teams: {
+        ...state.teams,
+        [orange]: { id: orange, money: 0 },
+      },
+    };
+    const spawnLabels = getProductionOptions(airport)
+      .map(({ unitTypeId: optionUnitTypeId }) => testAssets.unit(optionUnitTypeId).label);
+    expect(presentUnitPanel(unaffordableWaterState, orangeSoldier, testAssets)?.actions)
+      .toContainEqual({
+        id: "spawn",
+        label: "Spawn",
+        description: `Create a new unit on an empty adjacent cell for a monetary cost. Can spawn: ${spawnLabels.join(", ")}.`,
+      });
+
+    const constructionLabels = getConstructionOptions()
+      .map(({ unitTypeId: optionUnitTypeId }) => testAssets.unit(optionUnitTypeId).label);
+    expect(presentUnitActions(constructionWorker, testAssets)).toContainEqual({
+      id: "construct",
+      label: "Construct",
+      description: `Create a building at an adjacent target cell for a monetary cost. Can construct: ${constructionLabels.join(", ")}.`,
+    });
+    expect(presentUnitActions(unitTypeId("bank")).some(({ id }) => id === "spawn")).toBe(false);
   });
 
   test("omits movement costs for units that cannot move", () => {
