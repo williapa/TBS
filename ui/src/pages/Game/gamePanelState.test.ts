@@ -1,10 +1,12 @@
 import {
   createInitialGameInteractionState,
   presentBoard,
+  presentUnitDictionary,
+  presentUnitTypeDetails,
 } from "@TBS/presentation";
 import { createActiveGameStateFixture } from "@TBS/test-kit";
 
-import { buildGamePanelState } from "./gamePanelState";
+import { buildGamePanelState, buildUnitDictionaryRows } from "./gamePanelState";
 
 const fixture = () => {
   const state = createActiveGameStateFixture();
@@ -17,6 +19,35 @@ const fixture = () => {
 };
 
 describe("buildGamePanelState", () => {
+  test("builds only the applicable unit dictionary rows", () => {
+    const dictionaryUnits = presentUnitDictionary().flatMap(({ units }) => units);
+    const bankTypeId = dictionaryUnits.find(({ unitTypeId }) => unitTypeId === "bank")?.unitTypeId;
+    const soldierTypeId = dictionaryUnits
+      .find(({ unitTypeId }) => unitTypeId === "soldier")?.unitTypeId;
+    if (!bankTypeId || !soldierTypeId) throw new Error("dictionary fixtures must exist");
+    const bank = presentUnitTypeDetails(bankTypeId);
+    const soldier = presentUnitTypeDetails(soldierTypeId);
+    if (!bank || !soldier) throw new Error("dictionary details must exist");
+
+    const bankRows = buildUnitDictionaryRows(bank);
+    expect(bankRows).toEqual(expect.arrayContaining([
+      { id: "income", label: "Income", type: "text", value: "$1000" },
+      { id: "cost", label: "Cost", type: "text", value: "$2000" },
+      { id: "stats", label: "Stats", type: "text", value: "Attack 0, Defense 60" },
+    ]));
+    expect(bankRows.some(({ id }) => id === "energy")).toBe(false);
+    expect(bankRows.some(({ id }) => id === "energy-costs")).toBe(false);
+
+    const soldierRows = buildUnitDictionaryRows(soldier);
+    expect(soldierRows).toEqual(expect.arrayContaining([
+      { id: "cost", label: "Cost", type: "text", value: "$200" },
+      { id: "energy", label: "Energy", type: "text", value: "2" },
+    ]));
+    expect(soldierRows.some(({ id }) => id === "income")).toBe(false);
+    expect(soldierRows.some(({ id }) => id === "energy-costs")).toBe(true);
+    expect(soldierRows.some(({ id }) => id === "actions")).toBe(true);
+  });
+
   test("returns normalized empty-cell details for passive inspection", () => {
     const { emptyCell, state } = fixture();
     const panel = buildGamePanelState({

@@ -9,6 +9,7 @@
 .game-panel__view-toggle {
   align-self: flex-start;
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
 }
 
@@ -21,6 +22,25 @@
   display: grid;
   gap: 16px;
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 3fr);
+}
+
+.game-panel__dictionary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.game-panel__dictionary-picker {
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 320px;
+}
+
+.game-panel__dictionary-picker select {
+  min-height: 32px;
+  width: 100%;
 }
 
 .game-panel__default .game-panel__section {

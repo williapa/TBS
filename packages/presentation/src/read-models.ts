@@ -8,17 +8,15 @@ import type {
 import {
   getEntityCapabilities,
   getDefaultCombatStats,
-  getMovementCost,
   getTeamIncome,
-  getUnitDefinition,
   standardRuleServices,
-  standardTerrainTypeIds,
   type UnitCapability,
 } from "@TBS/game-rules";
 
 import { identityAssetManifest } from "./assets/manifest";
-import { presentUnitActions, type UnitPanelActionViewModel } from "./action-details";
+import type { UnitPanelActionViewModel } from "./action-details";
 import type { PresentationAssetManifest } from "./board/contracts";
+import { presentUnitTypeDetails } from "./unit-dictionary";
 
 export type UnitPanelViewModel = Readonly<{
   entityId: EntityId;
@@ -61,33 +59,26 @@ export const presentUnitPanel = (
 ): UnitPanelViewModel | null => {
   const entity = state.entities[entityId];
   if (!entity) return null;
-  const definition = getUnitDefinition(entity.unitTypeId);
-  if (!definition) return null;
+  const details = presentUnitTypeDetails(entity.unitTypeId, assets);
+  if (!details) return null;
   const combatStats = getDefaultCombatStats(entity, standardRuleServices);
   if (!combatStats) return null;
   const boosted = entity.statuses.some(({ type }) => type === "boosted");
   return {
     entityId,
     unitTypeId: entity.unitTypeId,
-    label: assets.unit(entity.unitTypeId).label,
+    label: details.label,
     teamId: entity.ownerTeamId ?? null,
     health: entity.health ?? null,
     attack: combatStats.attack,
     defense: combatStats.defense,
     boosted,
-    movement: definition.base.movement,
-    movementCosts: definition.capabilities.includes("move")
-      ? standardTerrainTypeIds.flatMap((terrainTypeId) => {
-          const cost = getMovementCost(definition, terrainTypeId);
-          return Number.isFinite(cost)
-            ? [{ terrainTypeId, terrainLabel: assets.terrain(terrainTypeId).label, cost }]
-            : [];
-        })
-      : [],
-    income: definition.income,
+    movement: details.movement,
+    movementCosts: details.movementCosts,
+    income: details.income,
     capabilities: getEntityCapabilities(state, entityId),
-    abilities: definition.abilities,
-    actions: presentUnitActions(entity.unitTypeId, assets),
+    abilities: details.abilities,
+    actions: details.actions,
     cargo: (entity.cargo?.entityIds ?? []).flatMap((cargoId) => {
       const cargo = state.entities[cargoId];
       return cargo

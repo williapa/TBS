@@ -5,6 +5,7 @@ import {
   type BoardCellViewModel,
   type GameInteractionState,
   type UnitPanelViewModel,
+  type UnitTypeDetailsViewModel,
 } from "@TBS/presentation";
 
 import { terrainColors } from "../../components/Map/Cell/Terrain/terrainColors";
@@ -21,12 +22,33 @@ const panelTerrain = (id: string, label: string): GamePanelTerrain => ({
   label,
 });
 
-const actionRows = (unit: UnitPanelViewModel): readonly GamePanelRow[] => {
+const actionRows = (
+  unit: Pick<UnitTypeDetailsViewModel, "actions">,
+): readonly GamePanelRow[] => {
   const actions = unit.actions;
   return actions.length > 0
     ? [{ id: "actions", label: "Actions", type: "actions" as const, actions }]
     : [];
 };
+
+const movementRows = (
+  unit: Pick<UnitTypeDetailsViewModel, "movement" | "movementCosts">,
+): readonly GamePanelRow[] => unit.movementCosts.length > 0
+  ? [{
+      id: "energy",
+      label: "Energy",
+      type: "text" as const,
+      value: String(unit.movement),
+    }, {
+      costs: unit.movementCosts.map(({ cost, terrainLabel, terrainTypeId }) => ({
+        cost,
+        terrain: panelTerrain(terrainTypeId, terrainLabel),
+      })),
+      id: "energy-costs",
+      label: "Energy Costs",
+      type: "terrain-costs" as const,
+    }]
+  : [];
 
 const unitRows = (
   unit: UnitPanelViewModel,
@@ -64,20 +86,7 @@ const unitRows = (
     type: "text" as const,
     value: "Yes — cannot be boosted again",
   }] : []),
-  ...(unit.movementCosts.length > 0 ? [{
-    id: "energy",
-    label: "Energy",
-    type: "text" as const,
-    value: String(unit.movement),
-  }, {
-    costs: unit.movementCosts.map(({ cost, terrainLabel, terrainTypeId }) => ({
-      cost,
-      terrain: panelTerrain(terrainTypeId, terrainLabel),
-    })),
-    id: "energy-costs",
-    label: "Energy Costs",
-    type: "terrain-costs" as const,
-  }] : []),
+  ...movementRows(unit),
   ...(unit.income > 0 ? [{
     id: "income",
     label: "Income",
@@ -91,6 +100,31 @@ const unitRows = (
     type: "text",
     value: formatCoordinates(coordinates),
   },
+];
+
+export const buildUnitDictionaryRows = (
+  unit: UnitTypeDetailsViewModel,
+): readonly GamePanelRow[] => [
+  ...(unit.category === "building" ? [{
+    id: "income",
+    label: "Income",
+    type: "text" as const,
+    value: `$${unit.income}`,
+  }] : []),
+  ...(unit.cost === null ? [] : [{
+    id: "cost",
+    label: "Cost",
+    type: "text" as const,
+    value: `$${unit.cost}`,
+  }]),
+  {
+    id: "stats",
+    label: "Stats",
+    type: "text",
+    value: `Attack ${unit.attack}, Defense ${unit.defense}`,
+  },
+  ...movementRows(unit),
+  ...actionRows(unit),
 ];
 
 const panelForCell = (

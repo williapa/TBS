@@ -1,3 +1,4 @@
+import { mapUnitOptions } from "@TBS/game-setup";
 import { fireEvent, render, screen } from "@testing-library/react";
 import GamePanel from "./GamePanel";
 
@@ -86,5 +87,51 @@ describe("GamePanel", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Selected cell" }));
     expect(screen.getByText("Soldier (person)")).toBeInTheDocument();
+  });
+
+  test("browses every concrete unit in a persistent dictionary view", () => {
+    const { rerender } = render(<GamePanel state={null} winCondition={winCondition} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Unit dictionary" }));
+
+    const select = screen.getByRole("combobox", { name: "Unit" });
+    expect(select.querySelectorAll("option")).toHaveLength(mapUnitOptions.length - 1);
+    expect(select.querySelector('option[value="none"]')).not.toBeInTheDocument();
+    expect([...select.querySelectorAll("optgroup")].map(({ label }) => label)).toEqual([
+      "animal",
+      "building",
+      "object",
+      "person",
+      "vehicle",
+    ]);
+    expect(screen.getByRole("heading", { name: "Dragon" })).toBeInTheDocument();
+
+    fireEvent.change(select, { target: { value: "airport" } });
+
+    expect(screen.getByRole("heading", { name: "Airport" })).toBeInTheDocument();
+    expect(screen.getByText("$100")).toBeInTheDocument();
+    expect(screen.getByText("$1000")).toBeInTheDocument();
+    expect(screen.getByText("Spawn")).toBeInTheDocument();
+    expect(screen.getByText(/Can spawn: Airplane, Helicopter, Pilot\./)).toBeInTheDocument();
+
+    fireEvent.change(select, { target: { value: "constructionWorker" } });
+    expect(screen.getByRole("heading", { name: "Construction Worker" })).toBeInTheDocument();
+    expect(screen.getByText("Construct")).toBeInTheDocument();
+    expect(screen.getByText(/Can construct: Airport, Bank, Capital/)).toBeInTheDocument();
+
+    fireEvent.change(select, { target: { value: "airport" } });
+
+    rerender(
+      <GamePanel
+        state={{ coords: { q: 0, r: 0 }, focus: "cell", rows: [] }}
+        winCondition={winCondition}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: "Unit dictionary" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("heading", { name: "Airport" })).toBeInTheDocument();
   });
 });

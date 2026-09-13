@@ -1,5 +1,11 @@
 import "./GamePanel.css";
-import type { WinConditionViewModel } from "@TBS/presentation";
+import {
+  presentUnitDictionary,
+  presentUnitTypeDetails,
+  type UnitTypeDetailsViewModel,
+  type WinConditionViewModel,
+} from "@TBS/presentation";
+import { getEmojiForUnit } from "@TBS/renderer-2d";
 import type { CameraIntent } from "@TBS/renderer-3d";
 import { useEffect, useState } from "react";
 import type {
@@ -9,6 +15,17 @@ import type {
   GamePanelTerrain,
 } from "../../types";
 import { AccessibleBoardNavigator } from "./AccessibleBoardNavigator";
+import { buildUnitDictionaryRows } from "./gamePanelState";
+
+type DetailsView = "default" | "dictionary" | "selection";
+type DictionaryUnitTypeId = UnitTypeDetailsViewModel["unitTypeId"];
+
+const unitDictionaryGroups = presentUnitDictionary();
+const unitDictionaryUnits = unitDictionaryGroups.flatMap(({ units }) => units);
+const initialDictionaryUnitTypeId = unitDictionaryUnits[0]?.unitTypeId ?? null;
+
+const isDictionaryUnitTypeId = (value: string): value is DictionaryUnitTypeId =>
+  unitDictionaryUnits.some(({ unitTypeId }) => unitTypeId === value);
 
 const cameraControls: readonly Readonly<{
   intent: CameraIntent;
@@ -100,29 +117,43 @@ const GamePanel = ({
   state: GamePanelState | null;
   winCondition: WinConditionViewModel;
 }>) => {
-  const [view, setView] = useState<"default" | "selection">(state ? "selection" : "default");
+  const [view, setView] = useState<DetailsView>(state ? "selection" : "default");
+  const [dictionaryUnitTypeId, setDictionaryUnitTypeId] =
+    useState<DictionaryUnitTypeId | null>(initialDictionaryUnitTypeId);
 
-  useEffect(() => setView(state ? "selection" : "default"), [state]);
+  useEffect(() => setView((current) =>
+    current === "dictionary" ? current : state ? "selection" : "default"), [state]);
 
   const showSelection = view === "selection" && state;
+  const dictionaryUnit = dictionaryUnitTypeId
+    ? presentUnitTypeDetails(dictionaryUnitTypeId)
+    : null;
+  const dictionaryRows = dictionaryUnit ? buildUnitDictionaryRows(dictionaryUnit) : [];
   return (
     <div aria-label="Game details" className="game panel" role="region">
       <div className="game-panel">
         <div aria-label="Details view" className="game-panel__view-toggle" role="group">
           <button
-            aria-pressed={!showSelection}
+            aria-pressed={view === "default"}
             onClick={() => setView("default")}
             type="button"
           >
             Map controls
           </button>
           <button
-            aria-pressed={Boolean(showSelection)}
+            aria-pressed={view === "selection"}
             disabled={!state}
             onClick={() => setView("selection")}
             type="button"
           >
             Selected cell
+          </button>
+          <button
+            aria-pressed={view === "dictionary"}
+            onClick={() => setView("dictionary")}
+            type="button"
+          >
+            Unit dictionary
           </button>
         </div>
         {showSelection ? (
@@ -132,6 +163,35 @@ const GamePanel = ({
               ? renderSection(state.transportRows, "Cargo")
               : null}
           </>
+        ) : view === "dictionary" ? (
+          <div className="game-panel__dictionary">
+            <div className="game-panel__dictionary-picker">
+              <label className="game-panel__label" htmlFor="unit-dictionary-select">Unit</label>
+              <select
+                id="unit-dictionary-select"
+                name="unit-dictionary"
+                value={dictionaryUnitTypeId ?? ""}
+                onChange={(event) => {
+                  const nextUnitTypeId = event.currentTarget.value;
+                  if (!isDictionaryUnitTypeId(nextUnitTypeId)) {
+                    throw new Error("Unit dictionary selected an invalid unit");
+                  }
+                  setDictionaryUnitTypeId(nextUnitTypeId);
+                }}
+              >
+                {unitDictionaryGroups.map((group) => (
+                  <optgroup key={group.category} label={group.label}>
+                    {group.units.map((unit) => (
+                      <option key={unit.unitTypeId} value={unit.unitTypeId}>
+                        {unit.label} {getEmojiForUnit(unit.unitTypeId)}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
+            {dictionaryUnit ? renderSection(dictionaryRows, dictionaryUnit.label) : null}
+          </div>
         ) : (
           <div className="game-panel__default">
             <section className="game-panel__section">

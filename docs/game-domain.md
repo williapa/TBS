@@ -54,6 +54,8 @@ Rules expose shared selectors for legal entities, destinations, targets, choices
 
 Unit details describe every unit type that an actor can potentially spawn or construct from the rules-owned production registry. These informational lists are independent of current money, terrain, occupancy, and turn-specific legality.
 
+The game-details panel also provides a unit dictionary for every concrete unit in the standard content registry. Its category-grouped selector presents registry-derived income, purchase or construction cost, base combat stats, movement energy and terrain costs, and actions without requiring an entity to exist in the current game.
+
 ## Money and income
 
 Each team starts with 1,000 money. Construction and production spend the costs defined in the rules registry. At turn transition, income from the next team's on-board buildings is calculated and credited deterministically. Income values are part of unit definitions, so setup, previews, and trusted execution share one source.

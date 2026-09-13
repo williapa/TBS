@@ -1,7 +1,7 @@
 import { unitTypeId } from "@TBS/game-core";
 import { describe, expect, it } from "vitest";
 
-import { getSpawnableUnitTypeIds } from "./production";
+import { getSpawnableUnitTypeIds, getUnitCost } from "./production";
 import { getUnitDefinition, getUnitsByCategory, standardUnits } from "./units";
 
 describe("standard unit registry", () => {
@@ -30,5 +30,12 @@ describe("standard unit registry", () => {
     expect(new Set(spawnableIds).size).toBe(spawnableIds.length);
     expect(spawnableIds).toContain("dragon");
     expect(spawnableIds).toContain("worker");
+  });
+
+  it("derives consistent unit costs from construction and production content", () => {
+    expect(getUnitCost(unitTypeId("airport"))).toBe(1000);
+    expect(getUnitCost(unitTypeId("constructionWorker"))).toBe(100);
+    expect(getUnitCost(unitTypeId("dragon"))).toBe(2500);
+    expect(getUnitCost(unitTypeId("money"))).toBeUndefined();
   });
 });

@@ -6,6 +6,7 @@ export * from "./assets/manifest";
 export * from "./board/contracts";
 export * from "./board/presentBoard";
 export * from "./read-models";
+export * from "./unit-dictionary";
 export * from "./win-condition";
 export * from "./interaction/intents";
 export * from "./interaction/contracts";

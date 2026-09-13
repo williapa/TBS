@@ -13,6 +13,8 @@ import {
   getProductionOptions,
   STANDARD_CONTENT_VERSION,
   STANDARD_RULESET_VERSION,
+  standardUnits,
+  unitCategories,
 } from "@TBS/game-rules";
 import { describe, expect, test } from "vitest";
 
@@ -24,8 +26,10 @@ import {
   DEFAULT_MOVE_DURATION_MS,
   presentBoard,
   presentTeamPanel,
+  presentUnitDictionary,
   presentUnitActions,
   presentUnitPanel,
+  presentUnitTypeDetails,
   presentWinCondition,
   type AnimationCue,
   type AnimationDriver,
@@ -217,6 +221,53 @@ describe("board presenter", () => {
       attack: 40,
       defense: 25,
       boosted: true,
+    });
+  });
+
+  test("presents a complete unit dictionary from standard content", () => {
+    const groups = presentUnitDictionary(testAssets);
+    const dictionaryUnits = groups.flatMap(({ units }) => units);
+
+    expect(groups.map(({ category }) => category)).toEqual(unitCategories);
+    expect(dictionaryUnits).toHaveLength(standardUnits.size);
+    expect(new Set(dictionaryUnits.map(({ unitTypeId }) => unitTypeId)).size)
+      .toBe(standardUnits.size);
+    expect(dictionaryUnits).toContainEqual({
+      unitTypeId: unitTypeId("soldier"),
+      label: "Unit soldier",
+    });
+  });
+
+  test("presents state-free dictionary details with applicable fields", () => {
+    expect(presentUnitTypeDetails(unitTypeId("soldier"), testAssets)).toMatchObject({
+      unitTypeId: "soldier",
+      label: "Unit soldier",
+      category: "person",
+      income: 0,
+      cost: 200,
+      attack: 30,
+      defense: 15,
+      movement: 2,
+      movementCosts: expect.arrayContaining([
+        { terrainTypeId: "plains", terrainLabel: "Terrain plains", cost: 1 },
+      ]),
+      actions: expect.arrayContaining([
+        expect.objectContaining({ id: "attack", label: "Attack" }),
+        expect.objectContaining({ id: "move", label: "Move" }),
+      ]),
+    });
+    expect(presentUnitTypeDetails(unitTypeId("bank"), testAssets)).toMatchObject({
+      category: "building",
+      income: 1_000,
+      cost: 2_000,
+      movement: 0,
+      movementCosts: [],
+    });
+    expect(presentUnitTypeDetails(unitTypeId("money"), testAssets)).toMatchObject({
+      category: "object",
+      cost: null,
+      movementCosts: [],
+      actions: [],
     });
   });
 

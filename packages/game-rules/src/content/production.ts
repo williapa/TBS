@@ -45,6 +45,18 @@ const constructionOptions: readonly ConstructionOption[] = [
   option("zoo", 5000, ["water"]),
 ];
 
+const unitCosts = new Map<UnitTypeId, number>();
+for (const candidate of [
+  ...constructionOptions,
+  ...[...productionByBuilding.values()].flat(),
+]) {
+  const existingCost = unitCosts.get(candidate.unitTypeId);
+  if (unitCosts.has(candidate.unitTypeId) && existingCost !== candidate.cost) {
+    throw new Error(`Conflicting costs for ${candidate.unitTypeId}`);
+  }
+  unitCosts.set(candidate.unitTypeId, candidate.cost);
+}
+
 export const getProductionOption = (
   buildingTypeId: UnitTypeId,
   producedUnitTypeId: UnitTypeId,
@@ -65,3 +77,5 @@ export const getConstructionOption = (buildingTypeId: UnitTypeId): ConstructionO
   constructionOptions.find((candidate) => candidate.unitTypeId === buildingTypeId);
 
 export const getConstructionOptions = (): readonly ConstructionOption[] => constructionOptions;
+
+export const getUnitCost = (id: UnitTypeId): number | undefined => unitCosts.get(id);

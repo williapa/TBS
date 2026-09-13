@@ -44,7 +44,8 @@ K. "Transport" - IF LOADED, list subset of detail sections (excluding G. Actions
 
 - details will need to scroll as some unit types will require significant space. the GamePanel.tsx should not expand to make the entire page scrollable, it should scroll with the available space in the window.
 - The default details view contains the canonical win condition and renderer controls. Camera controls appear there only while the 3D renderer is active. The DOM keyboard cell navigator is hidden in normal development and production builds and can be enabled explicitly for browser tests that exercise it.
-- A compact view switcher changes between the default view and selected-cell details. The selected-cell option is disabled when no cell is selected, and its pressed state replaces a redundant `Details` heading. Nested cargo details retain their `Cargo` heading.
+- A compact view switcher changes between the default view, selected-cell details, and a unit dictionary. The selected-cell option is disabled when no cell is selected, while the dictionary remains available and retains its selected unit across map interactions. Nested cargo details retain their `Cargo` heading.
+- The unit dictionary uses the standard registry's category order and concrete unit types, excluding the editor-only empty option. It displays applicable income, registry-derived cost, base combat stats, movement energy and terrain costs, and the same action descriptions used by selected-cell details.
 - The section should be built using a cloudscape container, with each field populating a "key value pair" component. However, you should confirm that the cloudscape container will not conflict with the previous requirement related to scrolling.
 - for "Actions", use the cloudscape "popover" component and a child cloudscape Button (without a display icon). when the action is clicked, the appropriate details text should be displayed as the popover text.
 
