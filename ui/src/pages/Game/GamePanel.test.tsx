@@ -16,7 +16,7 @@ describe("GamePanel", () => {
     expect(screen.getByRole("button", { name: "Selected cell" })).toBeDisabled();
   });
 
-  test("renders rows, section headers, and action descriptions", () => {
+  test("renders rows, the cargo heading, and action descriptions without a details heading", () => {
     const { container } = render(
       <GamePanel
         winCondition={winCondition}
@@ -63,8 +63,8 @@ describe("GamePanel", () => {
       />
     );
 
-    expect(screen.getByText("Details")).toBeInTheDocument();
-    expect(screen.getByText("Cargo")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Details" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Cargo" })).toBeInTheDocument();
     expect(screen.getByText("Soldier (person)")).toBeInTheDocument();
     expect(screen.getByText("Forest")).toBeInTheDocument();
     expect(screen.getByText("Forest 1")).toBeInTheDocument();

@@ -54,8 +54,8 @@ export const SessionPlayerPanel = ({
         </div>
       )}
       <div className="player__stats">
-        <p><b>Money:</b> <span>{money}</span></p>
-        <p><b>Income/turn:</b> <span>{income}</span></p>
+        <p><b>Money:</b> <span>${money}</span></p>
+        <p><b>Income per turn:</b> <span>${income}</span></p>
       </div>
     </aside>
   );

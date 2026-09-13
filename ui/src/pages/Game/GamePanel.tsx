@@ -82,19 +82,21 @@ const renderRows = (rows: readonly GamePanelRow[]) =>
     </div>
   ));
 
-const renderSection = (title: string, rows: readonly GamePanelRow[]) => (
-  <section className="game-panel__section" key={title}>
-    <h3 className="game-panel__title">{title}</h3>
+const renderSection = (rows: readonly GamePanelRow[], title?: string) => (
+  <section className="game-panel__section">
+    {title && <h3 className="game-panel__title">{title}</h3>}
     <div className="game-panel__grid">{renderRows(rows)}</div>
   </section>
 );
 
 const GamePanel = ({
   controls,
+  showKeyboardBoardControls = false,
   state,
   winCondition,
 }: Readonly<{
   controls?: GameMapControlsState | null;
+  showKeyboardBoardControls?: boolean;
   state: GamePanelState | null;
   winCondition: WinConditionViewModel;
 }>) => {
@@ -125,9 +127,9 @@ const GamePanel = ({
         </div>
         {showSelection ? (
           <>
-            {renderSection("Details", state.rows)}
+            {renderSection(state.rows)}
             {state.transportRows && state.transportRows.length > 0
-              ? renderSection("Cargo", state.transportRows)
+              ? renderSection(state.transportRows, "Cargo")
               : null}
           </>
         ) : (
@@ -152,7 +154,9 @@ const GamePanel = ({
                     </div>
                   )}
                 </div>
-                {controls.renderer === "3d" && controls.rendererAvailable && (
+                {showKeyboardBoardControls
+                  && controls.renderer === "3d"
+                  && controls.rendererAvailable && (
                   <AccessibleBoardNavigator board={controls.board} onIntent={controls.onBoardIntent} />
                 )}
               </section>

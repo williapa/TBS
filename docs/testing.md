@@ -50,6 +50,8 @@ The standalone local-game checks do not require Supabase. The per-model browser 
 
 Install the pinned browser once with `pnpm exec playwright install chromium`, keep both local Supabase and `pnpm edge:serve` running, then run `pnpm test:e2e`. Its lifecycle pre-step rebuilds all workspace and Edge artifacts before Playwright starts, preventing ignored package output from becoming stale.
 
+The Playwright web server sets `VITE_TEST_KEYBOARD_BOARD_CONTROLS=true` so browser tests can exercise the WebGL cell-selection controls. Existing production-build and development-server commands do not set this test-only flag, so those controls remain hidden during normal use.
+
 The one-worker suite uses isolated anonymous browser contexts and covers creator/challenger/spectator share-link play through the trusted action authority, a complete match controlled through the 3D renderer's semantic and keyboard inputs, Presence, completion, all nine action families, tab closure and durable restore, a same-member stale-tab conflict, and exact action-ID retry. Failures retain trace, video, screenshots, an HTML report, and client console/page errors under ignored `test-results/` paths.
 
 The Zuckerbird model case checks mesh selection, action menus, camera rotation, and 2D/3D switching with both teams, and attaches two views for glasses, tablet, and hoodie visibility. Its manifest test checks dedicated asset routing and health-bar clearance above the hair.

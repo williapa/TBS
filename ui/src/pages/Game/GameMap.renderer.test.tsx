@@ -56,7 +56,10 @@ const winCondition = {
   includesEliminationVictory: true,
 } as const;
 
-const GameMapHarness = (props: ActiveMapProps) => {
+const GameMapHarness = ({
+  showKeyboardBoardControls = false,
+  ...props
+}: ActiveMapProps & Readonly<{ showKeyboardBoardControls?: boolean }>) => {
   const { onPanelStateChange, ...mapProps } = props;
   const [controls, setControls] = useState<GameMapControlsState | null>(null);
   const [panelState, setPanelState] = useState<GamePanelState | null>(null);
@@ -72,7 +75,12 @@ const GameMapHarness = (props: ActiveMapProps) => {
         onControlsStateChange={setControls}
         onPanelStateChange={publishPanelState}
       />
-      <GamePanel controls={controls} state={panelState} winCondition={winCondition} />
+      <GamePanel
+        controls={controls}
+        showKeyboardBoardControls={showKeyboardBoardControls}
+        state={panelState}
+        winCondition={winCondition}
+      />
     </>
   );
 };
@@ -176,7 +184,7 @@ describe("GameMap renderer lifecycle", () => {
     fireEvent.click(screen.getByRole("button", { name: "Use 3D board" }));
     expect(await screen.findByLabelText("Mock three-dimensional board")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Move" })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "Keyboard board controls" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Keyboard board controls" })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Use 2D board" }));
     await waitFor(() => expect(rendererLifecycle.disposed).toHaveBeenCalledOnce());
@@ -357,6 +365,7 @@ describe("GameMap renderer lifecycle", () => {
       <GameMapHarness
         active
         onPanelStateChange={onPanelStateChange}
+        showKeyboardBoardControls
         {...gameProps()}
       />,
     );

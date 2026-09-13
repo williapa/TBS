@@ -11,6 +11,7 @@ import {
 import type { ReactNode } from "react";
 import { useState } from "react";
 
+import { browserEnvironment } from "../../env";
 import type { GameMapControlsState, GamePanelState } from "../../types";
 import GameMap from "../Game/GameMap";
 import GamePanel from "../Game/GamePanel";
@@ -141,7 +142,12 @@ export const GameView = ({
         />
       </div>
       <div className="r2">
-        <GamePanel controls={controlsState} state={panelState} winCondition={winCondition} />
+        <GamePanel
+          controls={controlsState}
+          showKeyboardBoardControls={browserEnvironment.showKeyboardBoardControls}
+          state={panelState}
+          winCondition={winCondition}
+        />
         <SessionEventsPanel actions={actions} />
       </div>
     </main>

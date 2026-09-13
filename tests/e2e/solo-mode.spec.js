@@ -14,7 +14,8 @@ test("test mode plays both teams without contacting Supabase", async ({ page }) 
   await expect(page.getByRole("button", { name: "Create game" })).toBeDisabled();
   await page.getByRole("button", { name: "Test mode" }).click();
 
-  await expect(page.getByRole("heading", { name: "Solo test game" })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "Purple turn" }))
+    .toHaveText("Purple turn — you control both teams");
   const detailsPanel = page.getByRole("region", { name: "Game details" });
   const boardViewToggle = detailsPanel.getByRole("group", { name: "Board view" });
   await expect(boardViewToggle).toBeVisible();
@@ -41,6 +42,8 @@ test("test mode plays both teams without contacting Supabase", async ({ page }) 
     .toHaveText("Purple turn — you control both teams");
   const purplePanel = page.getByRole("complementary", { name: "purple player" });
   await expect(purplePanel).toContainText("Local Purple");
+  await expect(purplePanel).toContainText("Money: $1000");
+  await expect(purplePanel).toContainText("Income per turn: $0");
   await purplePanel.getByRole("button", { name: "End turn" }).click();
 
   await expect(page.getByRole("status"))
