@@ -1,10 +1,12 @@
+import { createElement } from "react";
+import { render, screen } from "@testing-library/react";
 import {
   currentStandardProtocolCodec,
   CURRENT_PROTOCOL_VERSION,
   type StandardAppliedAction,
 } from "@TBS/application";
 
-import { getDisplayedEvents } from "./SessionEventsPanel";
+import { getDisplayedEvents, SessionEventsPanel } from "./SessionEventsPanel";
 
 const appliedAction = (
   revision: number,
@@ -58,5 +60,20 @@ describe("getDisplayedEvents", () => {
       { revision: 2, type: "unit-moved", sequence: "1.2" },
       { revision: 1, type: "unit-moved", sequence: "1.1" },
     ]);
+  });
+});
+
+describe("SessionEventsPanel", () => {
+  it("shows the first-move message only while the event history is empty", () => {
+    const view = render(createElement(SessionEventsPanel, { actions: [] }));
+
+    expect(screen.getByText("purple moves first.")).toBeInTheDocument();
+
+    view.rerender(createElement(SessionEventsPanel, {
+      actions: [appliedAction(1, [turnEnded("orange", "purple")])],
+    }));
+
+    expect(screen.queryByText("purple moves first.")).not.toBeInTheDocument();
+    expect(screen.getByRole("table")).toBeInTheDocument();
   });
 });

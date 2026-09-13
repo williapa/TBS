@@ -38,7 +38,7 @@ export const SessionEventsPanel = ({ actions }: { actions: readonly StandardAppl
   return (
     <section id="events" className="event panel table-container" aria-labelledby="session-events-title">
       <h2 id="session-events-title">Events</h2>
-      {events.length === 0 ? <p>No actions yet.</p> : (
+      {events.length === 0 ? <p>purple moves first.</p> : (
         <table>
           <colgroup><col className="events-table__revision" /><col /></colgroup>
           <thead><tr><th>Action</th><th>Event</th></tr></thead>
