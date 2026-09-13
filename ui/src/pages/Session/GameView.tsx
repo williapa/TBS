@@ -75,7 +75,7 @@ export const GameView = ({
   const winnerTeamId = state.lifecycle.phase === "finished"
     ? state.lifecycle.winnerTeamId
     : undefined;
-  const statusTitleId = winnerTeamId ? "game-state-title" : undefined;
+  const statusTitleId = state.lifecycle.phase === "active" ? undefined : "game-state-title";
   const canAct = Boolean(activeTeamId && activeTeamId === controlledTeamId && !pending);
   const orangePanel = presentTeamPanel(state, orangeTeamId);
   const purplePanel = presentTeamPanel(state, purpleTeamId);

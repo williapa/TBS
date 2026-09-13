@@ -84,7 +84,8 @@ test("creator, challenger, and spectator complete a live game and all action fam
     await spectator.goto(invitePath);
     await spectator.getByLabel("Display name").fill("Spectator");
     await spectator.getByRole("button", { name: "Watch as spectator" }).click();
-    await expect(spectator.getByRole("heading", { name: "Game in progress" })).toBeVisible();
+    await expect(spectator.getByText("Spectating")).toBeVisible();
+    await expect(spectator.getByRole("heading", { name: "Game in progress" })).toHaveCount(0);
     await expect(spectator.getByRole("button", { name: "End turn" })).toHaveCount(0);
     await expect(spectator.getByText("Spectators online").locator("xpath=following-sibling::*[1]")).toHaveText("1");
 

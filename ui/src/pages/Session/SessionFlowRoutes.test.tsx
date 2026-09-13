@@ -238,8 +238,8 @@ describe("new session create and join flow", () => {
     const watchButtons = secondView.getAllByRole("button", { name: "Watch as spectator" });
     fireEvent.click(watchButtons[watchButtons.length - 1]);
     expect(await secondView.findByText("Spectating")).toBeInTheDocument();
-    expect(secondView.queryByRole("heading", { name: "Waiting for an opponent" }))
-      .not.toBeInTheDocument();
+    expect(secondView.getByRole("heading", { name: "Waiting for an opponent" }))
+      .toBeInTheDocument();
     expect(secondView.getByText("You are watching as a spectator and cannot take game actions."))
       .toBeInTheDocument();
   });
@@ -265,8 +265,8 @@ describe("new session create and join flow", () => {
     const waiting = await createGame(waitingStore);
     saveReconnectDetails(waiting.inviteToken, { displayName: "Orange", intent: "player" });
     const waitingView = renderFlow(new InMemoryGameSessionGateway(waitingStore, "orange"), `/game/${waiting.inviteToken}`);
-    expect(await waitingView.findByText("Revision")).toBeInTheDocument();
-    expect(waitingView.container.querySelector("h1#game-state-title")).not.toBeInTheDocument();
+    expect(await waitingView.findByRole("heading", { name: "Waiting for an opponent" }))
+      .toBeInTheDocument();
     waitingView.unmount();
 
     const activeStore = createStore();

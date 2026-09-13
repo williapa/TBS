@@ -43,7 +43,7 @@ test("test mode plays both teams without contacting Supabase", async ({ page }) 
   const purplePanel = page.getByRole("complementary", { name: "purple player" });
   await expect(purplePanel).toContainText("Local Purple");
   await expect(purplePanel).toContainText("Money: $1000");
-  await expect(purplePanel).toContainText("Income per turn: $0");
+  await expect(purplePanel).toContainText("Income: $0");
   await purplePanel.getByRole("button", { name: "End turn" }).click();
 
   await expect(page.getByRole("status"))
