@@ -196,8 +196,8 @@ describe("new session create and join flow", () => {
     fireEvent.mouseLeave(screen.getByRole("button", { name: "Create game" }));
     fireEvent.click(screen.getByRole("button", { name: "Test mode" }));
 
-    expect(await screen.findByRole("heading", { name: "Solo test game" })).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent("Purple turn — you control both teams");
+    expect(await screen.findByRole("status")).toHaveTextContent("Purple turn — you control both teams");
+    expect(screen.queryByRole("heading", { name: "Solo test game" })).not.toBeInTheDocument();
     const purplePanel = screen.getByRole("complementary", { name: "purple player" });
     expect(within(purplePanel).getByRole("button", { name: "End turn" })).toBeInTheDocument();
     fireEvent.click(within(purplePanel).getByRole("button", { name: "End turn" }));
@@ -222,7 +222,8 @@ describe("new session create and join flow", () => {
       .toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Display name"), { target: { value: "Purple" } });
     fireEvent.click(screen.getByRole("button", { name: "Join as player" }));
-    expect(await screen.findByRole("heading", { name: "Game in progress" })).toBeInTheDocument();
+    expect(await screen.findByRole("complementary", { name: "purple player" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Game in progress" })).not.toBeInTheDocument();
     expect(screen.getByText("Win condition")).toBeInTheDocument();
     expect(screen.getByText("Eliminate every enemy unit that can move and attack."))
       .toBeInTheDocument();
@@ -236,8 +237,9 @@ describe("new session create and join flow", () => {
     fireEvent.change(names[names.length - 1], { target: { value: "Watcher" } });
     const watchButtons = secondView.getAllByRole("button", { name: "Watch as spectator" });
     fireEvent.click(watchButtons[watchButtons.length - 1]);
-    expect(await secondView.findByRole("heading", { name: "Waiting for an opponent" })).toBeInTheDocument();
     expect(await secondView.findByText("Spectating")).toBeInTheDocument();
+    expect(secondView.queryByRole("heading", { name: "Waiting for an opponent" }))
+      .not.toBeInTheDocument();
     expect(secondView.getByText("You are watching as a spectator and cannot take game actions."))
       .toBeInTheDocument();
   });
@@ -263,7 +265,8 @@ describe("new session create and join flow", () => {
     const waiting = await createGame(waitingStore);
     saveReconnectDetails(waiting.inviteToken, { displayName: "Orange", intent: "player" });
     const waitingView = renderFlow(new InMemoryGameSessionGateway(waitingStore, "orange"), `/game/${waiting.inviteToken}`);
-    expect(await waitingView.findByRole("heading", { name: "Waiting for an opponent" })).toBeInTheDocument();
+    expect(await waitingView.findByText("Revision")).toBeInTheDocument();
+    expect(waitingView.container.querySelector("h1#game-state-title")).not.toBeInTheDocument();
     waitingView.unmount();
 
     const activeStore = createStore();
@@ -271,8 +274,8 @@ describe("new session create and join flow", () => {
     await new InMemoryGameSessionGateway(activeStore, "purple").joinGame(active.inviteToken, "player", "Purple");
     saveReconnectDetails(active.inviteToken, { displayName: "Purple", intent: "player" });
     const activeView = renderFlow(new InMemoryGameSessionGateway(activeStore, "purple"), `/game/${active.inviteToken}`);
-    expect(await activeView.findByRole("heading", { name: "Game in progress" })).toBeInTheDocument();
-    expect(activeView.getByRole("group", { name: "Board view" })).toBeVisible();
+    expect(await activeView.findByRole("group", { name: "Board view" })).toBeVisible();
+    expect(activeView.container.querySelector("h1#game-state-title")).not.toBeInTheDocument();
     expect(activeView.container.querySelectorAll(".r1 > .player.panel")).toHaveLength(2);
     const orangePanel = activeView.getByRole("complementary", { name: "orange player" });
     const purplePanel = activeView.getByRole("complementary", { name: "purple player" });
@@ -341,8 +344,7 @@ describe("new session create and join flow", () => {
       };
     });
     const view = renderFlow(purple, `/game/${created.inviteToken}`);
-    await view.findByRole("heading", { name: "Game in progress" });
-    const movingUnit = view.getByRole("button", { name: /Soldier, purple team/ });
+    const movingUnit = await view.findByRole("button", { name: /Soldier, purple team/ });
     const originalTransform = movingUnit.getAttribute("transform");
 
     fireEvent.click(movingUnit);
@@ -411,7 +413,7 @@ describe("new session create and join flow", () => {
     await purpleGateway.joinGame(created.inviteToken, "player", "Purple");
     saveReconnectDetails(created.inviteToken, { displayName: "Purple", intent: "player" });
     const view = renderFlow(purpleGateway, `/game/${created.inviteToken}`);
-    await view.findByRole("heading", { name: "Game in progress" });
+    await view.findByRole("button", { name: "End turn" });
 
     fireEvent.click(view.getByRole("button", { name: "End turn" }));
     await waitFor(() => expect(view.container.querySelectorAll("[data-revision]")).toHaveLength(1));
@@ -436,8 +438,8 @@ describe("new session create and join flow", () => {
     saveReconnectDetails(created.inviteToken, { displayName: "Watcher", intent: "spectator" });
     const view = renderFlow(watcher, `/game/${created.inviteToken}`);
 
-    expect(await view.findByRole("heading", { name: "Game in progress" })).toBeInTheDocument();
     expect(await view.findByText("Spectating")).toBeInTheDocument();
+    expect(view.container.querySelector("h1#game-state-title")).not.toBeInTheDocument();
     expect(view.getByText("You are watching as a spectator and cannot take game actions."))
       .toBeInTheDocument();
     expect(view.getByText("Viewers online").nextSibling).toHaveTextContent("1");

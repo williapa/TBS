@@ -74,6 +74,7 @@ export const GameView = ({
   const winnerTeamId = state.lifecycle.phase === "finished"
     ? state.lifecycle.winnerTeamId
     : undefined;
+  const statusTitleId = winnerTeamId ? "game-state-title" : undefined;
   const canAct = Boolean(activeTeamId && activeTeamId === controlledTeamId && !pending);
   const orangePanel = presentTeamPanel(state, orangeTeamId);
   const purplePanel = presentTeamPanel(state, purpleTeamId);
@@ -83,8 +84,10 @@ export const GameView = ({
   const winCondition = presentWinCondition(state.objectives);
 
   return (
-    <main className="game-view" aria-labelledby="game-state-title">
-      <h1 className="game-view__status" id="game-state-title">{statusLabel}</h1>
+    <main className="game-view" aria-labelledby={statusTitleId}>
+      {statusTitleId && (
+        <h1 className="game-view__status" id={statusTitleId}>{statusLabel}</h1>
+      )}
       {turnAnnouncement && (
         <p className="game-view__turn-status" role="status">{turnAnnouncement}</p>
       )}
