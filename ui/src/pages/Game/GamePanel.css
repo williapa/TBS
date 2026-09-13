@@ -108,6 +108,30 @@
   overflow-wrap: anywhere;
 }
 
+.game-panel__terrain-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  line-height: 1.35;
+}
+
+.game-panel__terrain {
+  align-items: center;
+  display: inline-flex;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.game-panel__terrain-swatch {
+  border: 1px solid #5f6b7a;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 35%);
+  display: inline-block;
+  flex: 0 0 14px;
+  height: 14px;
+  width: 14px;
+}
+
 .game-panel__actions {
   display: flex;
   flex-direction: column;

@@ -7,12 +7,19 @@ import {
   type UnitPanelViewModel,
 } from "@TBS/presentation";
 
-import type { GamePanelRow, GamePanelState } from "../../types";
+import { terrainColors } from "../../components/Map/Cell/Terrain/terrainColors";
+import type { GamePanelRow, GamePanelState, GamePanelTerrain } from "../../types";
 
 type CellId = BoardCellViewModel["id"];
 type GameCell = StandardGameSnapshot["state"]["board"]["cells"][CellId];
 
 const formatCoordinates = ({ q, r }: Readonly<{ q: number; r: number }>) => `(${q}, ${r})`;
+
+const panelTerrain = (id: string, label: string): GamePanelTerrain => ({
+  color: terrainColors[id as keyof typeof terrainColors] ?? "rgba(119, 128, 141, 1)",
+  id,
+  label,
+});
 
 const actionRows = (unit: UnitPanelViewModel): readonly GamePanelRow[] => {
   const actions = unit.actions;
@@ -23,7 +30,7 @@ const actionRows = (unit: UnitPanelViewModel): readonly GamePanelRow[] => {
 
 const unitRows = (
   unit: UnitPanelViewModel,
-  terrainLabel: string,
+  terrain: GamePanelTerrain,
   coordinates: Readonly<{ q: number; r: number }>,
 ): readonly GamePanelRow[] => [
   {
@@ -35,8 +42,8 @@ const unitRows = (
   {
     id: "terrain",
     label: "Terrain",
-    type: "text",
-    value: terrainLabel,
+    terrain,
+    type: "terrain",
   },
   ...(unit.health ? [{
     color: unit.teamId ?? undefined,
@@ -63,12 +70,13 @@ const unitRows = (
     type: "text" as const,
     value: String(unit.movement),
   }, {
+    costs: unit.movementCosts.map(({ cost, terrainLabel, terrainTypeId }) => ({
+      cost,
+      terrain: panelTerrain(terrainTypeId, terrainLabel),
+    })),
     id: "energy-costs",
     label: "Energy Costs",
-    type: "text" as const,
-    value: unit.movementCosts
-      .map(({ cost, terrainLabel }) => `${terrainLabel} ${cost}`)
-      .join(", "),
+    type: "terrain-costs" as const,
   }] : []),
   ...(unit.income > 0 ? [{
     id: "income",
@@ -91,6 +99,7 @@ const panelForCell = (
   focus: GamePanelState["focus"],
 ): GamePanelState | null => {
   const terrainLabel = identityAssetManifest.terrain(cell.terrainTypeId).label;
+  const terrain = panelTerrain(cell.terrainTypeId, terrainLabel);
   const entityId = cell.occupantEntityId;
   if (!entityId) {
     return {
@@ -98,7 +107,7 @@ const panelForCell = (
       focus,
       rows: [
         { id: "occupant-type", label: "Occupant Type", type: "text", value: "Empty" },
-        { id: "terrain", label: "Terrain", type: "text", value: terrainLabel },
+        { id: "terrain", label: "Terrain", terrain, type: "terrain" },
         {
           id: "coordinates",
           label: "Coordinates",
@@ -113,7 +122,7 @@ const panelForCell = (
   return {
     coords: cell.position,
     focus,
-    rows: unitRows(unit, terrainLabel, cell.position),
+    rows: unitRows(unit, terrain, cell.position),
     ...(unit.cargo.length > 0
       ? {
           transportRows: unit.cargo.map((cargo) => ({

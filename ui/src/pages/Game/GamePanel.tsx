@@ -2,7 +2,12 @@ import "./GamePanel.css";
 import type { WinConditionViewModel } from "@TBS/presentation";
 import type { CameraIntent } from "@TBS/renderer-3d";
 import { useEffect, useState } from "react";
-import type { GameMapControlsState, GamePanelRow, GamePanelState } from "../../types";
+import type {
+  GameMapControlsState,
+  GamePanelRow,
+  GamePanelState,
+  GamePanelTerrain,
+} from "../../types";
 import { AccessibleBoardNavigator } from "./AccessibleBoardNavigator";
 
 const cameraControls: readonly Readonly<{
@@ -19,6 +24,18 @@ const cameraControls: readonly Readonly<{
   { intent: "rotate", label: "Rotate camera clockwise", text: "↻" },
 ];
 
+const renderTerrain = (terrain: GamePanelTerrain, cost?: number) => (
+  <span className="game-panel__terrain">
+    <span
+      aria-hidden="true"
+      className="game-panel__terrain-swatch"
+      data-terrain={terrain.id}
+      style={{ backgroundColor: terrain.color }}
+    />
+    <span>{terrain.label}{cost === undefined ? null : ` ${cost}`}</span>
+  </span>
+);
+
 const renderRowValue = (row: GamePanelRow) => {
   if (row.type === "actions") {
     return (
@@ -28,6 +45,20 @@ const renderRowValue = (row: GamePanelRow) => {
             <summary>{action.label}</summary>
             <div className="game-panel__action-description">{action.description}</div>
           </details>
+        ))}
+      </div>
+    );
+  }
+
+  if (row.type === "terrain") {
+    return <div className="game-panel__value">{renderTerrain(row.terrain)}</div>;
+  }
+
+  if (row.type === "terrain-costs") {
+    return (
+      <div className="game-panel__terrain-list">
+        {row.costs.map(({ cost, terrain }) => (
+          <span key={terrain.id}>{renderTerrain(terrain, cost)}</span>
         ))}
       </div>
     );

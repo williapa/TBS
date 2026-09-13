@@ -17,7 +17,7 @@ describe("GamePanel", () => {
   });
 
   test("renders rows, section headers, and action descriptions", () => {
-    render(
+    const { container } = render(
       <GamePanel
         winCondition={winCondition}
         state={{
@@ -25,6 +25,27 @@ describe("GamePanel", () => {
           focus: "cell",
           rows: [
             { id: "occupant-type", label: "Occupant Type", type: "text", value: "Soldier (person)" },
+            {
+              id: "terrain",
+              label: "Terrain",
+              terrain: { color: "rgb(102, 204, 102)", id: "forest", label: "Forest" },
+              type: "terrain",
+            },
+            {
+              costs: [
+                {
+                  cost: 1,
+                  terrain: { color: "rgb(102, 204, 102)", id: "forest", label: "Forest" },
+                },
+                {
+                  cost: 2,
+                  terrain: { color: "rgb(255, 255, 159)", id: "desert", label: "Desert" },
+                },
+              ],
+              id: "energy-costs",
+              label: "Energy Costs",
+              type: "terrain-costs",
+            },
             {
               actions: [
                 { description: "Initiate combat.", id: "attack", label: "Attack" },
@@ -45,6 +66,13 @@ describe("GamePanel", () => {
     expect(screen.getByText("Details")).toBeInTheDocument();
     expect(screen.getByText("Cargo")).toBeInTheDocument();
     expect(screen.getByText("Soldier (person)")).toBeInTheDocument();
+    expect(screen.getByText("Forest")).toBeInTheDocument();
+    expect(screen.getByText("Forest 1")).toBeInTheDocument();
+    expect(screen.getByText("Desert 2")).toBeInTheDocument();
+    expect(container.querySelectorAll(".game-panel__terrain-swatch")).toHaveLength(3);
+    expect(container.querySelector('[data-terrain="forest"]')).toHaveStyle({
+      backgroundColor: "rgb(102, 204, 102)",
+    });
     expect(screen.getByText("Attack")).toBeInTheDocument();
     expect(screen.getByText("Move")).toBeInTheDocument();
     expect(screen.getByText("Initiate combat.")).toBeInTheDocument();

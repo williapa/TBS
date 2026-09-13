@@ -28,7 +28,12 @@ describe("buildGamePanelState", () => {
     expect(panel).toMatchObject({ focus: "cell", coords: emptyCell.coordinate });
     expect(panel?.rows).toEqual([
       { id: "occupant-type", label: "Occupant Type", type: "text", value: "Empty" },
-      { id: "terrain", label: "Terrain", type: "text", value: expect.any(String) },
+      {
+        id: "terrain",
+        label: "Terrain",
+        terrain: { color: expect.any(String), id: expect.any(String), label: expect.any(String) },
+        type: "terrain",
+      },
       {
         id: "coordinates",
         label: "Coordinates",
@@ -56,10 +61,17 @@ describe("buildGamePanelState", () => {
       { id: "stats", label: "Stats", type: "text", value: "Attack 30, Defense 15" },
       { id: "energy", label: "Energy", type: "text", value: "2" },
       {
+        costs: [
+          { cost: 1, terrain: { color: "rgba(255, 240, 0, 1.0)", id: "beach", label: "Beach" } },
+          { cost: 1, terrain: { color: "rgba(102, 204, 102, 1.0)", id: "forest", label: "Forest" } },
+          { cost: 3, terrain: { color: "rgba(61, 70, 82, 1.0)", id: "mountain", label: "Mountain" } },
+          { cost: 1, terrain: { color: "rgba(130, 94, 92, 1.0)", id: "road", label: "Road" } },
+          { cost: 1, terrain: { color: "rgba(154, 205, 50, 1.0)", id: "plains", label: "Plains" } },
+          { cost: 2, terrain: { color: "rgba(255, 255, 159, 1.0)", id: "desert", label: "Desert" } },
+        ],
         id: "energy-costs",
         label: "Energy Costs",
-        type: "text",
-        value: "Beach 1, Forest 1, Mountain 3, Road 1, Plains 1, Desert 2",
+        type: "terrain-costs",
       },
     ]));
     expect(panel?.rows.find(({ id }) => id === "actions")).toMatchObject({

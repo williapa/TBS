@@ -65,9 +65,22 @@ export type GamePanelAction = Readonly<{
   description: string;
 }>;
 
+export type GamePanelTerrain = Readonly<{
+  color: string;
+  id: string;
+  label: string;
+}>;
+
 export type GamePanelRow =
   | Readonly<{ actions: readonly GamePanelAction[]; id: string; label: string; type: "actions" }>
-  | Readonly<{ color?: string; id: string; label: string; type: "text"; value: string }>;
+  | Readonly<{ color?: string; id: string; label: string; type: "text"; value: string }>
+  | Readonly<{ id: string; label: string; terrain: GamePanelTerrain; type: "terrain" }>
+  | Readonly<{
+      costs: readonly Readonly<{ cost: number; terrain: GamePanelTerrain }>[];
+      id: string;
+      label: string;
+      type: "terrain-costs";
+    }>;
 
 export type GamePanelState = Readonly<{
   coords: Coords;
