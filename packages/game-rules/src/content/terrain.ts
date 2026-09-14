@@ -15,8 +15,9 @@ export const standardTerrainTypeIds: readonly TerrainTypeId[] = [
 export const getMovementCost = (unit: UnitDefinition, terrain: TerrainTypeId): number => {
   if (!unit.capabilities.includes("move")) return Number.POSITIVE_INFINITY;
   if (unit.tags.includes("flying")) return 1;
+  if (unit.tags.includes("naval")) return terrain === "water" ? 1 : Number.POSITIVE_INFINITY;
 
-  const groundVehicle = unit.category === "vehicle" && !unit.tags.includes("flying") && !unit.tags.includes("naval");
+  const groundVehicle = unit.category === "vehicle";
   switch (terrain) {
     case "beach":
     case "forest":
@@ -30,7 +31,7 @@ export const getMovementCost = (unit: UnitDefinition, terrain: TerrainTypeId): n
     case "desert":
       return unit.id === "lion" ? 1 : 2;
     case "water":
-      return unit.id === "sub" ? 1 : Number.POSITIVE_INFINITY;
+      return Number.POSITIVE_INFINITY;
     default:
       return Number.POSITIVE_INFINITY;
   }

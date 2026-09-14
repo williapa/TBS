@@ -146,6 +146,48 @@ describe("standard ruleset action registry", () => {
     })]);
   });
 
+  it("allows submarines to move only across water terrain", () => {
+    const state = stateFixture();
+    const actor = state.entities[soldier];
+    if (!actor?.position) throw new Error("missing test actor");
+    const waterDestination = hexCoord(1, 0);
+    const landDestination = hexCoord(0, -1);
+    const submarineState: GameState = {
+      ...state,
+      board: {
+        cells: {
+          ...state.board.cells,
+          [hexKey(actor.position)]: {
+            ...state.board.cells[hexKey(actor.position)],
+            terrainTypeId: terrainTypeId("water"),
+          },
+          [hexKey(waterDestination)]: {
+            ...state.board.cells[hexKey(waterDestination)],
+            terrainTypeId: terrainTypeId("water"),
+          },
+          [hexKey(landDestination)]: {
+            position: landDestination,
+            terrainTypeId: terrainTypeId("plains"),
+          },
+        },
+      },
+      entities: {
+        ...state.entities,
+        [soldier]: { ...actor, unitTypeId: unitTypeId("sub") },
+      },
+    };
+
+    expect(getLegalMovePositions(submarineState, orange, soldier)).toEqual([waterDestination]);
+    expect(applyStandardAction(submarineState, orange, {
+      type: "move",
+      actorId: soldier,
+      destination: landDestination,
+    })).toMatchObject({
+      ok: false,
+      violations: [{ code: "destination-out-of-range" }],
+    });
+  });
+
   it("returns typed rejections without mutation", () => {
     const state = stateFixture();
     const result = applyStandardAction(state, purple, {

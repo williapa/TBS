@@ -206,6 +206,12 @@ describe("board presenter", () => {
     }, orange)).toMatchObject({ active: false, winner: true });
   });
 
+  test("lists water as the submarine's only movement terrain", () => {
+    expect(presentUnitTypeDetails(unitTypeId("sub"))?.movementCosts).toEqual([
+      { terrainTypeId: "water", terrainLabel: "Water", cost: 1 },
+    ]);
+  });
+
   test("presents boosted default combat stats and state", () => {
     const state = createState();
     const boostedState: GameState = {
