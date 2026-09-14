@@ -1,4 +1,5 @@
 import { Link, Navigate, Route, Routes } from "react-router-dom";
+import { browserEnvironment } from "../../env";
 import type { MapRepository} from "../../maps";
 import { MapRepositoryProvider } from "../../maps";
 import MapEditorPage from "../MapEditor/MapEditorPage";
@@ -7,7 +8,13 @@ import { SessionHomePage } from "./SessionHomePage";
 import { SessionLandingPage } from "./SessionLandingPage";
 import { SoloGamePage } from "./SoloGamePage";
 
-export const SessionFlowRoutes = ({ mapRepository }: { mapRepository?: MapRepository }) => (
+export const SessionFlowRoutes = ({
+  mapRepository,
+  showTestOnlyGameContent = browserEnvironment.showTestOnlyGameContent,
+}: Readonly<{
+  mapRepository?: MapRepository;
+  showTestOnlyGameContent?: boolean;
+}>) => (
   <MapRepositoryProvider repository={mapRepository}>
     <nav aria-label="Primary">
       <ul>
@@ -20,7 +27,10 @@ export const SessionFlowRoutes = ({ mapRepository }: { mapRepository?: MapReposi
     </nav>
     <Routes>
       <Route path="/" element={<SessionLandingPage />} />
-      <Route path="/game/new" element={<SessionHomePage />} />
+      <Route
+        path="/game/new"
+        element={<SessionHomePage showDefaultBattlefield={showTestOnlyGameContent} />}
+      />
       <Route path="/game/solo" element={<SoloGamePage />} />
       <Route path="/maps" element={<Navigate replace to="/maps/new" />} />
       <Route path="/maps/new" element={<MapEditorPage />} />

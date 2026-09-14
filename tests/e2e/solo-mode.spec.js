@@ -10,6 +10,7 @@ test("test mode plays both teams without contacting Supabase", async ({ page }) 
 
   await page.goto("/game/new");
   await expect(page.getByRole("heading", { name: "Start a game" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Map.*Default battlefield/ })).toBeVisible();
   await expect(page.getByRole("group", { name: "Board view" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Create game" })).toBeDisabled();
   await page.getByRole("button", { name: "Test mode" }).click();

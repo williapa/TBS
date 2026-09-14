@@ -26,7 +26,7 @@ module.exports = defineConfig({
       BROWSER: "none",
       CI: "false",
       VITE_SESSION_E2E: "true",
-      VITE_TEST_KEYBOARD_BOARD_CONTROLS: "true",
+      VITE_TEST_ONLY_GAME_CONTENT: "true",
       VITE_SUPABASE_URL: "http://127.0.0.1:54321",
       VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH",
     },

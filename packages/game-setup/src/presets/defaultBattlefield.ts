@@ -3,6 +3,8 @@ import { teamId, terrainTypeId, unitTypeId } from "@TBS/game-core";
 import { CURRENT_MAP_SCHEMA_VERSION } from "../contracts";
 import type { MapDocument, MapGrid } from "../contracts";
 
+export const DEFAULT_BATTLEFIELD_ID = "default-battlefield";
+
 const defaultMap = (): MapGrid => [[
   {
     row: 0,

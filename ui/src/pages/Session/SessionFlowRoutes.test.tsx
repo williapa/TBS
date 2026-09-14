@@ -14,12 +14,20 @@ import { SoloGameProvider } from "../../solo";
 import { SessionFlowRoutes } from "./SessionFlowRoutes";
 import { saveReconnectDetails } from "./sessionReconnect";
 
-const renderFlow = (gateway: GameClient, route = "/", mapRepository?: MapRepository) => render(
+const renderFlow = (
+  gateway: GameClient,
+  route = "/",
+  mapRepository?: MapRepository,
+  showTestOnlyGameContent?: boolean,
+) => render(
   <MemoryRouter initialEntries={[route]}>
     <GameSessionGatewayContext.Provider value={gateway}>
       <GameSessionProvider>
         <SoloGameProvider>
-          <SessionFlowRoutes mapRepository={mapRepository} />
+          <SessionFlowRoutes
+            mapRepository={mapRepository}
+            showTestOnlyGameContent={showTestOnlyGameContent}
+          />
         </SoloGameProvider>
       </GameSessionProvider>
     </GameSessionGatewayContext.Provider>
@@ -49,6 +57,19 @@ describe("new session create and join flow", () => {
 
     expect(screen.getByRole("heading", { name: "🎖️ Hostile Hexagons 🎖️" })).toBeInTheDocument();
     expect(screen.getByText(/Lead your legion to victory/)).toBeInTheDocument();
+  });
+
+  test("shows the minimal default battlefield only with test-only game content", async () => {
+    const gateway = new InMemoryGameSessionGateway(createStore(), "map-viewer");
+    const normalView = renderFlow(gateway, "/game/new", undefined, false);
+
+    expect(await normalView.findByRole("button", { name: /Map.*4 Forests/ })).toBeVisible();
+    expect(normalView.queryByRole("button", { name: /Map.*Default battlefield/ }))
+      .not.toBeInTheDocument();
+    normalView.unmount();
+
+    const testView = renderFlow(gateway, "/game/new", undefined, true);
+    expect(await testView.findByRole("button", { name: /Map.*Default battlefield/ })).toBeVisible();
   });
 
   test("creates a game from a selected local map, copies its payload, and produces a share link", async () => {

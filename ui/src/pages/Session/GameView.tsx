@@ -144,7 +144,7 @@ export const GameView = ({
       <div className="r2">
         <GamePanel
           controls={controlsState}
-          showKeyboardBoardControls={browserEnvironment.showKeyboardBoardControls}
+          showKeyboardBoardControls={browserEnvironment.showTestOnlyGameContent}
           state={panelState}
           winCondition={winCondition}
         />

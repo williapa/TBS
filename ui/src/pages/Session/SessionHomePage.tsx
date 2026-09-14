@@ -1,4 +1,4 @@
-import { createInitialGameSetup } from "@TBS/game-setup";
+import { createInitialGameSetup, DEFAULT_BATTLEFIELD_ID } from "@TBS/game-setup";
 import {
   Alert,
   Box,
@@ -27,7 +27,9 @@ import { saveReconnectDetails } from "./sessionReconnect";
 
 type GameModeTooltip = "multiplayer" | "test";
 
-export const SessionHomePage = () => {
+export const SessionHomePage = ({
+  showDefaultBattlefield = false,
+}: Readonly<{ showDefaultBattlefield?: boolean }>) => {
   const { createGame, connectionState, error } = useGameSession();
   const { startGame: startSoloGame } = useSoloGame();
   const navigate = useNavigate();
@@ -50,15 +52,20 @@ export const SessionHomePage = () => {
     let active = true;
     mapRepository.list().then((available) => {
       if (!active) return;
-      setMaps(available);
-      setMapId((current) => current || available[0]?.id || "");
+      const visibleMaps = showDefaultBattlefield
+        ? available
+        : available.filter(({ id }) => id !== DEFAULT_BATTLEFIELD_ID);
+      setMaps(visibleMaps);
+      setMapId((current) => (
+        visibleMaps.some(({ id }) => id === current) ? current : visibleMaps[0]?.id ?? ""
+      ));
     }).catch((value) => {
       if (active) setMapError(value instanceof Error ? value.message : "Maps could not be loaded");
     }).finally(() => {
       if (active) setMapsLoading(false);
     });
     return () => { active = false; };
-  }, [mapRepository]);
+  }, [mapRepository, showDefaultBattlefield]);
 
   useEffect(() => {
     if (!mapDeletedNotice) return;

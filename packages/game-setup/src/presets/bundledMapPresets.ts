@@ -1,7 +1,7 @@
 import type { BundledMapPreset, MapCell, MapDocument } from "../contracts";
 import { CURRENT_MAP_SCHEMA_VERSION } from "../contracts";
 import { importMapDocument } from "../maps/transfer";
-import { createDefaultBattlefield } from "./defaultBattlefield";
+import { createDefaultBattlefield, DEFAULT_BATTLEFIELD_ID } from "./defaultBattlefield";
 import fourForestsSource from "./four-forests.json";
 import lakeAffectionSource from "./lake-affection.json";
 import moneyMountainSource from "./money-mountain.json";
@@ -23,7 +23,7 @@ const clonePreset = (preset: BundledMapPreset): BundledMapPreset => ({
 });
 
 const presets: readonly BundledMapPreset[] = [
-  { id: "default-battlefield", ...createDefaultBattlefield() },
+  { id: DEFAULT_BATTLEFIELD_ID, ...createDefaultBattlefield() },
   { id: "four-forests", ...importBundledMap(fourForestsSource) },
   { id: "lake-affection", ...importBundledMap(lakeAffectionSource) },
   { id: "money-mountain", ...importBundledMap(moneyMountainSource) },

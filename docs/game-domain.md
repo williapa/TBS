@@ -16,7 +16,7 @@ The editor uses the versioned `MapDocument` contract owned by `@TBS/game-setup`.
 
 The new-map form limits hexagon side width to 10 in the browser. The setup contract retains its broader compatibility limit so previously saved or imported maps are not reinterpreted by this UI constraint.
 
-The client ships read-only Default battlefield, 4 Forests, Lake Affection, and Money Mountain presets through the same validated map repository interface used for local maps.
+The client ships read-only Default battlefield, 4 Forests, Lake Affection, and Money Mountain presets through the same validated map repository interface used for local maps. The minimal two-cell Default battlefield is shown in the game-creation list only when test-only browser content is enabled; normal development and production sessions offer the other bundled and locally saved maps.
 
 New maps begin in a symmetry-assisted editor stage. The creator chooses either a vertical axis through opposite map edges or a diagonal axis through opposite corners, edits one half of the hexagon, and then reflects that half across the selected axis. Before reflecting, the creator may choose to flip the reflected half vertically, reversing its top-to-bottom arrangement within the destination half. Cells on the axis and the destination half are visible but read-only until reflection. Reflection copies terrain and units while exchanging orange and purple ownership. Empty cells and object units remain neutral. After reflection, every cell becomes editable for final adjustments and the ordinary map save flow is unchanged. Existing saved maps open directly in unrestricted editing.
 
