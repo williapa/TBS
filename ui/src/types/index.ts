@@ -70,6 +70,21 @@ export type GamePanelTerrain = Readonly<{
 
 export type GamePanelRow =
   | Readonly<{ actions: readonly GamePanelAction[]; id: string; label: string; type: "actions" }>
+  | Readonly<{
+      attack: number;
+      defense: number;
+      id: string;
+      label: string;
+      type: "combat-stats";
+    }>
+  | Readonly<{
+      color?: string;
+      current: number;
+      id: string;
+      label: string;
+      maximum: number;
+      type: "health-stat";
+    }>
   | Readonly<{ color?: string; id: string; label: string; type: "text"; value: string }>
   | Readonly<{ id: string; label: string; terrain: GamePanelTerrain; type: "terrain" }>
   | Readonly<{

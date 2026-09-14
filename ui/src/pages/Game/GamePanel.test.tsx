@@ -49,6 +49,21 @@ describe("GamePanel", () => {
               type: "terrain",
             },
             {
+              attack: 100,
+              defense: 15,
+              id: "stats",
+              label: "Stats",
+              type: "combat-stats",
+            },
+            {
+              color: "purple",
+              current: 65,
+              id: "health",
+              label: "Health",
+              maximum: 100,
+              type: "health-stat",
+            },
+            {
               costs: [
                 {
                   cost: 1,
@@ -96,6 +111,35 @@ describe("GamePanel", () => {
     expect(screen.getByText("Forest")).toBeInTheDocument();
     expect(screen.getByText("Forest 1")).toBeInTheDocument();
     expect(screen.getByText("Desert 2")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar", { name: "attack" })).toHaveAttribute(
+      "aria-valuenow",
+      "100",
+    );
+    expect(screen.getByRole("progressbar", { name: "attack" })).toHaveAttribute(
+      "aria-valuemax",
+      "100",
+    );
+    expect(screen.getByRole("progressbar", { name: "defense" })).toHaveAttribute(
+      "aria-valuenow",
+      "15",
+    );
+    expect(screen.getByText("100")).toBeInTheDocument();
+    expect(screen.getByText("15")).toBeInTheDocument();
+    expect(container.querySelector('[data-stat="attack"]')).toHaveStyle({ width: "100%" });
+    expect(container.querySelector('[data-stat="defense"]')).toHaveStyle({ width: "15%" });
+    expect(screen.getByRole("progressbar", { name: "health" })).toHaveAttribute(
+      "aria-valuenow",
+      "65",
+    );
+    expect(screen.getByRole("progressbar", { name: "health" })).toHaveAttribute(
+      "aria-valuemax",
+      "100",
+    );
+    expect(screen.getByText("65 / 100")).toBeInTheDocument();
+    expect(container.querySelector('[data-stat="health"]')).toHaveStyle({
+      backgroundColor: "rgb(128, 0, 128)",
+      width: "65%",
+    });
     expect(container.querySelectorAll(".game-panel__terrain-swatch")).toHaveLength(3);
     expect(container.querySelector('[data-terrain="forest"]')).toHaveStyle({
       backgroundColor: "rgb(102, 204, 102)",

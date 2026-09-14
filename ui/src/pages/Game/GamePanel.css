@@ -128,6 +128,63 @@
   overflow-wrap: anywhere;
 }
 
+.game-panel__stat-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  max-width: 240px;
+  width: 100%;
+}
+
+.game-panel__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.game-panel__stat-heading {
+  align-items: baseline;
+  display: flex;
+  font-size: 0.8rem;
+  font-weight: 700;
+  justify-content: space-between;
+  line-height: 1;
+}
+
+.game-panel__stat-label {
+  text-transform: capitalize;
+}
+
+.game-panel__stat-value {
+  font-variant-numeric: tabular-nums;
+  margin-left: auto;
+}
+
+.game-panel__stat-track {
+  background: #d5d9df;
+  border: 1px solid #7d8998;
+  border-radius: 3px;
+  height: 10px;
+  overflow: hidden;
+}
+
+.game-panel__stat-fill {
+  display: block;
+  height: 100%;
+}
+
+.game-panel__stat-fill[data-stat="attack"] {
+  background-color: #c9253d;
+}
+
+.game-panel__stat-fill[data-stat="defense"] {
+  background-color: #2477a8;
+}
+
+.game-panel__stat-fill[data-stat="health"] {
+  background-color: #2e8b57;
+}
+
 .game-panel__terrain-list {
   display: flex;
   flex-wrap: wrap;

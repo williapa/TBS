@@ -33,7 +33,13 @@ describe("buildGamePanelState", () => {
     expect(bankRows).toEqual(expect.arrayContaining([
       { id: "income", label: "Income", type: "text", value: "$1000" },
       { id: "cost", label: "Cost", type: "text", value: "$2000" },
-      { id: "stats", label: "Stats", type: "text", value: "Attack 0, Defense 60" },
+      {
+        attack: 0,
+        defense: 60,
+        id: "stats",
+        label: "Stats",
+        type: "combat-stats",
+      },
     ]));
     expect(bankRows.some(({ id }) => id === "energy")).toBe(false);
     expect(bankRows.some(({ id }) => id === "energy-costs")).toBe(false);
@@ -89,7 +95,21 @@ describe("buildGamePanelState", () => {
     expect(panel?.focus).toBe("actor");
     expect(panel?.rows).toEqual(expect.arrayContaining([
       { id: "occupant-type", label: "Occupant Type", type: "text", value: "Soldier" },
-      { id: "stats", label: "Stats", type: "text", value: "Attack 30, Defense 15" },
+      {
+        color: "orange",
+        current: 100,
+        id: "health",
+        label: "Health",
+        maximum: 100,
+        type: "health-stat",
+      },
+      {
+        attack: 30,
+        defense: 15,
+        id: "stats",
+        label: "Stats",
+        type: "combat-stats",
+      },
       { id: "energy", label: "Energy", type: "text", value: "2" },
       {
         costs: [
@@ -147,7 +167,13 @@ describe("buildGamePanelState", () => {
     });
 
     expect(panel?.rows).toEqual(expect.arrayContaining([
-      { id: "stats", label: "Stats", type: "text", value: "Attack 40, Defense 25" },
+      {
+        attack: 40,
+        defense: 25,
+        id: "stats",
+        label: "Stats",
+        type: "combat-stats",
+      },
       {
         id: "boosted",
         label: "Boosted",

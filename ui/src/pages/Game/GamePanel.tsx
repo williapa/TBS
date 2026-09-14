@@ -29,6 +29,8 @@ const isDictionaryUnitTypeId = (value: string): value is DictionaryUnitTypeId =>
 
 type OpenUnitDictionary = (unitTypeId: DictionaryUnitTypeId) => void;
 
+const maximumCombatStat = 100;
+
 const cameraControls: readonly Readonly<{
   intent: CameraIntent;
   label: string;
@@ -54,6 +56,40 @@ const renderTerrain = (terrain: GamePanelTerrain, cost?: number) => (
     <span>{terrain.label}{cost === undefined ? null : ` ${cost}`}</span>
   </span>
 );
+
+const renderStatBar = (
+  label: "attack" | "defense" | "health",
+  value: number,
+  maximum: number,
+  valueText = String(value),
+  showLabel = true,
+  fillColor?: string,
+) => {
+  const barValue = Math.min(maximum, Math.max(0, value));
+  return (
+    <div className="game-panel__stat" key={label}>
+      <div className="game-panel__stat-heading">
+        {showLabel ? <span className="game-panel__stat-label">{label}</span> : null}
+        <span className="game-panel__stat-value">{valueText}</span>
+      </div>
+      <div
+        aria-label={label}
+        aria-valuemax={maximum}
+        aria-valuemin={0}
+        aria-valuenow={barValue}
+        className="game-panel__stat-track"
+        role="progressbar"
+      >
+        <span
+          aria-hidden="true"
+          className="game-panel__stat-fill"
+          data-stat={label}
+          style={{ backgroundColor: fillColor, width: `${(barValue / maximum) * 100}%` }}
+        />
+      </div>
+    </div>
+  );
+};
 
 const renderRowValue = (row: GamePanelRow, openUnitDictionary: OpenUnitDictionary) => {
   if (row.type === "actions") {
@@ -100,6 +136,33 @@ const renderRowValue = (row: GamePanelRow, openUnitDictionary: OpenUnitDictionar
         {row.costs.map(({ cost, terrain }) => (
           <span key={terrain.id}>{renderTerrain(terrain, cost)}</span>
         ))}
+      </div>
+    );
+  }
+
+  if (row.type === "combat-stats") {
+    return (
+      <div aria-label="Combat stats" className="game-panel__stat-chart" role="group">
+        {([
+          ["attack", row.attack],
+          ["defense", row.defense],
+        ] as const).map(([label, value]) =>
+          renderStatBar(label, value, maximumCombatStat))}
+      </div>
+    );
+  }
+
+  if (row.type === "health-stat") {
+    return (
+      <div className="game-panel__stat-chart">
+        {renderStatBar(
+          "health",
+          row.current,
+          row.maximum,
+          `${row.current} / ${row.maximum}`,
+          false,
+          row.color,
+        )}
       </div>
     );
   }
