@@ -1,11 +1,15 @@
 packages:
   - packages/*
+  - tools/*
   - ui
 allowBuilds:
   # Nx's installer selects its platform-native binary; no network or source
   # generation is performed by the script.
   esbuild: true
   nx: true
+  # ONNX Runtime Web uses protobufjs; this is its standard informational
+  # postinstall hook and does not download or compile code.
+  protobufjs: true
   workerd: true
 confirmModulesPurge: false
 minimumReleaseAgeExclude:

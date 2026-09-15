@@ -1,5 +1,5 @@
-import type { GameState, TeamId } from "@TBS/game-core";
-import { applyStandardAction } from "@TBS/game-rules";
+import type { GameState } from "@TBS/game-core";
+import { activateStandardGame, applyStandardAction } from "@TBS/game-rules";
 
 import type {
   GatewayError,
@@ -42,15 +42,6 @@ const error = (code: GatewayError["code"], message: string): GatewayError => ({
   retryable: false,
 });
 
-const requirePurpleTeam = (state: GameState): TeamId => {
-  const purple = Object.values(state.teams).find(({ id }) => id === "purple")?.id;
-  const orange = Object.values(state.teams).find(({ id }) => id === "orange")?.id;
-  if (!orange || !purple || Object.keys(state.teams).length !== 2) {
-    throw error("invalid-action", "solo games require the standard orange and purple teams");
-  }
-  return purple;
-};
-
 const rejectionMessage = (
   result: Exclude<ReturnType<typeof applyStandardAction>, { ok: true }>,
 ): string => result.violations.map(({ message }) => message).join("; ") || "The action is invalid";
@@ -67,24 +58,18 @@ export class SoloGameModel {
   };
 
   readonly startGame = ({ initialState, mapName }: StartSoloGameInput): void => {
-    if (initialState.revision !== 0 || initialState.lifecycle.phase !== "waiting") {
-      throw error("invalid-action", "solo games require a waiting revision-zero initial state");
-    }
     const normalizedMapName = mapName.trim();
     if (!normalizedMapName || normalizedMapName.length > 120) {
       throw error("invalid-action", "map name is invalid");
     }
-    const purpleTeamId = requirePurpleTeam(initialState);
+    const activation = activateStandardGame(initialState);
+    if (!activation.ok) throw error("invalid-action", activation.message);
     this.replaceState({
       actions: [],
       error: null,
       game: {
         mapName: normalizedMapName,
-        state: {
-          ...initialState,
-          lifecycle: { phase: "active", activeTeamId: purpleTeamId },
-          turn: { number: 1 },
-        },
+        state: activation.state,
       },
     });
   };

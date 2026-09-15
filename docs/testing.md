@@ -7,6 +7,8 @@ Run commands from the repository root.
 - `pnpm test`: all Nx unit and shared adapter-contract projects.
 - `pnpm nx run @TBS/game-core:test`: normalized-state invariants, immutable primitives, registries, and mechanic ordering.
 - `pnpm nx run @TBS/game-rules:test`: all standard action families, rejection/immutability/event order, deterministic replay, codecs, content registries, and extension seams.
+- `pnpm nx run @TBS/game-ai:test`: observation shape/version checks, six-neighbor and relational encoding, production/transport inputs, remaining-turn horizon, record-order invariance, candidate permutation alignment, and explicit overflow rejection.
+- `pnpm nx run @TBS/ai-training-tools:test`: complete legal-choice contracts, revision-bound selections, bundled reset, immutable snapshot/replay, same-team sequences, turn-60 draw and final-turn victory behavior, terminal rewards/bootstrap, truncation, encoded-observation protocol, and pipe-protocol validation.
 - `pnpm nx run @TBS/protocol:test`: current transport schemas, size limits, round trips, and injected rules-codec composition.
 - `pnpm nx run @TBS/application:test`: multiplayer session lifecycle, optimistic action projection and rollback, monotonic submission settlement, revision reconciliation, and deterministic local two-team control.
 - `pnpm nx run @TBS/game-setup:test`: map documents, limits, topology, playable placement, axial-backed generation, editor immutability, presets, and initial objective/state derivation.
@@ -22,6 +24,9 @@ Run commands from the repository root.
 - `pnpm edge:build`: deterministic trusted-action bundle generation directly from current workspace sources for the Edge runtime.
 - `pnpm performance:check`: maximum-size board batching p95, instanced terrain count, lazy 3D splitting, and production gzip budgets.
 - `pnpm portability:check`: shared read, write, and all-nine-action-family contracts against the provider-independent in-memory adapter; CI runs this as a named alternate-provider rehearsal.
+- `pnpm ai:benchmark`: builds the headless environment and reports per-preset legal enumeration, bounded random-legal simulation, memory, and serialization measurements. This is a diagnostic benchmark, not a strength gate.
+- `pnpm ai:representation:benchmark`: measures Money Mountain's reachable encoded entity/candidate bounds, serialization size, numeric input memory, and encoder latency.
+- `pnpm ai:phase2`: with the pinned Python environment active, generates an ignored untrained checkpoint/ONNX bundle, verifies entity/candidate permutation semantics and PyTorch/ONNX Runtime Web parity, runs one engine-to-model-to-engine decision, and reports representation measurements.
 
 ## Local Supabase
 

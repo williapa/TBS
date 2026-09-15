@@ -20,6 +20,8 @@ export * from "./extensions/pathfinder";
 export * from "./mechanics/movement";
 export * from "./mechanics/post-action";
 export * from "./mechanics/standard-pipeline";
+export * from "./rulesets/activate-standard-game";
 export * from "./rulesets/standard";
 export * from "./rulesets/standard-versions";
+export * from "./selectors/enumerate-standard-actions";
 export * from "./selectors/standard-legality";

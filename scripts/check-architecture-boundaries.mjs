@@ -56,6 +56,22 @@ const rules = [
     disallowed: (module) => module.startsWith("@TBS/") && module !== "@TBS/game-core",
   },
   {
+    roots: ["packages/game-ai/src"],
+    message: "game-ai may depend only on deterministic core/rules contracts and cannot import tensor runtimes, setup, application, UI, renderers, or providers",
+    disallowed: (module) =>
+      module === "react"
+      || module.startsWith("react/")
+      || module === "three"
+      || module.startsWith("@react-three/")
+      || module.startsWith("@supabase/")
+      || module.startsWith("onnxruntime")
+      || module.startsWith("@tensorflow/")
+      || (module.startsWith("@TBS/") && ![
+        "@TBS/game-core",
+        "@TBS/game-rules",
+      ].includes(module)),
+  },
+  {
     roots: ["packages/game-setup/src"],
     message: "game-setup may depend only on game-core and game-rules",
     disallowed: (module) => module.startsWith("@TBS/") && ![
@@ -95,6 +111,21 @@ const rules = [
       (module.startsWith("@TBS/") && ![
         "@TBS/game-core",
         "@TBS/game-rules",
+        "@TBS/protocol",
+      ].includes(module)),
+  },
+  {
+    roots: ["tools/ai-training/src"],
+    message: "AI training tools may compose domain packages but cannot depend on application, UI, renderers, or provider adapters",
+    disallowed: (module) =>
+      module === "react"
+      || module.startsWith("react/")
+      || module.startsWith("@supabase/")
+      || (module.startsWith("@TBS/") && ![
+        "@TBS/game-ai",
+        "@TBS/game-core",
+        "@TBS/game-rules",
+        "@TBS/game-setup",
         "@TBS/protocol",
       ].includes(module)),
   },

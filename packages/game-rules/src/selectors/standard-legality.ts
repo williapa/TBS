@@ -21,6 +21,11 @@ import type { UnitCapability } from "../content/units";
 import { getReachablePositions, type MovementPolicy } from "../mechanics/movement";
 import { standardRuleServices, validateStandardAction } from "../rulesets/standard";
 
+export type StandardLegalityObserver = Readonly<{
+  movementTraversal: () => void;
+  validation: () => void;
+}>;
+
 const moneyCollectionPolicy: MovementPolicy = {
   allowSamePosition: true,
   collectibleObjectTypeIds: [unitTypeId("money")],
@@ -37,8 +42,15 @@ const contextFor = (state: GameState, actorTeamId: TeamId) => ({
   services: standardRuleServices,
 });
 
-const isLegal = (state: GameState, actorTeamId: TeamId, action: StandardAction): boolean =>
-  validateStandardAction(state, actorTeamId, action).ok;
+const isLegal = (
+  state: GameState,
+  actorTeamId: TeamId,
+  action: StandardAction,
+  observer?: StandardLegalityObserver,
+): boolean => {
+  observer?.validation();
+  return validateStandardAction(state, actorTeamId, action).ok;
+};
 
 const canPreviewActor = (
   state: GameState,
@@ -100,9 +112,11 @@ const travelPositions = (
   actorTeamId: TeamId,
   actorId: EntityId,
   policy: MovementPolicy,
+  observer?: StandardLegalityObserver,
 ): readonly HexCoord[] => {
   const actor = state.entities[actorId];
   if (!actor?.position || !canPreviewActor(state, actorTeamId, actorId, "move")) return [];
+  observer?.movementTraversal();
   const reachable = getReachablePositions(contextFor(state, actorTeamId), actor, policy);
   return Object.values(state.board.cells)
     .filter(({ position }) => reachable.has(hexKey(position)))
@@ -113,10 +127,11 @@ export const getStandardTravelPositions = (
   state: GameState,
   actorTeamId: TeamId,
   actorId: EntityId,
+  observer?: StandardLegalityObserver,
 ): readonly HexCoord[] => {
   const actor = state.entities[actorId];
   if (!actor?.position || !canPreviewActor(state, actorTeamId, actorId, "move")) return [];
-  return [actor.position, ...travelPositions(state, actorTeamId, actorId, moneyCollectionPolicy)];
+  return [actor.position, ...travelPositions(state, actorTeamId, actorId, moneyCollectionPolicy, observer)];
 };
 
 export const getLegalMovePositions = (
@@ -134,24 +149,25 @@ export const getLegalMoveOptions = (
   state: GameState,
   actorTeamId: TeamId,
   actorId: EntityId,
+  observer?: StandardLegalityObserver,
 ): readonly MoveAction[] => {
   if (!canPreviewActor(state, actorTeamId, actorId, "move")) return [];
   const projectileTargets = projectileTargetEntities(state, actorTeamId);
-  return travelPositions(state, actorTeamId, actorId, moveCollectionPolicy)
+  return travelPositions(state, actorTeamId, actorId, moveCollectionPolicy, observer)
     .flatMap((destination): readonly MoveAction[] => {
-    const direct: MoveAction = { type: "move", actorId, destination };
-    if (isLegal(state, actorTeamId, direct)) return [direct];
-    return projectileTargets.flatMap((entity) => {
-      if (!entity.position) return [];
-      const candidate: MoveAction = {
-        type: "move",
-        actorId,
-        destination,
-        objectTarget: entity.position,
-      };
-      return isLegal(state, actorTeamId, candidate) ? [candidate] : [];
+      const direct: MoveAction = { type: "move", actorId, destination };
+      if (isLegal(state, actorTeamId, direct, observer)) return [direct];
+      return projectileTargets.flatMap((entity) => {
+        if (!entity.position) return [];
+        const candidate: MoveAction = {
+          type: "move",
+          actorId,
+          destination,
+          objectTarget: entity.position,
+        };
+        return isLegal(state, actorTeamId, candidate, observer) ? [candidate] : [];
+      });
     });
-  });
 };
 
 const hasLegalMoveOption = (
@@ -193,9 +209,10 @@ const legalTargetIds = (
   destination: HexCoord,
   capability: UnitCapability,
   createAction: (targetId: EntityId) => StandardAction,
+  observer?: StandardLegalityObserver,
 ): readonly EntityId[] => canPreviewActor(state, actorTeamId, actorId, capability)
   ? adjacentEntityIds(state, destination)
-    .filter((targetId) => isLegal(state, actorTeamId, createAction(targetId)))
+    .filter((targetId) => isLegal(state, actorTeamId, createAction(targetId), observer))
   : [];
 
 export const getAttackTargetIds = (
@@ -203,48 +220,52 @@ export const getAttackTargetIds = (
   actorTeamId: TeamId,
   actorId: EntityId,
   destination: HexCoord,
+  observer?: StandardLegalityObserver,
 ): readonly EntityId[] => legalTargetIds(state, actorTeamId, actorId, destination, "attack", (defenderId) => ({
   type: "attack",
   actorId,
   destination,
   defenderId,
-}));
+}), observer);
 
 export const getBoostTargetIds = (
   state: GameState,
   actorTeamId: TeamId,
   actorId: EntityId,
   destination: HexCoord,
+  observer?: StandardLegalityObserver,
 ): readonly EntityId[] => legalTargetIds(state, actorTeamId, actorId, destination, "boost", (targetId) => ({
   type: "boost",
   actorId,
   destination,
   targetId,
-}));
+}), observer);
 
 export const getHealTargetIds = (
   state: GameState,
   actorTeamId: TeamId,
   actorId: EntityId,
   destination: HexCoord,
+  observer?: StandardLegalityObserver,
 ): readonly EntityId[] => legalTargetIds(state, actorTeamId, actorId, destination, "heal", (targetId) => ({
   type: "heal",
   actorId,
   destination,
   targetId,
-}));
+}), observer);
 
 export const getLoadTargetIds = (
   state: GameState,
   actorTeamId: TeamId,
   actorId: EntityId,
   destination: HexCoord,
+  observer?: StandardLegalityObserver,
 ): readonly EntityId[] => legalTargetIds(state, actorTeamId, actorId, destination, "loadable", (vehicleId) => ({
   type: "load",
   actorId,
   destination,
   vehicleId,
-}));
+}), observer);
 
 export const getAffordableConstructionOptions = (
   state: GameState,
@@ -260,6 +281,7 @@ export const getLegalConstructionOptions = (
   actorId: EntityId,
   destination: HexCoord,
   constructionPosition: HexCoord,
+  observer?: StandardLegalityObserver,
 ): readonly ConstructionOption[] => {
   if (!canPreviewActor(state, actorTeamId, actorId, "construct")) return [];
   const buildingEntityId = previewEntityId(state, "construction", actorId);
@@ -270,7 +292,7 @@ export const getLegalConstructionOptions = (
     constructionPosition,
     buildingEntityId,
     buildingUnitTypeId,
-  }));
+  }, observer));
 };
 
 export const getConstructablePositions = (
@@ -307,6 +329,7 @@ export const getLegalProductionOptions = (
   actorTeamId: TeamId,
   buildingId: EntityId,
   destination: HexCoord,
+  observer?: StandardLegalityObserver,
 ): readonly ProductionOption[] => {
   const building = state.entities[buildingId];
   if (!building || !canPreviewActor(state, actorTeamId, buildingId, "spawn")) return [];
@@ -317,7 +340,7 @@ export const getLegalProductionOptions = (
     destination,
     spawnedEntityId,
     unitTypeId,
-  }));
+  }, observer));
 };
 
 export const getSpawnablePositions = (
@@ -344,6 +367,7 @@ export const getUnloadPositions = (
   actorTeamId: TeamId,
   actorId: EntityId,
   destination: HexCoord,
+  observer?: StandardLegalityObserver,
 ): readonly HexCoord[] => {
   const actor = state.entities[actorId];
   const definition = actor ? standardRuleServices.getUnit(actor.unitTypeId) : undefined;
@@ -355,7 +379,7 @@ export const getUnloadPositions = (
       actorId,
       destination,
       unloadPosition,
-    }));
+    }, observer));
 };
 
 export const getEntityCapabilities = (

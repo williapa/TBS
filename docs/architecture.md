@@ -5,7 +5,8 @@
 TBS is a browser-first turn-based strategy game. The supported runtime has these dependency layers:
 
 - `@TBS/game-core` owns the normalized state model, branded identifiers, axial coordinates, immutable transition primitives, mechanic infrastructure, and invariants. It has no workspace dependencies.
-- `@TBS/game-rules` owns the standard action/event unions, unit and terrain definitions, legality selectors, focused action handlers, ordered mechanics, and the single deterministic evaluator. It depends only on core.
+- `@TBS/game-rules` owns the standard action/event unions, unit and terrain definitions, legality selectors, complete revision-bound semantic command enumeration, focused action handlers, ordered mechanics, and the single deterministic evaluator. Its enumerator uses deterministic bookkeeping IDs and optional instrumentation callbacks without reading clocks. It depends only on core.
+- `@TBS/game-ai` owns the versioned, framework-free observation and candidate representation consumed by bundled-map models. It depends only on core and rules, uses relative ownership plus indexed cell/entity/cargo/action relationships, and contains no tensor runtime, files, browser APIs, or randomness.
 - `@TBS/protocol` owns the current wire envelopes, snapshots, applied actions, memberships, notices, and validation composition. It depends only on core and accepts rules codecs at composition roots.
 - `@TBS/game-setup` owns the current editor-oriented map document, map limits and validation, map-to-axial conversion, immutable editor operations, bundled presets, objectives, initial money, stable entity IDs, and normalized revision-zero state creation. It depends only on core and rules.
 - `@TBS/application` owns provider-neutral identity, session, query, command, realtime, and clock ports plus the canonical observable session model and revision reconciliation.
@@ -46,6 +47,8 @@ The 3D scene uses demand rendering while static and caps device-pixel ratio. Pro
 The extension seam is exercised by an opt-in Pathfinder unit and forest-concealment mechanic without modifying the pinned `standard@1` content. Provider replacement requirements and the in-memory contract rehearsal are documented in [Provider portability](./provider-portability.md). Historical design context remains in [v2 system design](./v2-system-design.md) and [v2 implementation checkpoint](./v2-implementation-checkpoint.md).
 
 Postgres is the durable authority for multiplayer games. Ephemeral solo test games have browser-memory authority and are intentionally not durable. Presence never controls seats, turns, or gameplay state.
+
+The AI training tool is an outer, local-only composition under `tools/ai-training`. Its long-lived bounded process resets only validated production bundled presets, applies commands through `game-rules`, validates restored canonical states through `protocol`, records preset hashes plus engine/candidate versions for snapshots and replays, and can expose `game-ai` tensors for the current actor. Its export harness defines a small shared graph/candidate policy-value model in Python, exports an ONNX artifact, and verifies it through ONNX Runtime Web/WASM before feeding a selected candidate back to the TypeScript engine. Generated model artifacts remain ignored and development-only. The tool does not depend on React, renderers, application sessions, Supabase, or provider adapters. Engine terminal results remain authoritative; operational command budgets are reported only as truncation.
 
 ## Security boundary
 

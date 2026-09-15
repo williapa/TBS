@@ -33,6 +33,9 @@ pnpm-debug.log*
 # ======================================
 node_modules/
 .pnpm-store/
+.venv/
+__pycache__/
+*.py[cod]
 
 # ======================================
 # Build artifacts

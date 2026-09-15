@@ -1,0 +1,42 @@
+{
+  "name": "@TBS/ai-training-tools",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Bounded headless simulation environment for bundled-map AI training",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "tbs-ai-environment": "dist/server.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "benchmark": "node dist/benchmark.js",
+    "build": "tsc -p tsconfig.json",
+    "onnx:smoke": "node dist/onnx-smoke.js",
+    "onnx:verify": "node dist/onnx-verify.js",
+    "phase2:verify": "pnpm run representation:fixture && ${AI_TRAINING_PYTHON:-python3} python/export_phase2_model.py .tmp/ai-phase-2/money-mountain-observation.json .tmp/ai-phase-2 && pnpm run onnx:verify && pnpm run onnx:smoke && pnpm run representation:benchmark",
+    "representation:benchmark": "node dist/representation-benchmark.js",
+    "representation:fixture": "node dist/representation-fixture.js",
+    "serve": "node dist/server.js",
+    "test": "vitest run src",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@TBS/game-ai": "workspace:*",
+    "@TBS/game-core": "workspace:*",
+    "@TBS/game-rules": "workspace:*",
+    "@TBS/game-setup": "workspace:*",
+    "@TBS/protocol": "workspace:*",
+    "onnxruntime-web": "1.23.2",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "26.2.0",
+    "typescript": "6.0.3",
+    "vitest": "4.1.10"
+  },
+  "nx": {
+    "projectType": "application",
+    "tags": ["layer:test", "type:tool"]
+  }
+}
