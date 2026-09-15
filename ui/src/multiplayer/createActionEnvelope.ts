@@ -1,7 +1,7 @@
 import {
   currentStandardProtocolCodec,
   CURRENT_PROTOCOL_VERSION,
-  STANDARD_RULESET_VERSION,
+  type StandardGameSnapshot,
   type StandardActionEnvelope,
 } from "@TBS/application";
 import type { StandardActionDraft } from "@TBS/presentation";
@@ -28,13 +28,13 @@ const materializeAction = (
 };
 
 export const createActionEnvelope = (
-  expectedRevision: number,
+  state: Pick<StandardGameSnapshot["state"], "revision" | "rulesetVersion">,
   action: StandardActionDraft,
   createIdentifier: CreateIdentifier = browserIdentifier,
 ): StandardActionEnvelope => currentStandardProtocolCodec.parseActionEnvelope({
   protocolVersion: CURRENT_PROTOCOL_VERSION,
   actionId: createIdentifier(),
-  expectedRevision,
-  rulesetVersion: STANDARD_RULESET_VERSION,
+  expectedRevision: state.revision,
+  rulesetVersion: state.rulesetVersion,
   action: materializeAction(action, createIdentifier),
 });

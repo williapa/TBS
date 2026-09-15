@@ -178,6 +178,17 @@ export type StandardEvent =
   | Readonly<{
       type: "game-over";
       winnerTeamId: TeamId;
+    }>
+  | Readonly<{
+      type: "draw-warning";
+      turnsRemaining: number;
+    }>
+  | Readonly<{
+      type: "last-turn-warning";
+      teamId: TeamId;
+    }>
+  | Readonly<{
+      type: "game-drawn";
     }>;
 
 export type StandardRuleServices = Readonly<{

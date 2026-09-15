@@ -71,6 +71,9 @@ describe("standard action and event codecs", () => {
       { type: "unit-loaded", ...movement, entityId: "actor", vehicleId: "vehicle" },
       { type: "unit-unloaded", ...movement, entityId: "actor", vehicleId: "vehicle", unloadPosition: destination },
       { type: "game-over", winnerTeamId: "orange" },
+      { type: "draw-warning", turnsRemaining: 10 },
+      { type: "last-turn-warning", teamId: "purple" },
+      { type: "game-drawn" },
     ] as const;
 
     expect(events.map((event) => parseStandardEvent(event).type)).toEqual(events.map(({ type }) => type));

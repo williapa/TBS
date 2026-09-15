@@ -1,5 +1,5 @@
 import { entityId, hexKey, teamId, terrainTypeId, unitTypeId, validateGameState } from "@TBS/game-core";
-import { applyStandardAction } from "@TBS/game-rules";
+import { applyStandardAction, STANDARD_RULESET_VERSION } from "@TBS/game-rules";
 import { describe, expect, test } from "vitest";
 
 import {
@@ -129,7 +129,7 @@ describe("map documents and setup", () => {
       schemaVersion: 2,
       revision: 0,
       lifecycle: { phase: "waiting" },
-      rulesetVersion: "standard@1",
+      rulesetVersion: STANDARD_RULESET_VERSION,
       contentVersion: "standard@1",
       teams: { orange: { money: 1_000 }, purple: { money: 1_000 } },
       turn: { number: 0 },

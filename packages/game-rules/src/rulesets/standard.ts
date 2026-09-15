@@ -1,7 +1,6 @@
 import {
   ActionRegistryBuilder,
   contentVersion,
-  rulesetVersion,
   type GameState,
   type RegistryExecutionResult,
   type RegistryValidationResult,
@@ -21,8 +20,12 @@ import { unloadActionHandler } from "../actions/unload";
 import type { StandardAction, StandardEvent, StandardRuleServices } from "../actions/types";
 import { getUnitDefinition } from "../content/units";
 import { standardPostActionPipeline } from "../mechanics/standard-pipeline";
+import {
+  isSupportedStandardRulesetVersion,
+  STANDARD_RULESET_VERSION,
+} from "./standard-versions";
 
-export const STANDARD_RULESET_VERSION = rulesetVersion("standard@1");
+export { STANDARD_RULESET_VERSION };
 export const STANDARD_CONTENT_VERSION = contentVersion("standard@1");
 
 export const standardRuleServices: StandardRuleServices = { getUnit: getUnitDefinition };
@@ -51,10 +54,10 @@ const validateStandardContext = (
   state: GameState,
   actorTeamId: TeamId,
 ): RuleViolation | undefined => {
-  if (state.rulesetVersion !== STANDARD_RULESET_VERSION) {
+  if (!isSupportedStandardRulesetVersion(state.rulesetVersion)) {
     return {
       code: "incompatible-ruleset",
-      message: `Expected ${STANDARD_RULESET_VERSION}, received ${state.rulesetVersion}`,
+      message: `Unsupported standard ruleset: ${state.rulesetVersion}`,
     };
   }
   if (state.lifecycle.phase === "finished") return { code: "finished-game", message: "the game has already finished" };

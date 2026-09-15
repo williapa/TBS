@@ -27,9 +27,105 @@ The browser may use the publishable key. Never copy or commit the service-role k
 
 Run `pnpm supabase:migration:new descriptive_name`, edit the generated SQL file, and verify the complete history with `pnpm supabase:reset`, `pnpm supabase:test`, and `pnpm supabase:lint`. Commit `supabase/config.toml`, migrations, tests, and the seed file with the code that depends on them.
 
-These commands affect only the local project. Linking to or deploying a hosted Supabase project is intentionally outside this setup.
+The reset, test, and lint commands above affect only the local project. Do not make schema changes directly in a hosted project's SQL or Table Editor. Remote schema changes must be represented by forward-only migration files so that Git history and Supabase's migration history remain aligned.
 
 The generated bundle under `supabase/functions/submit-action/generated/` is deliberately not committed. Production builds and deployments must run `pnpm edge:build` first. The function accepts only `{ gameId, envelope }`; service/secret keys remain in the Edge environment and must never be exposed to the browser.
+
+## Deploy hosted Supabase changes
+
+Deploy from a reviewed release commit and coordinate so only one person pushes migrations to an environment at a time. Use the project-local CLI through `pnpm exec supabase`; this ensures the repository's pinned CLI version is used.
+
+### Decide what must be deployed
+
+| Changed area | Hosted action |
+| --- | --- |
+| `supabase/migrations/` | Preview and run `db push`. |
+| `supabase/functions/submit-action/` | Rebuild and deploy `submit-action`. |
+| Trusted runtime sources under `packages/game-core`, `packages/game-rules`, `packages/protocol`, or `packages/application/src/commands` | Rebuild and deploy `submit-action`, even if its checked-in function source did not change. |
+| `[functions.submit-action]` in `supabase/config.toml` | Deploy `submit-action` so its function configuration is applied. |
+| Edge Function secrets | Update them with `secrets set`; a function redeploy is not required. |
+| Other hosted Auth, API, Realtime, Storage, or project configuration | Apply the corresponding reviewed hosted configuration change; see the configuration warning below. |
+
+A change can require more than one row. For example, a ruleset or protocol change that adds persisted state or events normally requires both a migration and an Edge Function deployment. Deploy the compatible database migration first, the Edge Function second, and the web application last.
+
+### Authenticate and link the target project
+
+Authentication and linking are normally one-time setup on each deployment machine:
+
+```sh
+pnpm exec supabase login
+pnpm exec supabase link --project-ref <production-project-ref>
+```
+
+Get the project reference from the hosted project's dashboard URL or project settings. Linking may prompt for the database password. Never put the access token, database password, secret key, or service-role key in a command committed to Git. Before every deployment, confirm that the linked project is the intended environment:
+
+```sh
+pnpm exec supabase projects list
+pnpm exec supabase migration list
+```
+
+The migration list should have a coherent local/remote history. Stop if the remote contains unexpected versions or if previously applied migration files differ from the release commit.
+
+### Validate the release locally
+
+From the repository root, run:
+
+```sh
+pnpm check
+pnpm supabase:reset
+pnpm supabase:test
+pnpm supabase:lint
+pnpm edge:build
+```
+
+`supabase:reset` destroys only the local Supabase database. It verifies that the full migration history can build a clean database. Do not substitute `supabase db reset --linked`; that command destroys the linked remote database and must never be used for production.
+
+### Deploy migrations
+
+Preview the pending migration set, review every listed file, and then apply it:
+
+```sh
+pnpm exec supabase db push --dry-run
+pnpm exec supabase db push
+pnpm exec supabase migration list
+```
+
+The final migration list must show the deployed versions on both the local and remote sides. Do not pass `--include-seed` in production; `supabase/seed.sql` is local test data. If migration history is out of sync, investigate the remote schema and release history before using `migration repair`. Repair changes migration bookkeeping only and is not a normal deployment or rollback tool.
+
+### Deploy the trusted Edge Function
+
+Always build immediately before deploying because `supabase/functions/submit-action/generated/` is ignored and may be absent or stale:
+
+```sh
+pnpm edge:build
+pnpm exec supabase functions deploy submit-action
+```
+
+The deploy uses `[functions.submit-action]` from `supabase/config.toml`, including JWT verification. Hosted Supabase supplies the platform URL and API keys used by this function; do not upload those values manually or expose the secret/service-role value to the browser. If future function code introduces a custom secret, set it separately from an ignored environment file and verify its name in the dashboard:
+
+```sh
+pnpm exec supabase secrets set --env-file <production-secrets-file>
+pnpm exec supabase secrets list
+```
+
+Never commit the production secrets file. Supabase makes updated secrets available without redeploying the function.
+
+### Hosted configuration warning
+
+The current `supabase/config.toml` also contains local ports and localhost Auth URLs. Do not run `pnpm exec supabase config push` against production without first separating or reviewing every hosted value; doing so could replace production Auth or API settings with local-development values. Function-specific settings are applied by `functions deploy`. For other hosted configuration changes, use a reviewed production-specific configuration or make the explicit change in the Supabase dashboard and record it in this document until this repository has environment-specific configuration as code.
+
+### Verify and recover
+
+After deployment:
+
+1. Confirm `migration list` shows no unexpected difference.
+2. Confirm the dashboard shows a new successful `submit-action` deployment when the function was deployed.
+3. Exercise a bounded multiplayer smoke test against the deployed web application: create a game, join the purple seat in a second browser context, submit one action, and confirm both clients reconcile to the same revision.
+4. Inspect the database and Edge Function logs for migration, authorization, or invocation errors.
+
+Database migrations are forward-only. Never edit an applied migration or reset production to roll back. Correct a database problem with a new reviewed migration. To recover an Edge Function, rebuild and redeploy a known-good commit only when it remains compatible with the already-deployed database schema.
+
+See Supabase's current guidance for [database migration deployment](https://supabase.com/docs/guides/deployment/database-migrations), [Edge Function deployment](https://supabase.com/docs/guides/functions/deploy), [function secrets](https://supabase.com/docs/guides/functions/secrets), and the [CLI reference](https://supabase.com/docs/reference/cli/su). Supabase CLI behavior can change, so verify these primary sources when updating this runbook.
 
 ## Free-tier safeguards and monitoring
 

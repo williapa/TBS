@@ -83,10 +83,11 @@ const objectiveSchema = z.discriminatedUnion("type", [
   }).strict(),
 ]);
 
-const lifecycleSchema = z.discriminatedUnion("phase", [
+const lifecycleSchema = z.union([
   z.object({ phase: z.literal("waiting") }).strict(),
   z.object({ phase: z.literal("active"), activeTeamId: identifierSchema }).strict(),
   z.object({ phase: z.literal("finished"), winnerTeamId: identifierSchema }).strict(),
+  z.object({ phase: z.literal("finished"), result: z.literal("draw") }).strict(),
 ]);
 
 export const normalizedGameStateSchema = z.object({
@@ -160,7 +161,9 @@ export const parseNormalizedGameState = (value: unknown): GameState => {
     ? document.lifecycle
     : document.lifecycle.phase === "active"
       ? { phase: "active" as const, activeTeamId: teamId(document.lifecycle.activeTeamId) }
-      : { phase: "finished" as const, winnerTeamId: teamId(document.lifecycle.winnerTeamId) };
+      : "winnerTeamId" in document.lifecycle
+        ? { phase: "finished" as const, winnerTeamId: teamId(document.lifecycle.winnerTeamId) }
+        : document.lifecycle;
 
   const state: GameState = {
     schemaVersion: NORMALIZED_GAME_SCHEMA_VERSION,

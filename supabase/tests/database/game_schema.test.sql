@@ -1,6 +1,6 @@
 begin;
 
-select plan(20);
+select plan(22);
 
 select lives_ok(
   $$select private.assert_current_state(
@@ -13,6 +13,30 @@ select lives_ok(
     0
   )$$,
   'the database accepts the current normalized state shape'
+);
+
+select lives_ok(
+  $$select private.assert_current_state(
+    '{
+      "schemaVersion":2,"rulesetVersion":"standard@2","contentVersion":"standard@1",
+      "revision":60,"lifecycle":{"phase":"finished","result":"draw"},"board":{"cells":{}},
+      "entities":{},"teams":{"orange":{"id":"orange","money":0},"purple":{"id":"purple","money":0}},
+      "objectives":[],"turn":{"number":61}
+    }'::jsonb,
+    60
+  )$$,
+  'the database accepts a standard@2 drawn state advanced past the final turn without a winner'
+);
+
+select lives_ok(
+  $$insert into public.game_sessions (
+      id, invite_code_hash, ruleset_version, revision, lifecycle_phase,
+      active_team_id, winner_team_id
+    ) values (
+      '10000000-0000-0000-0000-000000000060', 'draw-lifecycle', 'standard@2', 60,
+      'finished', null, null
+    )$$,
+  'finished session metadata permits a draw without a winner'
 );
 
 select throws_ok(

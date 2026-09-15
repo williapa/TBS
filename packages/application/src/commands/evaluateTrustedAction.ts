@@ -1,10 +1,10 @@
 import type { GameState, TeamId } from "@TBS/game-core";
 import {
   applyStandardAction,
+  isSupportedStandardRulesetVersion,
   parseStandardAction,
   parseStandardEvent,
   STANDARD_CONTENT_VERSION,
-  STANDARD_RULESET_VERSION,
   type StandardAction,
   type StandardActionResult,
   type StandardEvent,
@@ -109,10 +109,10 @@ export const evaluateTrustedAction = (
 
   if (
     input.versions.protocolVersion !== CURRENT_PROTOCOL_VERSION
-    || input.versions.rulesetVersion !== STANDARD_RULESET_VERSION
     || input.versions.contentVersion !== STANDARD_CONTENT_VERSION
-    || envelope.rulesetVersion !== STANDARD_RULESET_VERSION
-    || snapshot.state.rulesetVersion !== STANDARD_RULESET_VERSION
+    || !isSupportedStandardRulesetVersion(snapshot.state.rulesetVersion)
+    || input.versions.rulesetVersion !== snapshot.state.rulesetVersion
+    || envelope.rulesetVersion !== snapshot.state.rulesetVersion
     || snapshot.state.contentVersion !== STANDARD_CONTENT_VERSION
   ) {
     return reject(

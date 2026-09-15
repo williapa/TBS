@@ -19,7 +19,7 @@ export const SoloGamePage = () => {
   const { actions, error, game, submitAction } = useSoloGame();
   const send = useCallback((action: StandardActionDraft) => {
     if (!game) return;
-    submitAction(createActionEnvelope(game.state.revision, action));
+    submitAction(createActionEnvelope(game.state, action));
   }, [game, submitAction]);
 
   if (!game) {
@@ -36,16 +36,19 @@ export const SoloGamePage = () => {
   const activeTeamId = state.lifecycle.phase === "active"
     ? state.lifecycle.activeTeamId
     : undefined;
-  const winnerTeamId = state.lifecycle.phase === "finished"
+  const winnerTeamId = state.lifecycle.phase === "finished" && "winnerTeamId" in state.lifecycle
     ? state.lifecycle.winnerTeamId
     : undefined;
+  const isDraw = state.lifecycle.phase === "finished" && "result" in state.lifecycle;
   const orangeTeamId = Object.values(state.teams).find(({ id }) => id === "orange")?.id;
   if (!orangeTeamId) {
     return <p role="alert">The game does not contain the standard orange team.</p>;
   }
   const latestAction = actions.at(-1);
   const latestTransition = latestAction?.revision === state.revision ? latestAction : undefined;
-  const statusLabel = winnerTeamId
+  const statusLabel = isDraw
+    ? "Game ended in a draw"
+    : winnerTeamId
     ? `${teamName(winnerTeamId)} team wins!`
     : "Solo test game";
   const turnAnnouncement = activeTeamId

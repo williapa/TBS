@@ -52,6 +52,25 @@ describe("formatDomainEvent", () => {
     }))).toBe("Orange ended their turn. Purple gained $125 income.");
   });
 
+  it("renders the ten-turn draw warning", () => {
+    expect(formatDomainEvent(parseEvent({
+      type: "draw-warning",
+      turnsRemaining: 10,
+    }))).toBe("10 turns left before game ends in draw!");
+  });
+
+  it.each(["purple", "orange"] as const)("renders %s's last-turn warning", (teamId) => {
+    expect(formatDomainEvent(parseEvent({
+      type: "last-turn-warning",
+      teamId,
+    }))).toBe(`This is ${teamId}'s last turn before the game ends in a draw!`);
+  });
+
+  it("describes a drawn game", () => {
+    expect(formatDomainEvent(parseEvent({ type: "game-drawn" })))
+      .toBe("The game has ended in a draw.");
+  });
+
   it("describes projectile targeting and damage", () => {
     expect(formatDomainEvent(parseEvent({
       type: "unit-moved",

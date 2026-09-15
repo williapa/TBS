@@ -16,7 +16,7 @@ create temporary table created_game on commit drop as
 select * from public.create_game(
   'Orange',
   '{
-    "schemaVersion":2,"rulesetVersion":"standard@1","contentVersion":"standard@1",
+    "schemaVersion":2,"rulesetVersion":"standard@2","contentVersion":"standard@1",
     "revision":0,"lifecycle":{"phase":"waiting"},"board":{"cells":{}},
     "entities":{},"teams":{"orange":{"id":"orange","money":1000},"purple":{"id":"purple","money":1000}},
     "objectives":[],"turn":{"number":0}
@@ -35,7 +35,7 @@ select is((select role from created_game), 'orange', 'creator receives orange');
 select is(
   (select concat_ws(':', schema_version, protocol_version, ruleset_version, content_version)
    from public.game_sessions where id = (select game_id from created_game)),
-  '2:2:standard@1:standard@1',
+  '2:2:standard@2:standard@1',
   'new games pin the current engine versions'
 );
 select is(

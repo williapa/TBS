@@ -45,6 +45,13 @@ describe("normalized game-state invariants", () => {
     expect(validateGameState(validState())).toEqual([]);
   });
 
+  it("accepts a finished game with a draw result and no winner", () => {
+    expect(validateGameState({
+      ...validState(),
+      lifecycle: { phase: "finished", result: "draw" },
+    })).toEqual([]);
+  });
+
   it("reports entity/occupancy, health, money, and lifecycle violations", () => {
     const state = validState();
     const invalid: GameState = {

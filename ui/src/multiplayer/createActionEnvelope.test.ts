@@ -18,7 +18,7 @@ describe("createActionEnvelope", () => {
     const actor = Object.values(state.entities)[0];
     if (!actor?.position) throw new Error("active fixture requires a positioned actor");
     const envelope = createActionEnvelope(
-      7,
+      { revision: 7, rulesetVersion: state.rulesetVersion },
       {
         type: "construct",
         actorId: actor.id,

@@ -34,6 +34,10 @@ import {
   standardRuleServices,
   validateStandardAction,
 } from "./standard";
+import {
+  LEGACY_STANDARD_RULESET_VERSION,
+  STANDARD_MAX_TURNS,
+} from "./standard-versions";
 
 const orange = teamId("orange");
 const purple = teamId("purple");
@@ -486,6 +490,70 @@ describe("standard ruleset action registry", () => {
     }]);
   });
 
+  it("warns at the start of turn 51 that ten turns remain", () => {
+    const state = { ...stateFixture(), turn: { number: STANDARD_MAX_TURNS - 10 } };
+
+    const result = applyStandardAction(state, orange, { type: "end-turn" });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.turn.number).toBe(STANDARD_MAX_TURNS - 9);
+    expect(result.state.lifecycle).toEqual({ phase: "active", activeTeamId: purple });
+    expect(result.events.map(({ type }) => type)).toEqual(["turn-ended", "draw-warning"]);
+    expect(result.events[result.events.length - 1]).toEqual({ type: "draw-warning", turnsRemaining: 10 });
+  });
+
+  it.each([
+    { completedTurn: STANDARD_MAX_TURNS - 2, teamId: purple },
+    { completedTurn: STANDARD_MAX_TURNS - 1, teamId: orange },
+  ])("warns $teamId before their last turn after turn $completedTurn", ({ completedTurn, teamId }) => {
+    const actorTeamId = teamId === purple ? orange : purple;
+    const state = {
+      ...stateFixture(),
+      lifecycle: { phase: "active" as const, activeTeamId: actorTeamId },
+      turn: { number: completedTurn },
+    };
+
+    const result = applyStandardAction(state, actorTeamId, { type: "end-turn" });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.turn.number).toBe(completedTurn + 1);
+    expect(result.state.lifecycle).toEqual({ phase: "active", activeTeamId: teamId });
+    expect(result.events.map(({ type }) => type)).toEqual(["turn-ended", "last-turn-warning"]);
+    expect(result.events[result.events.length - 1]).toEqual({ type: "last-turn-warning", teamId });
+  });
+
+  it("finishes in a draw after the sixtieth turn, advances the event sequence, and does not mutate the input", () => {
+    const state = { ...stateFixture(), turn: { number: STANDARD_MAX_TURNS } };
+
+    const result = applyStandardAction(state, orange, { type: "end-turn" });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(state.lifecycle).toEqual({ phase: "active", activeTeamId: orange });
+    expect(result.state.lifecycle).toEqual({ phase: "finished", result: "draw" });
+    expect(result.state.turn.number).toBe(STANDARD_MAX_TURNS + 1);
+    expect(result.events.map(({ type }) => type)).toEqual(["turn-ended", "game-drawn"]);
+    expect(result.events[result.events.length - 1]).toEqual({ type: "game-drawn" });
+  });
+
+  it("preserves pre-limit behavior for games pinned to standard@1", () => {
+    const state = {
+      ...stateFixture(),
+      rulesetVersion: LEGACY_STANDARD_RULESET_VERSION,
+      turn: { number: STANDARD_MAX_TURNS },
+    };
+
+    const result = applyStandardAction(state, orange, { type: "end-turn" });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.lifecycle).toEqual({ phase: "active", activeTeamId: purple });
+    expect(result.state.turn.number).toBe(STANDARD_MAX_TURNS + 1);
+    expect(result.events.map(({ type }) => type)).toEqual(["turn-ended"]);
+  });
+
   it("emits game-over after the action and before any turn transition", () => {
     const base = stateFixture();
     const entities = Object.fromEntries(Object.entries(base.entities).filter(([id]) => id !== purpleGuard));
@@ -503,6 +571,7 @@ describe("standard ruleset action registry", () => {
         { type: "elimination", teamId: orange },
         { type: "elimination", teamId: purple },
       ],
+      turn: { number: STANDARD_MAX_TURNS },
     };
     const result = applyStandardAction(state, orange, {
       type: "move",

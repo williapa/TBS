@@ -56,5 +56,11 @@ export const formatDomainEvent = (event: StandardEvent): string => {
       return `${teamName(event.actorTeamId)} ended their turn. ${teamName(event.nextTeamId)} gained $${event.income} income.`;
     case "game-over":
       return `${teamName(event.winnerTeamId)} won the game!`;
+    case "draw-warning":
+      return `${event.turnsRemaining} turns left before game ends in draw!`;
+    case "last-turn-warning":
+      return `This is ${event.teamId}'s last turn before the game ends in a draw!`;
+    case "game-drawn":
+      return "The game has ended in a draw.";
   }
 };

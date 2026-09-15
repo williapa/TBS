@@ -64,7 +64,8 @@ export type ObjectiveState =
 export type GameLifecycle =
   | Readonly<{ phase: "waiting" }>
   | Readonly<{ phase: "active"; activeTeamId: TeamId }>
-  | Readonly<{ phase: "finished"; winnerTeamId: TeamId }>;
+  | Readonly<{ phase: "finished"; winnerTeamId: TeamId }>
+  | Readonly<{ phase: "finished"; result: "draw" }>;
 
 export type TurnState = Readonly<{
   number: number;
@@ -132,7 +133,11 @@ export const validateGameState = (state: GameState): readonly StateInvariantViol
   if (state.lifecycle.phase === "active" && !state.teams[state.lifecycle.activeTeamId]) {
     violations.push({ code: "missing-active-team", path: "lifecycle.activeTeamId" });
   }
-  if (state.lifecycle.phase === "finished" && !state.teams[state.lifecycle.winnerTeamId]) {
+  if (
+    state.lifecycle.phase === "finished"
+    && "winnerTeamId" in state.lifecycle
+    && !state.teams[state.lifecycle.winnerTeamId]
+  ) {
     violations.push({ code: "missing-winner-team", path: "lifecycle.winnerTeamId" });
   }
 

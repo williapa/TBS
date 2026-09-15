@@ -36,7 +36,11 @@ const renderFlow = (
 
 const createStore = () => new InMemoryGameSessionStore(applyStandardAction);
 const endTurnEnvelope = (revision: number, id: string) =>
-  createActionEnvelope(revision, { type: "end-turn" }, () => id);
+  createActionEnvelope(
+    { revision, rulesetVersion: createWaitingGameStateFixture().rulesetVersion },
+    { type: "end-turn" },
+    () => id,
+  );
 
 const createGame = async (store: InMemoryGameSessionStore) => {
   return new InMemoryGameSessionGateway(store, "orange").createGame({
@@ -341,6 +345,26 @@ describe("new session create and join flow", () => {
     expect(winningPanel).toHaveClass("panel--winner");
     expect(within(winningPanel).getByText("Winner")).toBeInTheDocument();
     expect(finishedView.getByRole("complementary", { name: "purple player" }))
+      .not.toHaveClass("panel--winner");
+    finishedView.unmount();
+
+    finishedGame.state = {
+      ...finishedGame.state,
+      lifecycle: { phase: "finished", result: "draw" },
+    };
+    const drawnView = renderFlow(
+      new InMemoryGameSessionGateway(activeStore, "purple"),
+      `/game/${active.inviteToken}`,
+    );
+    expect(await drawnView.findByRole("heading", { name: "Game ended in a draw" }))
+      .toBeInTheDocument();
+    const drawMetadata = drawnView.container.querySelector<HTMLElement>(".game-view__metadata");
+    if (!drawMetadata) throw new Error("drawn game metadata is missing");
+    expect(within(drawMetadata).getByText("Outcome").nextSibling).toHaveTextContent("Draw");
+    expect(within(drawMetadata).queryByText("Winner")).not.toBeInTheDocument();
+    expect(drawnView.getByRole("complementary", { name: "orange player" }))
+      .not.toHaveClass("panel--winner");
+    expect(drawnView.getByRole("complementary", { name: "purple player" }))
       .not.toHaveClass("panel--winner");
   });
 

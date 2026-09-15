@@ -114,6 +114,20 @@ const gameOverEventSchema = z.object({
   winnerTeamId: teamIdSchema,
 }).strict();
 
+const drawWarningEventSchema = z.object({
+  type: z.literal("draw-warning"),
+  turnsRemaining: z.number().int().positive(),
+}).strict();
+
+const lastTurnWarningEventSchema = z.object({
+  type: z.literal("last-turn-warning"),
+  teamId: teamIdSchema,
+}).strict();
+
+const gameDrawnEventSchema = z.object({
+  type: z.literal("game-drawn"),
+}).strict();
+
 export const standardEventSchema = z.union([
   unitMovedEventSchema,
   turnEndedEventSchema,
@@ -124,6 +138,9 @@ export const standardEventSchema = z.union([
   unitLoadedEventSchema,
   unitUnloadedEventSchema,
   gameOverEventSchema,
+  drawWarningEventSchema,
+  lastTurnWarningEventSchema,
+  gameDrawnEventSchema,
 ]);
 
 export const parseStandardEvent = (value: unknown): StandardEvent => standardEventSchema.parse(value);

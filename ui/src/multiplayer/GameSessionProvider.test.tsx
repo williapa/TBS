@@ -15,7 +15,11 @@ const input = () => ({
 });
 const createStore = () => new InMemoryGameSessionStore(applyStandardAction);
 const endTurnEnvelope = (revision: number, id: string) =>
-  createActionEnvelope(revision, { type: "end-turn" }, () => id);
+  createActionEnvelope(
+    { revision, rulesetVersion: createWaitingGameStateFixture().rulesetVersion },
+    { type: "end-turn" },
+    () => id,
+  );
 
 const wrapperFor = (gateway: GameClient) => ({ children }: { children: ReactNode }) => (
   <GameSessionGatewayContext.Provider value={gateway}>

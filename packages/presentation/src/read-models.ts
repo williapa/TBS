@@ -103,6 +103,8 @@ export const presentTeamPanel = (
     money: team.money,
     income: getTeamIncome(state, teamId),
     active: state.lifecycle.phase === "active" && state.lifecycle.activeTeamId === teamId,
-    winner: state.lifecycle.phase === "finished" && state.lifecycle.winnerTeamId === teamId,
+    winner: state.lifecycle.phase === "finished"
+      && "winnerTeamId" in state.lifecycle
+      && state.lifecycle.winnerTeamId === teamId,
   };
 };

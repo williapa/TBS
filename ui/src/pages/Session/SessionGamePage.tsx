@@ -21,7 +21,7 @@ export const SessionGamePage = () => {
   } = useGameSession();
   const send = useCallback((action: StandardActionDraft) => {
     if (!snapshot) return;
-    void submitAction(createActionEnvelope(snapshot.state.revision, action));
+    void submitAction(createActionEnvelope(snapshot.state, action));
   }, [snapshot, submitAction]);
   if (!snapshot || !role) return null;
 
@@ -37,9 +37,10 @@ export const SessionGamePage = () => {
   const activeTeamId = state.lifecycle.phase === "active"
     ? state.lifecycle.activeTeamId
     : undefined;
-  const winnerTeamId = state.lifecycle.phase === "finished"
+  const winnerTeamId = state.lifecycle.phase === "finished" && "winnerTeamId" in state.lifecycle
     ? state.lifecycle.winnerTeamId
     : undefined;
+  const isDraw = state.lifecycle.phase === "finished" && "result" in state.lifecycle;
   const onlineMembers = new Set(presence.map((entry) => entry.memberId));
   const onlineSpectators = new Set(
     presence.filter((entry) => entry.role === "spectator").map((entry) => entry.memberId),
@@ -54,7 +55,9 @@ export const SessionGamePage = () => {
     ? "Waiting for an opponent"
     : state.lifecycle.phase === "active"
       ? "Game in progress"
-      : `${winnerTeamName} team wins${winnerDisplayName ? ` — ${winnerDisplayName} is the winner!` : "!"}`;
+      : isDraw
+        ? "Game ended in a draw"
+        : `${winnerTeamName} team wins${winnerDisplayName ? ` — ${winnerDisplayName} is the winner!` : "!"}`;
   const latestAction = actions.at(-1);
   const committedTransition = latestAction?.revision === state.revision
     ? latestAction

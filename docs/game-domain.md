@@ -73,13 +73,15 @@ The attacker strikes first. A surviving defender counterattacks from the post-st
 
 Consumable objects may award money or supply projectile effects when collected as part of movement. Priest shielding and object damage are rule-owned behavior recorded in standard events.
 
-## Victory
+## Victory and draws
 
 Every game has elimination objectives: a team loses when it no longer has an on-board unit with both movement and attack capability. When setup added capital objectives, losing the team's capital is also a loss condition. A winning transition emits `game-over` and sets the canonical lifecycle to `finished` with the winner team.
 
+Games created under `standard@2` also have a 60-turn limit, where one turn is one player's opportunity to move. Completing turn 50 emits a 10-turn warning at action ID 51.1. The starts of turns 59 and 60 emit last-turn warnings for purple and orange, respectively. If turn 60 completes without a winner, the event history advances to action ID 61.1, emits `game-drawn`, and finishes with a draw. Objective victory is evaluated first, so a winning action on the final turn still produces a winner. The maximum is defined once by `STANDARD_MAX_TURNS` in the standard ruleset. Existing `standard@1` games retain their original unlimited-turn behavior.
+
 The map editor shows the win condition derived from its current unit placement. Game creation and invite previews show the same condition from the revision-zero objectives. The active game's default details view shows that condition together with the renderer and applicable 3D camera/accessibility controls; when a cell or actor is selected, the user can switch between its details and the default view. These views present the canonical objectives rather than storing a separate win-condition setting.
 
-Finished-game views announce the winning team and seated player's display name in the persistent game status, and mark the winning player panel independently of the transient event history.
+Finished-game views announce either the winning team and seated player's display name or the draw result in the persistent game status. Winning player panels are marked independently of the transient event history; drawn games mark neither player as the winner.
 
 ## Extension path
 

@@ -219,12 +219,12 @@ describe("GameMap renderer lifecycle", () => {
     const reduced = applyStandardAction(props.state, props.perspective, command);
     if (!reduced.ok) throw new Error("animation fixture move should be valid");
     const firstActionId = createActionEnvelope(
-      props.state.revision,
+      props.state,
       command,
       () => "45000000-0000-4000-8000-000000000001",
     ).actionId;
     const conflictingActionId = createActionEnvelope(
-      props.state.revision,
+      props.state,
       command,
       () => "45000000-0000-4000-8000-000000000002",
     ).actionId;

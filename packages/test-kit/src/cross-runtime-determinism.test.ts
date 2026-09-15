@@ -1,7 +1,12 @@
 import { createHash } from "node:crypto";
 
 import { teamId } from "@TBS/game-core";
-import { applyStandardAction, parseStandardAction, parseStandardEvent } from "@TBS/game-rules";
+import {
+  applyStandardAction,
+  parseStandardAction,
+  parseStandardEvent,
+  STANDARD_RULESET_VERSION,
+} from "@TBS/game-rules";
 import { createCurrentProtocolCodec, parseNormalizedGameState } from "@TBS/protocol";
 import { describe, expect, it } from "vitest";
 
@@ -12,7 +17,7 @@ const envelopeFixture = {
   protocolVersion: 2,
   actionId: FIXTURE_ACTION_ID,
   expectedRevision: 0,
-  rulesetVersion: "standard@1",
+  rulesetVersion: STANDARD_RULESET_VERSION,
   action: {
     type: "move",
     actorId: "initial-cell-0",

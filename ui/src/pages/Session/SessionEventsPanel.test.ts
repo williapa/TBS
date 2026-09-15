@@ -76,4 +76,41 @@ describe("SessionEventsPanel", () => {
     expect(screen.queryByText("purple moves first.")).not.toBeInTheDocument();
     expect(screen.getByRole("table")).toBeInTheDocument();
   });
+
+  it("places draw warnings and the result at the required turn action IDs", () => {
+    const actions = Array.from({ length: 60 }, (_, index) => {
+      const turn = index + 1;
+      const actorTeamId = turn % 2 === 0 ? "orange" : "purple";
+      const nextTeamId = actorTeamId === "orange" ? "purple" : "orange";
+      const events: unknown[] = [turnEnded(actorTeamId, nextTeamId)];
+      if (turn === 50) events.push({ type: "draw-warning", turnsRemaining: 10 });
+      if (turn === 58) events.push({ type: "last-turn-warning", teamId: "purple" });
+      if (turn === 59) events.push({ type: "last-turn-warning", teamId: "orange" });
+      if (turn === 60) events.push({ type: "game-drawn" });
+      return appliedAction(turn, events);
+    });
+
+    render(createElement(SessionEventsPanel, {
+      actions,
+    }));
+
+    expect(getDisplayedEvents(actions)
+      .filter(({ event }) => ["draw-warning", "last-turn-warning", "game-drawn"].includes(event.type))
+      .map(({ event, sequence }) => ({ type: event.type, sequence })))
+      .toEqual([
+        { type: "game-drawn", sequence: "61.1" },
+        { type: "last-turn-warning", sequence: "60.1" },
+        { type: "last-turn-warning", sequence: "59.1" },
+        { type: "draw-warning", sequence: "51.1" },
+      ]);
+
+    for (const message of [
+      "10 turns left before game ends in draw!",
+      "This is purple's last turn before the game ends in a draw!",
+      "This is orange's last turn before the game ends in a draw!",
+      "The game has ended in a draw.",
+    ]) {
+      expect(screen.getByText(message).closest("tr")).toBeInTheDocument();
+    }
+  });
 });

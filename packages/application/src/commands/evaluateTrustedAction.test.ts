@@ -1,4 +1,5 @@
 import {
+  LEGACY_STANDARD_RULESET_VERSION,
   STANDARD_CONTENT_VERSION,
   STANDARD_RULESET_VERSION,
 } from "@TBS/game-rules";
@@ -61,6 +62,30 @@ describe("evaluateTrustedAction", () => {
       ok: false,
       error: { code: "incompatible-data", retryable: false },
     });
+  });
+
+  it("continues evaluating games pinned to the legacy standard ruleset", () => {
+    const canonical = createGameSnapshotFixture();
+    const legacySnapshot = {
+      ...canonical,
+      state: {
+        ...canonical.state,
+        rulesetVersion: LEGACY_STANDARD_RULESET_VERSION,
+        turn: { number: 60 },
+      },
+    };
+
+    const result = evaluateTrustedAction({
+      snapshot: legacySnapshot,
+      callerId: "orange-member",
+      versions: { ...versions, rulesetVersion: LEGACY_STANDARD_RULESET_VERSION },
+      envelope: { ...envelope, rulesetVersion: LEGACY_STANDARD_RULESET_VERSION },
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.proposal.state.turn.number).toBe(61);
+    expect(result.proposal.state.lifecycle.phase).toBe("active");
   });
 
   it("rejects spectators, stale revisions, and unsupported pinned versions", () => {

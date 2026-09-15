@@ -72,9 +72,10 @@ export const GameView = ({
   const activeTeamId = state.lifecycle.phase === "active"
     ? state.lifecycle.activeTeamId
     : undefined;
-  const winnerTeamId = state.lifecycle.phase === "finished"
+  const winnerTeamId = state.lifecycle.phase === "finished" && "winnerTeamId" in state.lifecycle
     ? state.lifecycle.winnerTeamId
     : undefined;
+  const isDraw = state.lifecycle.phase === "finished" && "result" in state.lifecycle;
   const statusTitleId = state.lifecycle.phase === "active" ? undefined : "game-state-title";
   const canAct = Boolean(activeTeamId && activeTeamId === controlledTeamId && !pending);
   const orangePanel = presentTeamPanel(state, orangeTeamId);
@@ -101,6 +102,7 @@ export const GameView = ({
         <dt>Revision</dt><dd>{revision}{pending ? " (action pending)" : ""}</dd>
         {activeTeamId && <><dt>Current turn</dt><dd>{activeTeamId}</dd></>}
         {winnerTeamId && <><dt>Winner</dt><dd>{winnerTeamId}</dd></>}
+        {isDraw && <><dt>Outcome</dt><dd>Draw</dd></>}
       </dl>
       {errorMessage && <p className="game-view__error" role="alert">{errorMessage}</p>}
       <div className="r1">
