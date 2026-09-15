@@ -2,25 +2,24 @@ import {
   NORMALIZED_GAME_SCHEMA_VERSION,
   entityId,
   hexKey,
+  teamId,
   validateGameState,
   type BoardCellState,
   type EntityState,
   type GameState,
   type ObjectiveState,
   type TeamId,
-  type TeamState,
 } from "@TBS/game-core";
 import {
   STANDARD_CONTENT_VERSION,
   STANDARD_RULESET_VERSION,
-  STANDARD_STARTING_MONEY,
   standardTeamIds,
   standardUnits,
 } from "@TBS/game-rules";
 
 import { mapOffsetToAxial } from "../geometry/mapHex";
-import { validatePlayableMap } from "../maps/validation";
-import type { MapCell, MapGrid } from "../contracts";
+import { validateMapStartingMoney, validatePlayableMap } from "../maps/validation";
+import { MapSetupError, type MapCell, type MapGrid } from "../contracts";
 import { isObjectMapUnit } from "../maps/mapUnitOwnership";
 
 const ownerFor = (cell: Pick<MapCell, "team" | "unit">): TeamId | undefined =>
@@ -69,7 +68,12 @@ export const deriveInitialObjectives = (map: MapGrid): readonly ObjectiveState[]
 };
 
 export const createInitialGameState = (value: unknown): GameState => {
-  const map = validatePlayableMap(value);
+  if (typeof value !== "object" || value === null || Array.isArray(value) || !("map" in value)) {
+    throw new MapSetupError("invalid-map", "Game setup must contain a map and starting money");
+  }
+  const input = value as Readonly<{ map: unknown; startingMoney?: unknown }>;
+  const map = validatePlayableMap(input.map);
+  const startingMoney = validateMapStartingMoney(input.startingMoney);
   const width = map[0].length;
   const cells: Record<string, BoardCellState> = {};
   const entities: Record<string, EntityState> = {};
@@ -93,10 +97,8 @@ export const createInitialGameState = (value: unknown): GameState => {
     entities[occupantEntityId] = entity;
   }
 
-  const teams: Record<string, TeamState> = Object.fromEntries(standardTeamIds.map((id) => [
-    id,
-    { id, money: STANDARD_STARTING_MONEY },
-  ]));
+  const orange = teamId("orange");
+  const purple = teamId("purple");
   const state: GameState = {
     schemaVersion: NORMALIZED_GAME_SCHEMA_VERSION,
     rulesetVersion: STANDARD_RULESET_VERSION,
@@ -105,7 +107,10 @@ export const createInitialGameState = (value: unknown): GameState => {
     lifecycle: { phase: "waiting" },
     board: { cells },
     entities,
-    teams,
+    teams: {
+      [orange]: { id: orange, money: startingMoney.orange },
+      [purple]: { id: purple, money: startingMoney.purple },
+    },
     objectives: deriveInitialObjectives(map),
     turn: { number: 0 },
   };

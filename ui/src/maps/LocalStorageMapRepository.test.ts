@@ -1,4 +1,9 @@
-import { createDefaultBattlefield, mapTerrainOptions, validateMap } from "@TBS/game-setup";
+import {
+  createDefaultBattlefield,
+  DEFAULT_MAP_STARTING_MONEY,
+  mapTerrainOptions,
+  validateMap,
+} from "@TBS/game-setup";
 import { LocalStorageMapRepository } from "./LocalStorageMapRepository";
 
 const map = () => validateMap(structuredClone(createDefaultBattlefield().map));
@@ -18,21 +23,37 @@ describe("LocalStorageMapRepository", () => {
       { id: "money-mountain", name: "Money Mountain" },
     ]);
     expect(listed).toHaveLength(4);
-    expect(listed.every(({ readOnly, schemaVersion }) => readOnly && schemaVersion === 1)).toBe(true);
+    expect(listed.every(({ readOnly, schemaVersion }) => readOnly && schemaVersion === 2)).toBe(true);
+    expect(listed.every(({ startingMoney }) => (
+      startingMoney.orange === 1_000 && startingMoney.purple === 1_000
+    ))).toBe(true);
     expect(await repository.get("default-battlefield")).toEqual(listed[0]);
     await expect(repository.delete("four-forests")).rejects.toMatchObject({ code: "read-only" });
   });
 
   test("saves, reloads, updates, and deletes local maps", async () => {
     const firstPage = new LocalStorageMapRepository(window.localStorage, () => "custom-1");
-    const saved = await firstPage.save({ name: "  My map  ", map: map() });
-    expect(saved).toMatchObject({ id: "custom-1", name: "My map", readOnly: false });
+    const saved = await firstPage.save({
+      name: "  My map  ",
+      map: map(),
+      startingMoney: { orange: 1_200, purple: 800 },
+    });
+    expect(saved).toMatchObject({
+      id: "custom-1",
+      name: "My map",
+      readOnly: false,
+      startingMoney: { orange: 1_200, purple: 800 },
+    });
 
     const reloadedPage = new LocalStorageMapRepository(window.localStorage, () => "custom-2");
     expect(await reloadedPage.get("custom-1")).toEqual(saved);
     const updatedMap = map().map((row, rowIndex) => row.map((cell, columnIndex) =>
       rowIndex === 0 && columnIndex === 0 ? { ...cell, terrain: forest } : cell));
-    expect(await reloadedPage.update("custom-1", { name: "Updated", map: updatedMap })).toMatchObject({ name: "Updated" });
+    expect(await reloadedPage.update("custom-1", {
+      name: "Updated",
+      map: updatedMap,
+      startingMoney: { orange: 900, purple: 700 },
+    })).toMatchObject({ name: "Updated", startingMoney: { orange: 900, purple: 700 } });
     await reloadedPage.delete("custom-1");
     expect(await reloadedPage.get("custom-1")).toBeUndefined();
   });
@@ -40,13 +61,17 @@ describe("LocalStorageMapRepository", () => {
   test.each([
     ["malformed JSON", "{", "invalid-map"],
     ["unsupported repository", JSON.stringify({ repositoryVersion: 2, maps: [] }), "unsupported-version"],
-    ["unsupported map", JSON.stringify({ repositoryVersion: 1, maps: [{ schemaVersion: 2, id: "bad", name: "Bad", map: map() }] }), "unsupported-version"],
+    ["unsupported map", JSON.stringify({ repositoryVersion: 1, maps: [{ schemaVersion: 3, id: "bad", name: "Bad", map: map() }] }), "unsupported-version"],
     ["malformed map", JSON.stringify({ repositoryVersion: 1, maps: [{ schemaVersion: 1, id: "bad", name: "Bad", map: [[{ row: 0 }]] }] }), "invalid-map"],
   ])("rejects %s without changing stored data", async (_name, raw, code) => {
     window.localStorage.setItem("TBS.maps.v1", raw);
     const repository = new LocalStorageMapRepository(window.localStorage, () => "new-map");
     await expect(repository.list()).rejects.toMatchObject({ code });
-    await expect(repository.save({ name: "Safe", map: map() })).rejects.toMatchObject({ code });
+    await expect(repository.save({
+      name: "Safe",
+      map: map(),
+      startingMoney: DEFAULT_MAP_STARTING_MONEY,
+    })).rejects.toMatchObject({ code });
     expect(window.localStorage.getItem("TBS.maps.v1")).toBe(raw);
   });
 
@@ -54,7 +79,25 @@ describe("LocalStorageMapRepository", () => {
     const repository = new LocalStorageMapRepository(window.localStorage, () => "bad");
     const invalid = map().map((row, rowIndex) => row.map((cell, columnIndex) =>
       rowIndex === 0 && columnIndex === 0 ? { ...cell, row: 3 } : cell));
-    await expect(repository.save({ name: "Bad", map: invalid })).rejects.toMatchObject({ code: "invalid-map" });
+    await expect(repository.save({
+      name: "Bad",
+      map: invalid,
+      startingMoney: DEFAULT_MAP_STARTING_MONEY,
+    })).rejects.toMatchObject({ code: "invalid-map" });
     expect(window.localStorage.getItem("TBS.maps.v1")).toBeNull();
+  });
+
+  test("migrates saved version-one maps to default starting money when read", async () => {
+    window.localStorage.setItem("TBS.maps.v1", JSON.stringify({
+      repositoryVersion: 1,
+      maps: [{ schemaVersion: 1, id: "legacy", name: "Legacy", map: map() }],
+    }));
+
+    const repository = new LocalStorageMapRepository(window.localStorage);
+
+    expect(await repository.get("legacy")).toMatchObject({
+      schemaVersion: 2,
+      startingMoney: DEFAULT_MAP_STARTING_MONEY,
+    });
   });
 });

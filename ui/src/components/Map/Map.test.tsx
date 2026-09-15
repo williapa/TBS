@@ -75,8 +75,13 @@ describe("map editor persistence", () => {
       </MapRepositoryProvider>
     );
 
+    fireEvent.change(screen.getByLabelText("Orange starting money"), { target: { value: "1200" } });
+    fireEvent.change(screen.getByLabelText("Purple starting money"), { target: { value: "800" } });
     fireEvent.click(screen.getByRole("button", { name: 'Create map "Tiny"' }));
-    await waitFor(() => expect(save).toHaveBeenCalledWith(expect.objectContaining({ name: "Tiny" })));
+    await waitFor(() => expect(save).toHaveBeenCalledWith(expect.objectContaining({
+      name: "Tiny",
+      startingMoney: { orange: 1_200, purple: 800 },
+    })));
     expect(await screen.findByRole("heading", { name: "Start a game" })).toBeInTheDocument();
   });
 

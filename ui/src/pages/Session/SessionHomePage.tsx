@@ -77,7 +77,7 @@ export const SessionHomePage = ({
   const selectedSetup = useMemo(() => {
     if (!selectedMap) return {};
     try {
-      return { state: createInitialGameSetup(selectedMap.map) };
+      return { state: createInitialGameSetup(selectedMap) };
     } catch (value) {
       return {
         error: value instanceof Error ? value.message : "The selected map could not be previewed",

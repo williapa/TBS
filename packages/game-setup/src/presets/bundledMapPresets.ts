@@ -20,6 +20,7 @@ const cloneCell = (cell: MapCell): MapCell => ({
 const clonePreset = (preset: BundledMapPreset): BundledMapPreset => ({
   ...preset,
   map: preset.map.map((row) => row.map(cloneCell)),
+  startingMoney: { ...preset.startingMoney },
 });
 
 const presets: readonly BundledMapPreset[] = [

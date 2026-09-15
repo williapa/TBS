@@ -1,6 +1,6 @@
 import { teamId, terrainTypeId, unitTypeId } from "@TBS/game-core";
 
-import { CURRENT_MAP_SCHEMA_VERSION } from "../contracts";
+import { CURRENT_MAP_SCHEMA_VERSION, DEFAULT_MAP_STARTING_MONEY } from "../contracts";
 import type { MapDocument, MapGrid } from "../contracts";
 
 export const DEFAULT_BATTLEFIELD_ID = "default-battlefield";
@@ -30,4 +30,5 @@ export const createDefaultBattlefield = (): MapDocument => ({
   schemaVersion: CURRENT_MAP_SCHEMA_VERSION,
   name: "Default battlefield",
   map: defaultMap(),
+  startingMoney: { ...DEFAULT_MAP_STARTING_MONEY },
 });

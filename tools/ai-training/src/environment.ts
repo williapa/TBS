@@ -141,7 +141,7 @@ const presetFor = (presetId: string) => {
 export const getTrainingObservationLimits = (
   presetId: ProductionAiPresetId,
 ): StandardObservationLimits => {
-  const cellCount = Object.keys(createInitialGameState(presetFor(presetId).map).board.cells).length;
+  const cellCount = Object.keys(createInitialGameState(presetFor(presetId)).board.cells).length;
   return {
     cellCount,
     // Current standard transports carry at most one loadable entity. Rejecting an
@@ -153,7 +153,7 @@ export const getTrainingObservationLimits = (
 
 export const getBundledPresetHash = (presetId: ProductionAiPresetId): string => {
   const preset = presetFor(presetId);
-  return contentHash({ id: preset.id, name: preset.name, state: createInitialGameState(preset.map) });
+  return contentHash({ id: preset.id, name: preset.name, state: createInitialGameState(preset) });
 };
 
 const rewardsFor = (state: GameState): Readonly<Record<TeamId, number>> => {
@@ -188,7 +188,7 @@ export class StandardTrainingEnvironment {
     requireUnsignedInteger(seed, "seed");
     requireMaxCommands(maxCommands);
     const preset = presetFor(presetId);
-    const initialState = createInitialGameState(preset.map);
+    const initialState = createInitialGameState(preset);
     verifyCurrentEngine(initialState);
     const activation = activateStandardGame(initialState);
     if (!activation.ok) throw new Error(activation.message);

@@ -4,7 +4,11 @@ import {
   unitTypeId,
   type GameState,
 } from "@TBS/game-core";
-import { createHexMap, createInitialGameState } from "@TBS/game-setup";
+import {
+  createHexMap,
+  createInitialGameState,
+  DEFAULT_MAP_STARTING_MONEY,
+} from "@TBS/game-setup";
 import type { GameSnapshot } from "@TBS/protocol";
 
 export const FIXTURE_ACTION_ID = "00000000-0000-4000-8000-000000000001" as const;
@@ -13,7 +17,7 @@ export const createWaitingGameStateFixture = (): GameState => {
   const map = createHexMap(2, terrainTypeId("plains"));
   map[0][0] = { ...map[0][0], team: teamId("orange"), unit: unitTypeId("soldier") };
   map[2][1] = { ...map[2][1], team: teamId("purple"), unit: unitTypeId("soldier") };
-  return createInitialGameState(map);
+  return createInitialGameState({ map, startingMoney: DEFAULT_MAP_STARTING_MONEY });
 };
 
 export const createActiveGameStateFixture = (): GameState => ({

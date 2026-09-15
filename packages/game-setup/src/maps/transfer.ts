@@ -41,11 +41,12 @@ export const importMapDocument = (serialized: string): SaveMapInput => {
     throw new MapSetupError("invalid-map", "Map file must contain an object");
   }
   const document = value as Readonly<Record<string, unknown>>;
-  if (document.schemaVersion !== CURRENT_MAP_SCHEMA_VERSION) {
+  const schemaVersion = document.schemaVersion;
+  if (schemaVersion !== 1 && schemaVersion !== CURRENT_MAP_SCHEMA_VERSION) {
     throw new MapSetupError(
       "unsupported-version",
-      `Unsupported map schema version ${String(document.schemaVersion)}`,
+      `Unsupported map schema version ${String(schemaVersion)}`,
     );
   }
-  return validateSaveMapInput(document, CURRENT_MAP_SCHEMA_VERSION);
+  return validateSaveMapInput(document, schemaVersion);
 };

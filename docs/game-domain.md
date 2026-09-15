@@ -12,7 +12,7 @@ Two durable multiplayer player seats exist: the creator is orange and the challe
 
 ## Maps and setup
 
-The editor uses the versioned `MapDocument` contract owned by `@TBS/game-setup`. Its row, column, cell index, neighbor index, and empty-cell sentinel fields exist only at the map-document boundary. Setup validates map size, topology, identifiers, cargo, and the requirement that each player team has at least one movable combat unit. Unsupported prototype map documents are rejected or cleared.
+The editor uses the versioned `MapDocument` contract owned by `@TBS/game-setup`. Its row, column, cell index, neighbor index, empty-cell sentinel fields, and per-team starting money exist only at the map-document boundary. Setup validates map size, topology, identifiers, cargo, non-negative integer starting balances, and the requirement that each player team has at least one movable combat unit. Version-one map documents are migrated to the original 1,000-per-team balance when imported or read from local storage; other unsupported prototype map documents are rejected or cleared.
 
 The new-map form limits hexagon side width to 10 in the browser. The setup contract retains its broader compatibility limit so previously saved or imported maps are not reinterpreted by this UI constraint.
 
@@ -58,7 +58,7 @@ The game-details panel also provides a unit dictionary for every concrete unit i
 
 ## Money and income
 
-Each team starts with 1,000 money. Construction and production spend the costs defined in the rules registry. At turn transition, income from the next team's on-board buildings is calculated and credited deterministically. Income values are part of unit definitions, so setup, previews, and trusted execution share one source.
+Each team starts with the amount configured by the map. The bundled maps currently configure 1,000 money for Orange and 1,000 for Purple. Construction and production spend the costs defined in the rules registry. At turn transition, income from the next team's on-board buildings is calculated and credited deterministically. Income values are part of unit definitions, so setup, previews, and trusted execution share one source.
 
 ## Combat, objects, and status
 

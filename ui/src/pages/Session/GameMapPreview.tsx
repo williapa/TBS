@@ -32,6 +32,12 @@ export const GameMapPreview = (props: GameMapPreviewProps) => {
     () => previewState ? presentWinCondition(previewState.objectives) : undefined,
     [previewState],
   );
+  const orangeMoney = previewState
+    ? Object.values(previewState.teams).find(({ id }) => id === "orange")?.money
+    : undefined;
+  const purpleMoney = previewState
+    ? Object.values(previewState.teams).find(({ id }) => id === "purple")?.money
+    : undefined;
 
   return (
     <Container header={<Header variant="h2">{props.title}</Header>}>
@@ -55,6 +61,12 @@ export const GameMapPreview = (props: GameMapPreviewProps) => {
                 value: props.status === "ready" ? props.creatorDisplayName : "",
               },
               { label: "Win condition", value: winCondition?.description ?? "" },
+              {
+                label: "Starting money",
+                value: props.status === "ready"
+                  ? `Orange $${orangeMoney ?? 0}; Purple $${purpleMoney ?? 0}`
+                  : "",
+              },
             ]}
           />
           <div className="game-map-preview">

@@ -26,7 +26,8 @@ const parseSavedMap = (value: unknown): Omit<SavedMap, "readOnly"> => {
   assertSerializedMapSize(JSON.stringify(value));
   if (typeof value !== "object" || value === null || Array.isArray(value)) invalid("Saved map must be an object");
   const item = value as Record<string, unknown>;
-  if (item.schemaVersion !== CURRENT_MAP_SCHEMA_VERSION) {
+  const schemaVersion = item.schemaVersion;
+  if (schemaVersion !== 1 && schemaVersion !== CURRENT_MAP_SCHEMA_VERSION) {
     throw new MapRepositoryError("unsupported-version", `Unsupported map schema version ${String(item.schemaVersion)}`);
   }
   const id = item.id;
@@ -36,7 +37,11 @@ const parseSavedMap = (value: unknown): Omit<SavedMap, "readOnly"> => {
   return {
     schemaVersion: CURRENT_MAP_SCHEMA_VERSION,
     id,
-    ...validateSaveMapInput({ name, map: item.map }, CURRENT_MAP_SCHEMA_VERSION),
+    ...validateSaveMapInput({
+      name,
+      map: item.map,
+      startingMoney: item.startingMoney,
+    }, schemaVersion),
   };
 };
 

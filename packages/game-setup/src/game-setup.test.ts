@@ -7,6 +7,7 @@ import {
   createHexMap,
   createInitialGameSetup,
   CURRENT_MAP_SCHEMA_VERSION,
+  DEFAULT_MAP_STARTING_MONEY,
   deriveInitialObjectives,
   getMapReflectionCellRole,
   axialToMapIndex,
@@ -32,6 +33,11 @@ const playableMap = (): MapGrid => {
   map[2][1] = { ...map[2][1], team: teamId("purple"), unit: unitTypeId("soldier") };
   return map;
 };
+
+const setupFor = (
+  map: MapGrid,
+  startingMoney = DEFAULT_MAP_STARTING_MONEY,
+) => ({ map, startingMoney });
 
 const rectangularMap = (rows: number, columns: number): MapGrid => {
   let index = 0;
@@ -96,10 +102,24 @@ describe("map documents and setup", () => {
       schemaVersion: CURRENT_MAP_SCHEMA_VERSION,
       name: "Crossing",
       map: playableMap(),
+      startingMoney: { orange: 800, purple: 600 },
     };
     expect(importMapDocument(exportMapDocument(document))).toEqual({
       name: document.name,
       map: document.map,
+      startingMoney: document.startingMoney,
+    });
+  });
+
+  test("migrates version-one documents to the standard starting money", () => {
+    expect(importMapDocument(JSON.stringify({
+      schemaVersion: 1,
+      name: "Legacy crossing",
+      map: playableMap(),
+    }))).toEqual({
+      name: "Legacy crossing",
+      map: playableMap(),
+      startingMoney: DEFAULT_MAP_STARTING_MONEY,
     });
   });
 
@@ -109,7 +129,20 @@ describe("map documents and setup", () => {
     expect(() => validateSaveMapInput({
       name: "Too wide",
       map: rectangularMap(1, MAX_MAP_COLUMNS + 1),
+      startingMoney: DEFAULT_MAP_STARTING_MONEY,
     })).toThrow(`limit is ${MAX_MAP_COLUMNS}`);
+  });
+
+  test.each([
+    [{ orange: -1, purple: 1_000 }, ">=0"],
+    [{ orange: 1.5, purple: 1_000 }, "expected int"],
+    [{ orange: 1_000 }, "purple"],
+  ])("rejects invalid starting money", (startingMoney, message) => {
+    expect(() => validateSaveMapInput({
+      name: "Invalid economy",
+      map: playableMap(),
+      startingMoney,
+    })).toThrow(message);
   });
 
   test("requires a movable combat unit for each player team", () => {
@@ -124,14 +157,14 @@ describe("map documents and setup", () => {
     const map = playableMap();
     map[1][0] = { ...map[1][0], team: teamId("orange"), unit: unitTypeId("capital") };
     map[1][1] = { ...map[1][1], team: teamId("purple"), unit: unitTypeId("capital") };
-    const state = createInitialGameSetup(map);
+    const state = createInitialGameSetup(setupFor(map, { orange: 1_200, purple: 900 }));
     expect(state).toMatchObject({
       schemaVersion: 2,
       revision: 0,
       lifecycle: { phase: "waiting" },
       rulesetVersion: STANDARD_RULESET_VERSION,
       contentVersion: "standard@1",
-      teams: { orange: { money: 1_000 }, purple: { money: 1_000 } },
+      teams: { orange: { money: 1_200 }, purple: { money: 900 } },
       turn: { number: 0 },
     });
     expect(state.entities[entityId("initial-cell-0")]?.id).toBe("initial-cell-0");
@@ -177,7 +210,7 @@ describe("map documents and setup", () => {
       unit: unitTypeId("truck"),
       loadedUnit: { team: teamId("orange"), unit: unitTypeId("worker") },
     };
-    const state = createInitialGameSetup(map);
+    const state = createInitialGameSetup(setupFor(map));
     const vehicle = state.entities[entityId("initial-cell-3")];
     expect(vehicle?.cargo?.entityIds).toEqual([entityId("initial-cargo-3-0")]);
     expect(state.entities[entityId("initial-cargo-3-0")]?.position).toBeUndefined();
@@ -193,7 +226,7 @@ describe("map documents and setup", () => {
   });
 
   test("preserves assigned entity identity through deterministic movement", () => {
-    const state = createInitialGameSetup(playableMap());
+    const state = createInitialGameSetup(setupFor(playableMap()));
     const active = { ...state, lifecycle: { phase: "active" as const, activeTeamId: teamId("orange") } };
     const destination = mapOffsetToAxial(0, 1, 2);
     const result = applyStandardAction(active, teamId("orange"), {
@@ -208,11 +241,16 @@ describe("map documents and setup", () => {
 
   test("owns validated bundled presets without depending on test fixtures", () => {
     const presets = createBundledMapPresets();
-    expect(presets.map(({ id, name, map }) => ({ id, name, cells: map.flat().length }))).toEqual([
-      { id: "default-battlefield", name: "Default battlefield", cells: 2 },
-      { id: "four-forests", name: "4 Forests", cells: 91 },
-      { id: "lake-affection", name: "Lake Affection", cells: 169 },
-      { id: "money-mountain", name: "Money Mountain", cells: 91 },
+    expect(presets.map(({ id, name, map, startingMoney }) => ({
+      id,
+      name,
+      cells: map.flat().length,
+      startingMoney,
+    }))).toEqual([
+      { id: "default-battlefield", name: "Default battlefield", cells: 2, startingMoney: DEFAULT_MAP_STARTING_MONEY },
+      { id: "four-forests", name: "4 Forests", cells: 91, startingMoney: DEFAULT_MAP_STARTING_MONEY },
+      { id: "lake-affection", name: "Lake Affection", cells: 169, startingMoney: DEFAULT_MAP_STARTING_MONEY },
+      { id: "money-mountain", name: "Money Mountain", cells: 91, startingMoney: DEFAULT_MAP_STARTING_MONEY },
     ]);
     presets.forEach(({ map }) => expect(validatePlayableMap(map)).toEqual(map));
     expect(createBundledMapPresets()[1].map).not.toBe(presets[1].map);
@@ -356,7 +394,7 @@ describe("editor operations", () => {
 
     const validated = validateMap(map);
     expect(validated[1][1].team).toBe("gray");
-    expect(createInitialGameSetup(map).entities[entityId("initial-cell-3")]?.ownerTeamId)
+    expect(createInitialGameSetup(setupFor(map)).entities[entityId("initial-cell-3")]?.ownerTeamId)
       .toBeUndefined();
   });
 });

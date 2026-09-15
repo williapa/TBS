@@ -4,11 +4,13 @@ import { z } from "zod";
 
 import {
   CURRENT_MAP_SCHEMA_VERSION,
+  DEFAULT_MAP_STARTING_MONEY,
   MAX_MAP_COLUMNS,
   MAX_MAP_ROWS,
   MapSetupError,
   type MapCell,
   type MapGrid,
+  type MapStartingMoney,
   type SaveMapInput,
 } from "../contracts";
 import { neutralizeObjectMapUnitTeam } from "./mapUnitOwnership";
@@ -73,9 +75,14 @@ export const mapCellSchema = z.object({
 }));
 
 export const mapGridSchema = z.array(z.array(mapCellSchema).min(1)).min(1);
+export const mapStartingMoneySchema = z.object({
+  orange: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+  purple: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+}).strict();
 export const saveMapInputSchema = z.object({
   name: z.string().trim().min(1).max(120),
   map: mapGridSchema,
+  startingMoney: mapStartingMoneySchema,
 }).strict();
 export const mapDocumentSchema = saveMapInputSchema.extend({
   schemaVersion: z.literal(CURRENT_MAP_SCHEMA_VERSION),
@@ -156,21 +163,39 @@ export const validatePlayableMap = (
   return map;
 };
 
+export const validateMapStartingMoney = (value: unknown): MapStartingMoney => {
+  try {
+    return mapStartingMoneySchema.parse(value);
+  } catch (error) {
+    throw new MapSetupError(
+      "invalid-map",
+      error instanceof Error ? error.message : "Map starting money is invalid",
+    );
+  }
+};
+
 export const validateSaveMapInput = (
   value: unknown,
   schemaVersion: number = CURRENT_MAP_SCHEMA_VERSION,
 ): SaveMapInput => {
-  if (schemaVersion !== CURRENT_MAP_SCHEMA_VERSION) {
+  if (schemaVersion !== 1 && schemaVersion !== CURRENT_MAP_SCHEMA_VERSION) {
     throw new MapSetupError("unsupported-version", `Unsupported map schema version ${schemaVersion}`);
   }
   if (typeof value !== "object" || value === null || Array.isArray(value) || !("map" in value)) {
     invalid("Map file must contain an object");
   }
-  const candidate = value as Readonly<{ name?: unknown; map: unknown }>;
-  const map = validatePlayableMap(candidate.map, schemaVersion);
+  const candidate = value as Readonly<{
+    name?: unknown;
+    map: unknown;
+    startingMoney?: unknown;
+  }>;
+  const map = validatePlayableMap(candidate.map);
   const name = candidate.name;
   if (typeof name !== "string" || !name.trim() || name.trim().length > 120) {
     throw new MapSetupError("invalid-map", "Map name is required and must not exceed 120 characters");
   }
-  return { name: name.trim(), map };
+  const startingMoney = schemaVersion === 1
+    ? { ...DEFAULT_MAP_STARTING_MONEY }
+    : validateMapStartingMoney(candidate.startingMoney);
+  return { name: name.trim(), map, startingMoney };
 };

@@ -1,6 +1,10 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "name": "4 Forests",
+  "startingMoney": {
+    "orange": 1000,
+    "purple": 1000
+  },
   "map": [
       [
           {

@@ -1,6 +1,7 @@
 import {
   createHexMap,
   createInitialGameSetup,
+  DEFAULT_MAP_STARTING_MONEY,
   mapPlayerTeamOptions,
   mapTerrainOptions,
   mapUnitOptions,
@@ -27,26 +28,28 @@ const requireOption = <Option extends string>(
 };
 
 const landingBoard = presentBoard({
-  state: createInitialGameSetup(createHexMap(
-    3,
-    requireOption(mapTerrainOptions, "plains"),
-  ).map((row) =>
-    row.map((cell) => ({
-      ...cell,
-      terrain: requireOption(mapTerrainOptions, landingTerrains[cell.index] ?? "plains"),
-      ...(cell.index === 13
-        ? {
-            team: requireOption(mapPlayerTeamOptions, "orange"),
-            unit: requireOption(mapUnitOptions, "soldier"),
-          }
-        : cell.index === 5
+  state: createInitialGameSetup({
+    map: createHexMap(
+      3,
+      requireOption(mapTerrainOptions, "plains"),
+    ).map((row) =>
+      row.map((cell) => ({
+        ...cell,
+        terrain: requireOption(mapTerrainOptions, landingTerrains[cell.index] ?? "plains"),
+        ...(cell.index === 13
           ? {
-              team: requireOption(mapPlayerTeamOptions, "purple"),
-              unit: requireOption(mapUnitOptions, "dragon"),
+              team: requireOption(mapPlayerTeamOptions, "orange"),
+              unit: requireOption(mapUnitOptions, "soldier"),
             }
-          : {}),
-    }))),
-  ),
+          : cell.index === 5
+            ? {
+                team: requireOption(mapPlayerTeamOptions, "purple"),
+                unit: requireOption(mapUnitOptions, "dragon"),
+              }
+            : {}),
+      }))),
+    startingMoney: DEFAULT_MAP_STARTING_MONEY,
+  }),
 });
 
 export const SessionLandingPage = () => (

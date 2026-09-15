@@ -15,7 +15,7 @@ const presets = createBundledMapPresets();
 for (const presetId of PRODUCTION_AI_PRESET_IDS) {
   const preset = presets.find(({ id }) => id === presetId);
   if (!preset) throw new Error(`missing bundled preset ${presetId}`);
-  const activation = activateStandardGame(createInitialGameState(preset.map));
+  const activation = activateStandardGame(createInitialGameState(preset));
   if (!activation.ok || activation.state.lifecycle.phase !== "active") {
     throw new Error(`could not activate ${preset.id}`);
   }

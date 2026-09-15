@@ -1,7 +1,11 @@
 {
-    "schemaVersion": 1,
+    "schemaVersion": 2,
     "id": "b4e76d27-7bbe-412f-ae39-08c49dee1de0",
     "name": "Money Mountain",
+    "startingMoney": {
+        "orange": 1000,
+        "purple": 1000
+    },
     "map": [
         [
             {

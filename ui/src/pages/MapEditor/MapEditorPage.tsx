@@ -29,7 +29,15 @@ const MapEditorPage = () => {
   if (mapId) {
     if (error) return <main><p role="alert">{error}</p><Link to="/maps/new">Create a new map</Link></main>;
     if (!savedMap) return <main><p>Loading map…</p></main>;
-    return <Map mapId={savedMap.id} name={savedMap.name} initialMap={savedMap.map} mode="editor" />;
+    return (
+      <Map
+        initialMap={savedMap.map}
+        initialStartingMoney={savedMap.startingMoney}
+        mapId={savedMap.id}
+        mode="editor"
+        name={savedMap.name}
+      />
+    );
   }
 
   switch(formValues.submitted) {

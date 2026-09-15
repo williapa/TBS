@@ -1,4 +1,4 @@
-import type { MapGrid, SaveMapInput } from "@TBS/game-setup";
+import type { MapGrid, MapStartingMoney, SaveMapInput } from "@TBS/game-setup";
 import { CURRENT_MAP_SCHEMA_VERSION } from "@TBS/game-setup";
 
 export { CURRENT_MAP_SCHEMA_VERSION };
@@ -9,6 +9,7 @@ export type SavedMap = {
   id: string;
   name: string;
   map: MapGrid;
+  startingMoney: MapStartingMoney;
   readOnly: boolean;
 };
 

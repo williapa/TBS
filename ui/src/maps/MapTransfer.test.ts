@@ -1,5 +1,6 @@
 import {
   createDefaultBattlefield,
+  DEFAULT_MAP_STARTING_MONEY,
   MAX_MAP_COLUMNS,
   MAX_MAP_ROWS,
   MAX_SERIALIZED_MAP_BYTES,
@@ -32,18 +33,32 @@ describe("map import/export", () => {
       id: "local-1",
       name: "Crossing",
       map: map(),
+      startingMoney: { orange: 1_200, purple: 800 },
       readOnly: false,
     };
     const serialized = exportMap(saved);
-    expect(JSON.parse(serialized)).toMatchObject({ schemaVersion: 1, name: "Crossing" });
-    expect(importMap(serialized)).toEqual({ name: saved.name, map: saved.map });
+    expect(JSON.parse(serialized)).toMatchObject({
+      schemaVersion: 2,
+      name: "Crossing",
+      startingMoney: saved.startingMoney,
+    });
+    expect(importMap(serialized)).toEqual({
+      name: saved.name,
+      map: saved.map,
+      startingMoney: saved.startingMoney,
+    });
   });
 
   test.each([
     ["rows", rectangularMap(MAX_MAP_ROWS + 1, 1), `limit is ${MAX_MAP_ROWS}`],
     ["columns", rectangularMap(1, MAX_MAP_COLUMNS + 1), `limit is ${MAX_MAP_COLUMNS}`],
   ])("rejects maps exceeding the %s limit with a useful error", (_dimension, oversizedMap, message) => {
-    const serialized = JSON.stringify({ schemaVersion: 1, name: "Too big", map: oversizedMap });
+    const serialized = JSON.stringify({
+      schemaVersion: 2,
+      name: "Too big",
+      map: oversizedMap,
+      startingMoney: DEFAULT_MAP_STARTING_MONEY,
+    });
     expect(() => importMap(serialized)).toThrow(message);
   });
 
@@ -55,7 +70,7 @@ describe("map import/export", () => {
 
   test.each([
     ["malformed JSON", "{", "not valid JSON"],
-    ["unsupported version", JSON.stringify({ schemaVersion: 2, name: "Future", map: map() }), "Unsupported map schema version 2"],
+    ["unsupported version", JSON.stringify({ schemaVersion: 3, name: "Future", map: map() }), "Unsupported map schema version 3"],
     ["missing name", JSON.stringify({ schemaVersion: 1, map: map() }), "Map name is required"],
   ])("rejects %s with a useful validation error", (_case, serialized, message) => {
     expect(() => importMap(serialized)).toThrow(message);
@@ -64,7 +79,11 @@ describe("map import/export", () => {
   test("applies the same limits to local repository writes", async () => {
     window.localStorage.clear();
     const repository = new LocalStorageMapRepository(window.localStorage, () => "oversized");
-    await expect(repository.save({ name: "Too wide", map: rectangularMap(1, MAX_MAP_COLUMNS + 1) }))
+    await expect(repository.save({
+      name: "Too wide",
+      map: rectangularMap(1, MAX_MAP_COLUMNS + 1),
+      startingMoney: DEFAULT_MAP_STARTING_MONEY,
+    }))
       .rejects.toMatchObject({ code: "map-too-large" });
     expect(window.localStorage.getItem("TBS.maps.v1")).toBeNull();
   });

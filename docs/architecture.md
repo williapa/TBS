@@ -23,7 +23,7 @@ The browser does not call an Express server, Socket.IO, DynamoDB, or map REST en
 
 - `/` presents the homepage. `/game/new` previews the selected bundled or local map and offers two actions from that exact setup: `Create game` starts the existing multiplayer flow and produces an invite URL, while `Test mode` starts an ephemeral local game controlling both teams. Custom maps can also be deleted there; bundled maps remain read-only.
 - `/game/solo` renders the active local test game. It uses no identity, Supabase client, network session, Presence, invite, or reconnect state, and a browser refresh ends the game.
-- `/maps/new` and `/maps/:mapId/edit` create and edit versioned maps in browser local storage. `/maps` currently redirects to the new-map flow; import/export remains a setup/repository API rather than a shipped screen.
+- `/maps/new` and `/maps/:mapId/edit` create and edit versioned maps, including each team's starting money, in browser local storage. Version-one maps migrate to the original 1,000-per-team balance when read. `/maps` currently redirects to the new-map flow; import/export remains a setup/repository API rather than a shipped screen.
 - `/game/:inviteToken` previews the current battlefield for a fresh invite visitor, then joins a player or spectator; saved members reconnect directly and render waiting, active, or finished state.
 
 Old signup, profile, lobby, create-game, and map-editor bookmarks redirect intentionally into this supported surface.

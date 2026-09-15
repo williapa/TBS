@@ -1,5 +1,9 @@
 import { applyStandardAction } from "@TBS/game-rules";
-import { createDefaultBattlefield, mapTerrainOptions } from "@TBS/game-setup";
+import {
+  createDefaultBattlefield,
+  DEFAULT_MAP_STARTING_MONEY,
+  mapTerrainOptions,
+} from "@TBS/game-setup";
 import { createWaitingGameStateFixture } from "@TBS/test-kit";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -88,7 +92,11 @@ describe("new session create and join flow", () => {
         ? { ...cell, terrain: forest }
         : cell,
     ));
-    const savedMap = await repository.save({ name: "Forest crossing", map: custom });
+    const savedMap = await repository.save({
+      name: "Forest crossing",
+      map: custom,
+      startingMoney: { orange: 1_200, purple: 800 },
+    });
     const customMapRepository: MapRepository = {
       list: async () => [savedMap],
       get: (id) => repository.get(id),
@@ -105,6 +113,7 @@ describe("new session create and join flow", () => {
     expect(previewDetails.getByText("Enter a display name")).toBeInTheDocument();
     expect(previewDetails.getByText("Eliminate every enemy unit that can move and attack."))
       .toBeInTheDocument();
+    expect(previewDetails.getByText("Orange $1200; Purple $800")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Display name"), { target: { value: "Ada" } });
     expect(previewDetails.getByText("Ada")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Create game" }));
@@ -123,6 +132,10 @@ describe("new session create and join flow", () => {
     const game = Array.from(store.games.values())[0];
     expect(Object.values(game.state.board.cells).some(({ terrainTypeId }) => terrainTypeId === "forest"))
       .toBe(true);
+    expect(game.state.teams).toMatchObject({
+      orange: { money: 1_200 },
+      purple: { money: 800 },
+    });
     const purple = await new InMemoryGameSessionGateway(store, "purple-copy").joinGame("invite-1", "player", "Purple");
     const watcher = await new InMemoryGameSessionGateway(store, "watcher-copy").joinGame("invite-1", "spectator", "Watcher");
     expect(purple.snapshot.state.board).toEqual(game.state.board);
@@ -138,10 +151,12 @@ describe("new session create and join flow", () => {
     const firstCustomMap = await repository.save({
       name: "First custom map",
       map: createDefaultBattlefield().map,
+      startingMoney: DEFAULT_MAP_STARTING_MONEY,
     });
     const secondCustomMap = await repository.save({
       name: "Second custom map",
       map: createDefaultBattlefield().map,
+      startingMoney: DEFAULT_MAP_STARTING_MONEY,
     });
     const bundledMap = (await repository.list()).find(({ readOnly }) => readOnly);
     if (!bundledMap) throw new Error("Bundled map fixture is unavailable");
