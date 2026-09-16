@@ -15,6 +15,8 @@
     "onnx:smoke": "node dist/onnx-smoke.js",
     "onnx:verify": "node dist/onnx-verify.js",
     "phase2:verify": "pnpm run representation:fixture && ${AI_TRAINING_PYTHON:-python3} python/export_phase2_model.py .tmp/ai-phase-2/money-mountain-observation.json .tmp/ai-phase-2 && pnpm run onnx:verify && pnpm run onnx:smoke && pnpm run representation:benchmark",
+    "phase3:four-forests": "${AI_TRAINING_PYTHON:-python3} python/four_forests_phase3.py",
+    "phase3:test": "${AI_TRAINING_PYTHON:-python3} -m unittest discover -s python -p 'test_*.py'",
     "representation:benchmark": "node dist/representation-benchmark.js",
     "representation:fixture": "node dist/representation-fixture.js",
     "serve": "node dist/server.js",

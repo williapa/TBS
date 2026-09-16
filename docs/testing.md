@@ -9,6 +9,7 @@ Run commands from the repository root.
 - `pnpm nx run @TBS/game-rules:test`: all standard action families, rejection/immutability/event order, deterministic replay, codecs, content registries, and extension seams.
 - `pnpm nx run @TBS/game-ai:test`: observation shape/version checks, six-neighbor and relational encoding, production/transport inputs, remaining-turn horizon, record-order invariance, candidate permutation alignment, and explicit overflow rejection.
 - `pnpm nx run @TBS/ai-training-tools:test`: complete legal-choice contracts, revision-bound selections, bundled reset, immutable snapshot/replay, same-team sequences, turn-60 draw and final-turn victory behavior, terminal rewards/bootstrap, truncation, encoded-observation protocol, and pipe-protocol validation.
+- `pnpm ai:phase3:test`: Four Forests strategy-profile priorities, soldier restraint, zero-damage capital-attack rejection, and map-distance coverage for the Python pilot.
 - `pnpm nx run @TBS/protocol:test`: current transport schemas, size limits, round trips, and injected rules-codec composition.
 - `pnpm nx run @TBS/application:test`: multiplayer session lifecycle, optimistic action projection and rollback, monotonic submission settlement, revision reconciliation, and deterministic local two-team control.
 - `pnpm nx run @TBS/game-setup:test`: map documents, limits, topology, playable placement, axial-backed generation, editor immutability, presets, and initial objective/state derivation.

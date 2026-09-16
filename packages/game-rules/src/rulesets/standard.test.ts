@@ -7,6 +7,7 @@ import {
   teamId,
   terrainTypeId,
   unitTypeId,
+  validateGameState,
   type BoardCellState,
   type EntityState,
   type GameState,
@@ -402,6 +403,53 @@ describe("standard ruleset action registry", () => {
       attackDamage: 15,
       counterattackDamage: 10,
       deaths: [],
+    })]);
+  });
+
+  it("removes transported cargo and records every death when its carrier dies", () => {
+    const vehicleId = entityId("purple-vehicle");
+    const passengerId = entityId("purple-passenger");
+    const vehiclePosition = hexCoord(1, 0);
+    const stateWithVehicle = placeEntity(stateFixture(), {
+      id: vehicleId,
+      unitTypeId: unitTypeId("truck"),
+      ownerTeamId: purple,
+      position: vehiclePosition,
+      health: { current: 1, maximum: 100 },
+      actionBudget: { moved: false, acted: false },
+      cargo: { capacity: 1, entityIds: [passengerId] },
+      statuses: [],
+    });
+    const state: GameState = {
+      ...stateWithVehicle,
+      entities: {
+        ...stateWithVehicle.entities,
+        [passengerId]: {
+          id: passengerId,
+          unitTypeId: unitTypeId("zookeeper"),
+          ownerTeamId: purple,
+          health: { current: 100, maximum: 100 },
+          actionBudget: { moved: true, acted: true },
+          statuses: [],
+        },
+      },
+    };
+
+    const result = applyStandardAction(state, orange, {
+      type: "attack",
+      actorId: soldier,
+      destination: hexCoord(0, 0),
+      defenderId: vehicleId,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.entities[vehicleId]).toBeUndefined();
+    expect(result.state.entities[passengerId]).toBeUndefined();
+    expect(validateGameState(result.state)).toEqual([]);
+    expect(result.events).toEqual([expect.objectContaining({
+      type: "unit-attacked",
+      deaths: [vehicleId, passengerId],
     })]);
   });
 

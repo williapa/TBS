@@ -20,15 +20,33 @@ const movementFor = (context: RuleContext<GameState, TeamId, StandardRuleService
     collectibleObjectTypeIds: [unitTypeId("money")],
   });
 
-const removeKilled = (state: GameState, killed: EntityState): GameState => {
-  if (!killed.position) return state;
-  const entities = Object.fromEntries(Object.entries(state.entities).filter(([id]) => id !== killed.id));
+const removeKilled = (
+  state: GameState,
+  killed: EntityState,
+): Readonly<{ state: GameState; deathIds: readonly EntityId[] }> => {
+  if (!killed.position) return { state, deathIds: [] };
+  const deathIds: EntityId[] = [];
+  const pending = [killed.id];
+  const visited = new Set<EntityId>();
+  while (pending.length > 0) {
+    const id = pending.shift();
+    if (!id || visited.has(id)) continue;
+    visited.add(id);
+    deathIds.push(id);
+    pending.push(...(state.entities[id]?.cargo?.entityIds ?? []));
+  }
+  const entities = Object.fromEntries(
+    Object.entries(state.entities).filter(([, entity]) => !visited.has(entity.id)),
+  );
   const key = hexKey(killed.position);
   const cell = state.board.cells[key];
   return {
-    ...state,
-    entities,
-    board: { cells: { ...state.board.cells, [key]: { ...cell, occupantEntityId: undefined } } },
+    state: {
+      ...state,
+      entities,
+      board: { cells: { ...state.board.cells, [key]: { ...cell, occupantEntityId: undefined } } },
+    },
+    deathIds,
   };
 };
 
@@ -37,7 +55,7 @@ const strike = (
   attackerId: EntityId,
   defenderId: EntityId,
   services: StandardRuleServices,
-): Readonly<{ state: GameState; damage: number; killed: boolean }> => {
+): Readonly<{ state: GameState; damage: number; killed: boolean; deathIds: readonly EntityId[] }> => {
   const attacker = state.entities[attackerId];
   const defender = state.entities[defenderId];
   const attackerDefinition = attacker ? services.getUnit(attacker.unitTypeId) : undefined;
@@ -46,7 +64,10 @@ const strike = (
     throw new Error("validated combat dependencies are missing");
   }
   const applied = Math.min(calculateCombatDamage(attacker, defender, services), defender.health.current);
-  if (applied >= defender.health.current) return { state: removeKilled(state, defender), damage: applied, killed: true };
+  if (applied >= defender.health.current) {
+    const removed = removeKilled(state, defender);
+    return { state: removed.state, damage: applied, killed: true, deathIds: removed.deathIds };
+  }
   return {
     state: {
       ...state,
@@ -57,6 +78,7 @@ const strike = (
     },
     damage: applied,
     killed: false,
+    deathIds: [],
   };
 };
 
@@ -86,17 +108,18 @@ export const attackActionHandler: ActionHandler<GameState, TeamId, AttackAction,
     const first = strike(state, action.actorId, action.defenderId, context.services);
     state = first.state;
     let counterattackDamage = 0;
-    let attackerKilled = false;
+    let counterattackDeathIds: readonly EntityId[] = [];
     if (!first.killed) {
       const counter = strike(state, action.defenderId, action.actorId, context.services);
       state = counter.state;
       counterattackDamage = counter.damage;
-      attackerKilled = counter.killed;
+      counterattackDeathIds = counter.deathIds;
     }
     state = { ...state, revision: state.revision + 1 };
-    const deaths: EntityId[] = [];
-    if (attackerKilled) deaths.push(action.actorId);
-    if (first.killed) deaths.push(action.defenderId);
+    const deaths = [
+      ...counterattackDeathIds,
+      ...first.deathIds,
+    ];
     return {
       state,
       events: [{

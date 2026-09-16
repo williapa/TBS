@@ -2,9 +2,9 @@
 
 ## Status and purpose
 
-The repository has the deterministic tooling needed to run future AI experiments against bundled production maps. It does not contain a trained player, a qualified model, or evidence that any bundled map is ready for productive self-play.
+The repository has the deterministic tooling needed to run AI experiments against bundled production maps and a bounded Phase 3 curriculum pilot for Four Forests. It does not contain a qualified player model or evidence that unrestricted self-play is ready to produce one.
 
-Game balance work comes next. No map is currently selected as the first training target. After the rules and content are balanced, the first learning experiment will select one bundled map and define a strategy and curriculum specifically for that map.
+Four Forests is the first training target. Its strategy, paired balance suite, behavior-cloning trajectory pilot, and progression gate are defined in [`ai-four-forests-strategy.md`](./ai-four-forests-strategy.md). Pilot checkpoints remain experimental and unqualified.
 
 This document is the authoritative description of the AI training foundation. It deliberately does not preserve results from exploratory simulations because rules, content, or map-balance changes invalidate those results.
 
@@ -86,6 +86,10 @@ The export path converts a PyTorch checkpoint to ONNX, verifies permutation beha
 
 The current export fixture uses Money Mountain as a deterministic technical compatibility fixture. That does not select Money Mountain for training, define a Money Mountain strategy, or provide balance or strength evidence.
 
+### Four Forests curriculum pilot
+
+`tools/ai-training/python/four_forests_phase3.py` supplies the first map-specific scripted profiles, paired-seat balance checks, compressed trajectory collection, weighted behavior-cloning loop, bounded iterative correction on model-reached states, and closed-loop evaluation. It deliberately keeps strategy outside the deterministic rules and records terminal values from authoritative engine outcomes. Its recommendation separates balance failures from learning/curriculum failures so a longer run is not used to conceal either one.
+
 ### Reusable commands
 
 - `pnpm ai:build` builds the headless environment.
@@ -93,6 +97,8 @@ The current export fixture uses Money Mountain as a deterministic technical comp
 - `pnpm ai:benchmark` runs environment and legal-action performance diagnostics across bundled presets. Cross-map execution here is shared-tool coverage only.
 - `pnpm ai:representation:benchmark` measures the current representation fixture's sizes and encoding cost.
 - `pnpm ai:phase2` reproduces the untrained model/export compatibility verification. The command name is historical; it does not run training or report playing strength.
+- `pnpm ai:phase3:test` runs the Four Forests strategy-pilot unit coverage.
+- `pnpm ai:phase3:four-forests` runs the bounded map-specific pilot and writes ignored development artifacts.
 
 Operational details live in [`tools/ai-training/README.md`](../tools/ai-training/README.md), and the automated coverage is listed in [`docs/testing.md`](./testing.md).
 
@@ -100,12 +106,10 @@ Operational details live in [`tools/ai-training/README.md`](../tools/ai-training
 
 The repository does not yet provide:
 
-- a PPO or other learning loop;
-- a trajectory collector or durable training-data format;
+- a PPO, league, or unrestricted self-play learning loop;
 - learned or qualified weights;
 - an opponent pool, league, or checkpoint-selection policy;
-- a map-specific strategic curriculum;
-- a balance or playing-strength evaluation suite; or
+- a qualification-grade balance or playing-strength evaluation suite; or
 - player-facing model loading and inference.
 
 These omissions are the clean stopping boundary. Adding a learner before balance and map strategy are established would automate production of data without establishing that the data teaches useful play.
@@ -116,10 +120,10 @@ Resume AI work in this order:
 
 1. Stabilize the relevant game rules, content, and bundled maps. Version changes forward and update their deterministic tests.
 2. Verify that both orange and purple have credible winning paths. Preserve win, draw, and loss counts by seat and inspect first-player asymmetry directly.
-3. Select exactly one bundled map as the initial target.
-4. Write a map-specific strategy document covering its economy, objectives, openings, tactical skills, transport constraints, and failure modes.
-5. Turn that strategy into small deterministic curriculum scenarios and competent scripted baselines before unrestricted self-play.
-6. Implement the learner and trajectory pipeline against the already-versioned environment and representation.
+3. Keep Four Forests as the single initial target until its curriculum gate passes.
+4. Maintain its map-specific strategy document as economy, objective, opening, tactical, and failure-mode evidence changes.
+5. Expand its deterministic curriculum scenarios and scripted baselines before unrestricted self-play.
+6. Extend the pilot trajectory, behavior-cloning, and correction pipeline with a self-play learner only after the current curriculum gate passes.
 7. Evaluate with fixed seeds, paired seats, held-out scenarios, separate win/draw/loss reporting, and regression checks against known tactical cases.
 8. Treat a model as releasable only after it passes an explicit map-and-version-specific qualification gate.
 

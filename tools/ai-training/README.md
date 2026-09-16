@@ -32,3 +32,25 @@ To reproduce the deterministic Money Mountain export proof, activate Python 3.12
 6. benchmarks reachable Money Mountain representation sizes and encoding latency.
 
 The generated manifest is intentionally marked `qualifiedForPlayerRelease: false`. Phase 2 proves the representation and deployment boundary; it does not train or release a capable player.
+
+## Four Forests Phase 3 pilot
+
+The first map-specific experiment targets the bundled `four-forests` preset. It provides two deterministic, strategy-guided profiles around the shared construction-worker → office opening:
+
+- `zucker`: add a second leader and a Zuckerbird before advancing;
+- `michael`: construct a church and spawn Michael Jackson before advancing.
+
+Both profiles ignore port/submarine production, keep soldiers defensive, prefer attacks on the enemy capital, and use the production engine outcome without reward shaping. The paired balance suite swaps both profiles and their deterministic tie-break streams between seats so purple-first results remain visible.
+
+Training trajectories use only the `michael` profile for both seats. `zucker` remains in paired balance and learned-policy evaluation, but it is not mixed into imitation labels because the version-one observation has no hidden strategy-intent feature.
+
+The pilot collects versioned graph observations and scripted targets to a compressed JSON-lines trajectory file, trains the existing policy/value architecture with behavior cloning, and then performs bounded iterative correction. Each correction round rolls the current model out from both seats against the canonical expert, labels strategically distinct model-reached mistakes, and fine-tunes at a lower learning rate. Equivalent movement tie-breaks are excluded from the correction buffer. Construction and spawn samples receive additional training weight because a policy that only imitates common move/end-turn actions does not demonstrate the intended opening. The final checkpoint is evaluated from both seats against scripted and random opponents. Generated trajectories, checkpoints, and reports remain ignored development artifacts and are always marked unqualified for player release.
+
+Create an isolated Python 3.12 environment outside this repository's `tools` tree, install `python/requirements-phase3.txt`, and set `AI_TRAINING_PYTHON` to its absolute Python executable path. Then run:
+
+```sh
+pnpm ai:phase3:test
+pnpm ai:phase3:four-forests
+```
+
+The default bounded pilot writes to `.tmp/ai-phase-3-four-forests`. Use `--mode balance` to run only the paired scripted balance suite or `--mode evaluate --checkpoint <path>` to re-evaluate a compatible checkpoint. Counts, seeds, output directory, batch size, initial epochs, correction iterations/epochs, and learning rates are explicit CLI options. A pilot recommendation distinguishes map/seat balance blockers from curriculum-learning blockers; it does not qualify a model or authorize unrestricted self-play.

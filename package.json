@@ -6,6 +6,8 @@
     "ai:benchmark": "nx run @TBS/ai-training-tools:build && pnpm --filter @TBS/ai-training-tools benchmark",
     "ai:build": "nx run @TBS/ai-training-tools:build",
     "ai:phase2": "nx run @TBS/ai-training-tools:build && pnpm --filter @TBS/ai-training-tools phase2:verify",
+    "ai:phase3:four-forests": "nx run @TBS/ai-training-tools:build && pnpm --filter @TBS/ai-training-tools phase3:four-forests",
+    "ai:phase3:test": "pnpm --filter @TBS/ai-training-tools phase3:test",
     "ai:representation:benchmark": "nx run @TBS/ai-training-tools:build && pnpm --filter @TBS/ai-training-tools representation:benchmark",
     "ai:serve": "node tools/ai-training/dist/server.js",
     "architecture:check": "node scripts/check-architecture-boundaries.mjs",
