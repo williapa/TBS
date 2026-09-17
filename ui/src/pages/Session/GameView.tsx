@@ -150,7 +150,7 @@ export const GameView = ({
           state={panelState}
           winCondition={winCondition}
         />
-        <SessionEventsPanel actions={actions} />
+        <SessionEventsPanel actions={actions} revision={revision} />
       </div>
     </main>
   );

@@ -11,12 +11,13 @@ import { getDisplayedEvents, SessionEventsPanel } from "./SessionEventsPanel";
 const appliedAction = (
   revision: number,
   events: readonly unknown[],
+  action: unknown = { type: "end-turn" },
 ): StandardAppliedAction => currentStandardProtocolCodec.parseAppliedAction({
   protocolVersion: CURRENT_PROTOCOL_VERSION,
   actionId: `42000000-0000-4000-8000-${revision.toString().padStart(12, "0")}`,
   revision,
   actorTeamId: revision === 3 ? "purple" : "orange",
-  action: { type: "end-turn" },
+  action,
   events,
 });
 
@@ -65,12 +66,13 @@ describe("getDisplayedEvents", () => {
 
 describe("SessionEventsPanel", () => {
   it("shows the first-move message only while the event history is empty", () => {
-    const view = render(createElement(SessionEventsPanel, { actions: [] }));
+    const view = render(createElement(SessionEventsPanel, { actions: [], revision: 0 }));
 
     expect(screen.getByText("purple moves first.")).toBeInTheDocument();
 
     view.rerender(createElement(SessionEventsPanel, {
       actions: [appliedAction(1, [turnEnded("orange", "purple")])],
+      revision: 1,
     }));
 
     expect(screen.queryByText("purple moves first.")).not.toBeInTheDocument();
@@ -92,6 +94,7 @@ describe("SessionEventsPanel", () => {
 
     render(createElement(SessionEventsPanel, {
       actions,
+      revision: 60,
     }));
 
     expect(getDisplayedEvents(actions)
@@ -112,5 +115,90 @@ describe("SessionEventsPanel", () => {
     ]) {
       expect(screen.getByText(message).closest("tr")).toBeInTheDocument();
     }
+  });
+
+  it("plays action-specific alerts for newly added actions", () => {
+    const initialAction = appliedAction(1, [{
+      type: "unit-moved",
+      actorTeamId: "orange",
+      entityId: "orange-soldier",
+      unitTypeId: "soldier",
+      start: { q: 0, r: 0 },
+      end: { q: 0, r: 1 },
+    }], {
+      type: "move",
+      actorId: "orange-soldier",
+      destination: { q: 0, r: 1 },
+    });
+    const moveAction = appliedAction(2, [{
+      type: "unit-moved",
+      actorTeamId: "orange",
+      entityId: "orange-soldier",
+      unitTypeId: "soldier",
+      start: { q: 0, r: 1 },
+      end: { q: 0, r: 2 },
+    }], {
+      type: "move",
+      actorId: "orange-soldier",
+      destination: { q: 0, r: 2 },
+    });
+    const automaticEndTurnAction = appliedAction(3, [
+      {
+        type: "unit-moved",
+        actorTeamId: "purple",
+        entityId: "purple-soldier",
+        unitTypeId: "soldier",
+        start: { q: 1, r: 0 },
+        end: { q: 1, r: 1 },
+      },
+      turnEnded("purple", "orange"),
+    ], {
+      type: "move",
+      actorId: "purple-soldier",
+      destination: { q: 1, r: 1 },
+    });
+    const playAlert = vi.fn();
+    const view = render(createElement(SessionEventsPanel, {
+      actions: [initialAction],
+      playAlert,
+      revision: 1,
+    }));
+
+    expect(playAlert).not.toHaveBeenCalled();
+
+    view.rerender(createElement(SessionEventsPanel, {
+      actions: [initialAction, moveAction],
+      playAlert,
+      revision: 2,
+    }));
+
+    expect(playAlert).toHaveBeenLastCalledWith("action");
+
+    view.rerender(createElement(SessionEventsPanel, {
+      actions: [initialAction, moveAction, automaticEndTurnAction],
+      playAlert,
+      revision: 3,
+    }));
+
+    expect(playAlert).toHaveBeenLastCalledWith("end-turn");
+    expect(playAlert).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not alert when restored history arrives after mount", () => {
+    const restoredAction = appliedAction(4, [turnEnded("orange", "purple")]);
+    const playAlert = vi.fn();
+    const view = render(createElement(SessionEventsPanel, {
+      actions: [],
+      playAlert,
+      revision: 4,
+    }));
+
+    view.rerender(createElement(SessionEventsPanel, {
+      actions: [restoredAction],
+      playAlert,
+      revision: 4,
+    }));
+
+    expect(playAlert).not.toHaveBeenCalled();
   });
 });
