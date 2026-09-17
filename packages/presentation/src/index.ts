@@ -5,6 +5,7 @@ export * from "./action-details";
 export * from "./assets/manifest";
 export * from "./board/contracts";
 export * from "./board/presentBoard";
+export * from "./economy-history";
 export * from "./read-models";
 export * from "./unit-dictionary";
 export * from "./win-condition";

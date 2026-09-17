@@ -105,7 +105,11 @@
 
 .player__identity {
   color: white;
+  display: flex;
+  flex: 0 0 clamp(170px, 34vh, 260px);
+  flex-direction: column;
   min-height: 0;
+  overflow-y: auto;
   padding: 8px;
 }
 
@@ -165,9 +169,12 @@
 
 .player__avatar {
   display: block;
+  flex: 1 1 auto;
   height: min(22vh, 170px);
   margin-inline: auto;
   max-width: 100%;
+  min-height: 40px;
+  object-fit: contain;
 }
 
 .player__presence {
@@ -176,6 +183,7 @@
 }
 
 .player__actions {
+  flex: 0 0 38px;
   display: flex;
   justify-content: center;
   margin: 0px 4px;
@@ -187,12 +195,113 @@
   width: 100%;
 }
 
-.player__stats {
-  margin-top: auto;
-  padding: 8px 4px;
+.player__economy {
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
+  box-sizing: border-box;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  padding: 8px 4px 4px;
+  width: 100%;
 }
 
-.player__stats p,
+.player__stats {
+  display: grid;
+  gap: 4px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 4px;
+}
+
+.player__stat-button {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  min-width: 0;
+  padding: 4px 2px;
+}
+
+.player__stat-button[aria-pressed="true"] {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: currentColor;
+}
+
+.player__stat-button:focus-visible,
+.player__chart-scroll:focus-visible {
+  outline: 2px solid white;
+  outline-offset: -2px;
+}
+
+.player__stat-button span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.player__chart-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.player__chart {
+  background: rgba(0, 0, 0, 0.22);
+  display: block;
+  height: 100%;
+  max-width: none;
+  min-width: 100%;
+}
+
+.player__chart-axis,
+.player__chart-tick {
+  stroke: rgba(255, 255, 255, 0.5);
+  stroke-width: 1;
+}
+
+.player__chart-line {
+  fill: none;
+  stroke: #ffb533;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
+}
+
+.player__chart--purple .player__chart-line {
+  stroke: #dca7ff;
+}
+
+.player__chart-point {
+  fill: white;
+  stroke: #111;
+  stroke-width: 1;
+}
+
+.player__chart-axis-label,
+.player__chart-turn,
+.player__chart-value {
+  fill: rgba(255, 255, 255, 0.8);
+  font-size: 9px;
+}
+
+.player__chart-turn {
+  text-anchor: middle;
+}
+
+.player__chart-axis-label {
+  text-anchor: start;
+}
+
+.player__chart-value {
+  text-anchor: end;
+}
+
 .panel p {
   margin-left: auto;
   margin-right: auto;
@@ -265,5 +374,13 @@
 
   .player__stats {
     font-size: 0.75rem;
+  }
+
+  .player__economy {
+    padding-inline: 2px;
+  }
+
+  .player__identity {
+    flex-basis: clamp(110px, 30vh, 220px);
   }
 }

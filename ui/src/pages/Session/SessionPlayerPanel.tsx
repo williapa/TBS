@@ -1,8 +1,14 @@
+import type { TeamEconomyHistory } from "@TBS/presentation";
+import { useState } from "react";
+
+import { EconomyHistoryChart } from "./EconomyHistoryChart";
+
 type SessionPlayerPanelProps = {
   activeTurn: boolean;
   canEndTurn: boolean;
   color: "orange" | "purple";
   displayName?: string;
+  history: TeamEconomyHistory;
   income: number;
   isLocalPlayer: boolean;
   isOnline: boolean;
@@ -17,6 +23,7 @@ export const SessionPlayerPanel = ({
   canEndTurn,
   color,
   displayName,
+  history,
   income,
   isLocalPlayer,
   isOnline,
@@ -25,6 +32,7 @@ export const SessionPlayerPanel = ({
   onEndTurn,
   presenceLabel,
 }: SessionPlayerPanelProps) => {
+  const [metric, setMetric] = useState<"money" | "income">("money");
   const name = displayName ?? "Open seat";
   const accessibleName = `${name}${isLocalPlayer ? ", your player" : ""}${activeTurn ? ", current turn" : ""}`;
   const avatarSeed = encodeURIComponent(displayName ?? color);
@@ -49,14 +57,31 @@ export const SessionPlayerPanel = ({
           {presenceLabel ?? (displayName ? (isOnline ? "online" : "offline") : "waiting")}
         </p>
       </div>
-      {canEndTurn && (
-        <div className="player__actions">
+      <div className="player__actions">
+        {canEndTurn && (
           <button className="button" type="button" onClick={onEndTurn}>End turn</button>
+        )}
+      </div>
+      <div className="player__economy">
+        <div aria-label="Economy graph" className="player__stats" role="group">
+          <button
+            aria-pressed={metric === "money"}
+            className="player__stat-button"
+            onClick={() => setMetric("money")}
+            type="button"
+          >
+            <b>Money:</b> <span>${money}</span>
+          </button>
+          <button
+            aria-pressed={metric === "income"}
+            className="player__stat-button"
+            onClick={() => setMetric("income")}
+            type="button"
+          >
+            <b>Income:</b> <span>${income}</span>
+          </button>
         </div>
-      )}
-      <div className="player__stats">
-        <p><b>Money:</b> <span>${money}</span></p>
-        <p><b>Income:</b> <span>${income}</span></p>
+        <EconomyHistoryChart color={color} metric={metric} points={history[metric]} />
       </div>
     </aside>
   );

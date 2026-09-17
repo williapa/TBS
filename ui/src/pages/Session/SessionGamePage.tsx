@@ -84,6 +84,7 @@ export const SessionGamePage = () => {
     <GameView
       actions={actions}
       controlledTeamId={controlledTeamId}
+      economyState={snapshot.state}
       errorMessage={error?.message}
       events={events}
       metadata={(

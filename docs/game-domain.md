@@ -62,6 +62,8 @@ The game-details panel also provides a unit dictionary for every concrete unit i
 
 Each team starts with the amount configured by the map. Bundled maps normally configure 1,000 money per team; Four Forests configures 1,000 for Orange and 900 for first-moving Purple as a map-specific balance adjustment. Construction and production spend the costs defined in the rules registry. At turn transition, income from the next team's on-board buildings is calculated and credited deterministically. Income values are part of unit definitions, so setup, previews, and trusted execution share one source.
 
+Each player panel presents a turn-based economy history derived from the bounded action/event history and the current canonical snapshot. Money uses the balance before start-of-turn income and the balance after that income at the same turn position, producing a vertical income credit followed by a progressive line through spending or collected money objects during the turn. Income changes from constructed or destroyed buildings are presented progressively between turn boundaries, without vertical jumps. The history advances only when the next turn begins. A reconnecting player or spectator sees only the suffix that can be reconstructed from the history available to that client.
+
 ## Combat, objects, and status
 
 Combat damage is deterministic. Effective attack and defense include matchup and boost modifiers. Damage is:

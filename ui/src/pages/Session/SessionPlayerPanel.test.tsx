@@ -1,14 +1,19 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 
 import { SessionPlayerPanel } from "./SessionPlayerPanel";
 
 describe("SessionPlayerPanel", () => {
+  const history = {
+    money: [{ turn: 1, value: 1000 }, { turn: 2, value: 900 }],
+    income: [{ turn: 1, value: 25 }, { turn: 2, value: 125 }],
+  };
   const renderPanel = (activeTurn: boolean) => render(
     <SessionPlayerPanel
       activeTurn={activeTurn}
       canEndTurn={false}
       color="purple"
       displayName="Ada"
+      history={history}
       income={25}
       isLocalPlayer
       isOnline
@@ -21,9 +26,20 @@ describe("SessionPlayerPanel", () => {
   test("formats money and per-turn income as currency", () => {
     renderPanel(true);
 
-    expect(screen.getByText("Money:").closest("p")).toHaveTextContent("Money: $1000");
-    expect(screen.getByText("Income:").closest("p"))
+    expect(screen.getByText("Money:").closest("button")).toHaveTextContent("Money: $1000");
+    expect(screen.getByText("Income:").closest("button"))
       .toHaveTextContent("Income: $25");
+    expect(screen.getByRole("img", { name: /Money history from turn 1 to turn 2/ }))
+      .toBeInTheDocument();
+    expect(screen.getByText("$0")).toBeInTheDocument();
+    expect(screen.getByText("$1,100")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Income: $25" }));
+
+    expect(screen.getByRole("button", { name: "Income: $25" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("img", { name: /Income history from turn 1 to turn 2/ }))
+      .toBeInTheDocument();
+    expect(screen.getByText("$200")).toBeInTheDocument();
   });
 
   test("shows the current-turn indicator only inside the active player panel", () => {
@@ -39,6 +55,7 @@ describe("SessionPlayerPanel", () => {
         canEndTurn={false}
         color="purple"
         displayName="Ada"
+        history={history}
         income={25}
         isLocalPlayer
         isOnline
@@ -60,6 +77,7 @@ describe("SessionPlayerPanel", () => {
         canEndTurn={false}
         color="purple"
         displayName="Ada"
+        history={history}
         income={25}
         isLocalPlayer
         isOnline

@@ -4,6 +4,7 @@ import type {
   StandardGameSnapshot,
 } from "@TBS/application";
 import {
+  presentEconomyHistory,
   presentTeamPanel,
   presentWinCondition,
   type StandardActionDraft,
@@ -33,6 +34,7 @@ type GameViewProps = Readonly<{
   actions: readonly StandardAppliedAction[];
   controlledTeamId?: PlayerTeamId;
   errorMessage?: string;
+  economyState?: StandardGameSnapshot["state"];
   events: StandardAppliedAction["events"];
   metadata?: ReactNode;
   onAction: (action: StandardActionDraft) => void;
@@ -50,6 +52,7 @@ export const GameView = ({
   actions,
   controlledTeamId,
   errorMessage,
+  economyState,
   events,
   metadata,
   onAction,
@@ -83,6 +86,12 @@ export const GameView = ({
   if (!orangePanel || !purplePanel) {
     return <p role="alert">The game team state is incomplete.</p>;
   }
+  const economyHistory = presentEconomyHistory(economyState ?? state, actions);
+  const orangeHistory = economyHistory[orangeTeamId];
+  const purpleHistory = economyHistory[purpleTeamId];
+  if (!orangeHistory || !purpleHistory) {
+    return <p role="alert">The game economy history is incomplete.</p>;
+  }
   const winCondition = presentWinCondition(state.objectives);
 
   return (
@@ -111,6 +120,7 @@ export const GameView = ({
           canEndTurn={canAct && controlledTeamId === orangeTeamId}
           color="orange"
           displayName={players.orange.displayName}
+          history={orangeHistory}
           income={orangePanel.income}
           isLocalPlayer={players.orange.isLocalPlayer}
           isOnline={players.orange.isOnline}
@@ -134,6 +144,7 @@ export const GameView = ({
           canEndTurn={canAct && controlledTeamId === purpleTeamId}
           color="purple"
           displayName={players.purple.displayName}
+          history={purpleHistory}
           income={purplePanel.income}
           isLocalPlayer={players.purple.isLocalPlayer}
           isOnline={players.purple.isOnline}
