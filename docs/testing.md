@@ -18,7 +18,7 @@ Run commands from the repository root.
 - `pnpm nx run @TBS/renderer-3d:test`: axial world projection, instanced-terrain lookup, terrain-safe action and selection border layers with explicit selection render priority, proportional health-bar coverage anchored to the track's left edge, bounded camera transitions, distinct house/ambulance/truck/big-truck/sub/bank/airport/factory/lab/church/capital/college/office/zoo/leader/dragon/lion/doctor/scientist/Zuckerbird/blues musician/missile/nuke/moneybag asset routing and health-bar heights, procedural asset fallbacks, and deterministic movement interpolation/reduced-motion settling.
 - `pnpm nx run @TBS/adapter-memory:test`: shared provider-neutral contracts against the deterministic adapter.
 - `pnpm nx run @TBS/adapter-supabase:test`: provider mapping, identity, realtime lifecycle, and shared contracts. Live Supabase cases are skipped unless explicitly enabled.
-- `pnpm ui:test`: React bindings, map repository/import/export, multiplayer and solo routes, deferred multiplayer initialization, local two-team control, interactions, immediate optimistic movement, rejected-move rollback, and conflicting-transition animation cancellation.
+- `pnpm ui:test`: React bindings, map repository/import/export, multiplayer, solo, and Four Forests AI routes, deferred multiplayer initialization, local control boundaries, paced worker selections, worker failure handling, interactions, immediate optimistic movement, rejected-move rollback, and conflicting-transition animation cancellation.
 - `pnpm build`: strict TypeScript checks and production bundles.
 - `pnpm lint`: zero-warning static analysis.
 - `pnpm architecture:check`: dependency-boundary enforcement.

@@ -344,6 +344,15 @@ importers:
       '@TBS/application':
         specifier: workspace:*
         version: link:../packages/application
+      '@TBS/game-ai':
+        specifier: workspace:*
+        version: link:../packages/game-ai
+      '@TBS/game-core':
+        specifier: workspace:*
+        version: link:../packages/game-core
+      '@TBS/game-rules':
+        specifier: workspace:*
+        version: link:../packages/game-rules
       '@TBS/game-setup':
         specifier: workspace:*
         version: link:../packages/game-setup
@@ -362,6 +371,9 @@ importers:
       '@cloudscape-design/global-styles':
         specifier: 1.0.1
         version: 1.0.1
+      onnxruntime-web:
+        specifier: 1.23.2
+        version: 1.23.2
       react:
         specifier: 18.3.1
         version: 18.3.1
@@ -372,9 +384,6 @@ importers:
         specifier: 6.30.4
         version: 6.30.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
     devDependencies:
-      '@TBS/game-rules':
-        specifier: workspace:*
-        version: link:../packages/game-rules
       '@TBS/test-kit':
         specifier: workspace:*
         version: link:../packages/test-kit

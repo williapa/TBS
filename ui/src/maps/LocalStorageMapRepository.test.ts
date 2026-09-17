@@ -24,9 +24,12 @@ describe("LocalStorageMapRepository", () => {
     ]);
     expect(listed).toHaveLength(4);
     expect(listed.every(({ readOnly, schemaVersion }) => readOnly && schemaVersion === 2)).toBe(true);
-    expect(listed.every(({ startingMoney }) => (
-      startingMoney.orange === 1_000 && startingMoney.purple === 1_000
-    ))).toBe(true);
+    expect(listed.map(({ id, startingMoney }) => ({ id, startingMoney }))).toEqual([
+      { id: "default-battlefield", startingMoney: { orange: 1_000, purple: 1_000 } },
+      { id: "four-forests", startingMoney: { orange: 1_000, purple: 900 } },
+      { id: "lake-affection", startingMoney: { orange: 1_000, purple: 1_000 } },
+      { id: "money-mountain", startingMoney: { orange: 1_000, purple: 1_000 } },
+    ]);
     expect(await repository.get("default-battlefield")).toEqual(listed[0]);
     await expect(repository.delete("four-forests")).rejects.toMatchObject({ code: "read-only" });
   });

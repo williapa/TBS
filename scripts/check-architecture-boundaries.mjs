@@ -140,8 +140,9 @@ const rules = [
   },
   {
     roots: ["ui/src"],
+    except: ["ui/src/composition/ai"],
     excludeFile: (file) => file.endsWith(".test.ts") || file.endsWith(".test.tsx"),
-    message: "UI production source may depend only on application, presentation, setup, and renderer workspace packages",
+    message: "UI production source outside explicit composition roots may depend only on application, presentation, setup, and renderer workspace packages",
     disallowed: (module) => module.startsWith("@TBS/") && ![
       "@TBS/adapter-supabase",
       "@TBS/application",

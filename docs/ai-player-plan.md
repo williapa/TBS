@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-The repository has the deterministic tooling needed to run AI experiments against bundled production maps and a release-qualified Phase 3 policy bundle for Four Forests. The qualified policy combines trained weights with a versioned deterministic opening/objective postprocessor. It is not yet wired into the player application, and there is still no evidence that unrestricted self-play is ready to replace the bounded curriculum.
+The repository has the deterministic tooling needed to run AI experiments against bundled production maps and a release-qualified Phase 3 policy bundle for Four Forests. The qualified policy combines trained weights with a versioned deterministic opening/objective postprocessor and is available in the player application as an ephemeral Orange-human versus Purple-AI match. There is still no evidence that unrestricted self-play is ready to replace the bounded curriculum.
 
 Four Forests is the first training target. Its strategy, paired balance suite, behavior-cloning/correction run, and qualification gate are defined in [`ai-four-forests-strategy.md`](./ai-four-forests-strategy.md). A checkpoint without the matching postprocessor and qualification report remains unqualified.
 
@@ -108,7 +108,7 @@ The repository does not yet provide:
 
 - a PPO, league, or unrestricted self-play learning loop;
 - a self-play opponent pool or league;
-- player-facing model loading and inference.
+- player-facing models for maps other than Four Forests.
 
 These omissions are the clean stopping boundary. Adding a learner before balance and map strategy are established would automate production of data without establishing that the data teaches useful play.
 
@@ -131,4 +131,4 @@ Later maps repeat steps 3 through 8 with their own strategy, curriculum, checkpo
 
 The deterministic game engine remains authoritative. The AI tooling is an outer local composition and does not add training concerns to `game-core` or `game-rules`. The observation package contains no tensor runtime, filesystem, browser, network, or randomness dependency. Model inference selects only from a revision-bound legal candidate set, and the normal evaluator still validates the chosen command.
 
-Generated training and release bundles remain ignored local artifacts. The Four Forests bundle records model provenance, compatibility, and qualification evidence, but remains blocked from player release until the application implements the exact versioned postprocessor, model loading, resource limits, and failure behavior.
+Generated training artifacts remain ignored local artifacts. The qualified Four Forests ONNX model is the sole vendored player artifact. The browser runtime implements the exact versioned postprocessor, Web Worker model loading, fixed shape limits, a bounded inference timeout, stale-result rejection, and fail-closed behavior. The homepage exposes this fixed map/model pairing directly rather than generalizing AI into the create-game form.

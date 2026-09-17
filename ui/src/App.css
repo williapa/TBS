@@ -146,11 +146,15 @@ nav a {
   text-align: left;
 }
 
-.session-landing-page__action {
+.session-landing-page__actions {
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   margin-top: 34px;
 }
 
-.session-landing-page__action > span {
+.session-landing-page__actions > span:first-child {
   box-shadow: 0 12px 30px rgba(9, 105, 177, 0.26);
 }
 
@@ -260,9 +264,9 @@ fieldset legend {
     text-align: center;
   }
 
-  .session-landing-page__action {
+  .session-landing-page__actions {
+    align-items: center;
     display: flex;
-    justify-content: center;
     margin-top: 26px;
   }
 

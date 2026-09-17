@@ -12,3 +12,4 @@ export * from "./ports/session";
 export * from "./session/GameRevisionReconciler";
 export * from "./session/GameSessionModel";
 export * from "./session/SoloGameModel";
+export * from "./ai/AiOpponent";

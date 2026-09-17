@@ -18,6 +18,11 @@ import { SoloGameProvider } from "../../solo";
 import { SessionFlowRoutes } from "./SessionFlowRoutes";
 import { saveReconnectDetails } from "./sessionReconnect";
 
+const aiWorker = vi.hoisted(() => ({
+  choose: vi.fn(),
+  dispose: vi.fn(),
+}));
+
 const renderFlow = (
   gateway: GameClient,
   route = "/",
@@ -29,6 +34,10 @@ const renderFlow = (
       <GameSessionProvider>
         <SoloGameProvider>
           <SessionFlowRoutes
+            createAiOpponent={() => ({
+              choose: aiWorker.choose,
+              dispose: aiWorker.dispose,
+            })}
             mapRepository={mapRepository}
             showTestOnlyGameContent={showTestOnlyGameContent}
           />
@@ -56,6 +65,8 @@ const createGame = async (store: InMemoryGameSessionStore) => {
 
 describe("new session create and join flow", () => {
   beforeEach(() => {
+    aiWorker.choose.mockReset();
+    aiWorker.dispose.mockReset();
     window.localStorage.clear();
     window.localStorage.setItem("TBS.board-renderer.v2", "2d");
   });
@@ -65,6 +76,40 @@ describe("new session create and join flow", () => {
 
     expect(screen.getByRole("heading", { name: "🎖️ Hostile Hexagons 🎖️" })).toBeInTheDocument();
     expect(screen.getByText(/Lead your legion to victory/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "🤖 Play against the AI 🤖" }))
+      .toHaveAttribute("href", "/game/ai");
+  });
+
+  test("starts Four Forests with the human as Orange and paces the Purple AI move", async () => {
+    vi.useFakeTimers();
+    aiWorker.choose.mockImplementation(async (state: { revision: number }) => ({
+      type: "selection",
+      requestId: 1,
+      stateRevision: state.revision,
+      candidateKey: "end-turn",
+      action: { type: "end-turn" },
+    }));
+    const view = renderFlow(
+      new InMemoryGameSessionGateway(createStore(), "ai-player"),
+      "/game/ai",
+    );
+
+    expect(screen.getByText("Player vs AI")).toBeInTheDocument();
+    expect(screen.getByText("4 Forests")).toBeInTheDocument();
+    expect(screen.getByText("AI is choosing its next move…")).toBeInTheDocument();
+    expect(screen.getByText("0")).toBeInTheDocument();
+
+    await act(async () => { await Promise.resolve(); });
+    act(() => { vi.advanceTimersByTime(699); });
+    expect(screen.getByText("0")).toBeInTheDocument();
+    act(() => { vi.advanceTimersByTime(1); });
+    expect(screen.getByText("Your turn — you are Orange")).toBeInTheDocument();
+    expect(screen.getByText("1")).toBeInTheDocument();
+    expect(aiWorker.choose).toHaveBeenCalledOnce();
+
+    view.unmount();
+    expect(aiWorker.dispose).toHaveBeenCalledOnce();
+    vi.useRealTimers();
   });
 
   test("shows the minimal default battlefield only with test-only game content", async () => {

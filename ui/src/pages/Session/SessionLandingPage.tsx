@@ -64,12 +64,15 @@ export const SessionLandingPage = () => (
         <p className="session-landing-page__summary">
           Lead your legion to victory across a 6-sided grid in this turn-based strategy game!
         </p>
-        <div className="session-landing-page__action">
+        <div className="session-landing-page__actions">
           <Button
             variant="primary"
             href="/game/new"
           >
             🔗 Play with friends via shareable link 🔗
+          </Button>
+          <Button href="/game/ai">
+            🤖 Play against the AI 🤖
           </Button>
         </div>
       </div>

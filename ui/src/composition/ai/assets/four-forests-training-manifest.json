@@ -1,0 +1,96 @@
+{
+  "architectureId": "hex-graph-policy-value@1",
+  "candidateEncodingVersion": "standard-actions@1",
+  "checkpointSha256": "75e1ea9587883992886afc3af01fe32427c8da7196d34da63365384ad5790912",
+  "contentVersion": "standard@1",
+  "curriculumProfile": "michael",
+  "environmentVersion": "standard-simulation@1",
+  "inferencePolicy": {
+    "canonicalOpeningGuardrail": true,
+    "considersAllLegalObjectiveAttackerActions": true,
+    "objectiveTopK": 5,
+    "recentPositionWindow": 64,
+    "version": "four-forests-objective-policy@1"
+  },
+  "manifestVersion": "tbs-model-manifest@1",
+  "modelSha256": "62839515eb0a7bdb5edf2d32ba8ce82a8702a7b2a05512ea5600afdfc01f3b60",
+  "observationEncodingVersion": "standard-observation@1",
+  "pilotVersion": "four-forests-pilot@1",
+  "playerReleaseBlockers": [
+    "implement and verify the qualified deterministic policy postprocessor in the player runtime"
+  ],
+  "presetHash": "18d5a763e664f8615873166c39e57b84e5218c438db7aad7502a878ad7626021",
+  "presetId": "four-forests",
+  "qualification": {
+    "blockers": [],
+    "buildoutCompletionRate": 1.0,
+    "capitalFinishRate": 1.0,
+    "decision": "passed",
+    "drawRate": 0.0,
+    "forbiddenProductionCount": 0,
+    "games": 768,
+    "minimumPairs": 384,
+    "minimumSeatScore": 0.7239583333333334,
+    "profileScores": {
+      "orange": {
+        "michael": 0.671875,
+        "zucker": 0.9583333333333334
+      },
+      "purple": {
+        "michael": 0.5625,
+        "zucker": 0.8854166666666666
+      }
+    },
+    "profileWinRateWilsonLowerBounds95": {
+      "orange": {
+        "michael": 0.6026562942994619,
+        "zucker": 0.9199471090362051
+      },
+      "purple": {
+        "michael": 0.4917841406477123,
+        "zucker": 0.8326096843559069
+      }
+    },
+    "score": 0.76953125,
+    "seatScores": {
+      "orange": 0.8151041666666666,
+      "purple": 0.7239583333333334
+    },
+    "seatWinRateWilsonLowerBounds95": {
+      "orange": 0.7732205679729385,
+      "purple": 0.677193657333453
+    },
+    "selectionKey": [
+      0.7239583333333334,
+      0.76953125,
+      0.76953125,
+      0.0
+    ],
+    "winRate": 0.76953125
+  },
+  "qualificationReportSha256": "4c578762293c25e82a6535e79defe949e64d1c4133d5c3dbe54f0fceee88e0b4",
+  "qualifiedForFourForestsPolicyRelease": true,
+  "qualifiedForPlayerRelease": false,
+  "releaseId": "four-forests-phase-3-release-candidate",
+  "rulesetVersion": "standard@2",
+  "schemaVersion": 2,
+  "supportedShapes": {
+    "dynamicAxes": [
+      "batch",
+      "cells",
+      "entities",
+      "candidates"
+    ],
+    "featureCounts": {
+      "candidate": 51,
+      "cell": 15,
+      "entity": 76,
+      "global": 18
+    },
+    "limits": {
+      "cellCount": 91,
+      "maxCandidates": 65536,
+      "maxEntities": 182
+    }
+  }
+}

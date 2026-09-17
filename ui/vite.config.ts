@@ -17,10 +17,12 @@ export default defineConfig({
     // so rebuild the prebundle whenever the development server starts.
     force: true,
     include: [
+      "@TBS/game-ai",
       "@TBS/game-rules",
       "@TBS/game-setup",
       "@TBS/presentation",
       "@TBS/protocol",
+      "onnxruntime-web/wasm",
     ],
   },
   build: {

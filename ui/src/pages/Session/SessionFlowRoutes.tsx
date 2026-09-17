@@ -1,18 +1,22 @@
 import { Link, Navigate, Route, Routes } from "react-router-dom";
+import type { CreateAiOpponent } from "@TBS/application";
 import { browserEnvironment } from "../../env";
 import type { MapRepository} from "../../maps";
 import { MapRepositoryProvider } from "../../maps";
 import MapEditorPage from "../MapEditor/MapEditorPage";
+import { AiGamePage } from "./AiGamePage";
 import { InviteJoinPage } from "./InviteJoinPage";
 import { SessionHomePage } from "./SessionHomePage";
 import { SessionLandingPage } from "./SessionLandingPage";
 import { SoloGamePage } from "./SoloGamePage";
 
 export const SessionFlowRoutes = ({
+  createAiOpponent,
   mapRepository,
   showTestOnlyGameContent = browserEnvironment.showTestOnlyGameContent,
 }: Readonly<{
   mapRepository?: MapRepository;
+  createAiOpponent: CreateAiOpponent;
   showTestOnlyGameContent?: boolean;
 }>) => (
   <MapRepositoryProvider repository={mapRepository}>
@@ -32,6 +36,7 @@ export const SessionFlowRoutes = ({
         element={<SessionHomePage showDefaultBattlefield={showTestOnlyGameContent} />}
       />
       <Route path="/game/solo" element={<SoloGamePage />} />
+      <Route path="/game/ai" element={<AiGamePage createAiOpponent={createAiOpponent} />} />
       <Route path="/maps" element={<Navigate replace to="/maps/new" />} />
       <Route path="/maps/new" element={<MapEditorPage />} />
       <Route path="/maps/:mapId/edit" element={<MapEditorPage />} />

@@ -2,6 +2,7 @@ import type { GameClient } from "@TBS/application";
 import { useEffect } from "react";
 import { BrowserRouter } from "react-router-dom";
 import "./App.css";
+import { createFourForestsAiOpponent } from "./composition/ai/createFourForestsAiOpponent";
 import { browserEnvironment } from "./env";
 import { GameSessionGatewayContext, GameSessionProvider } from "./multiplayer";
 import { SessionFlowRoutes } from "./pages/Session/SessionFlowRoutes";
@@ -20,7 +21,7 @@ const App = ({ gateway }: { gateway: GameClient }) => {
       <GameSessionGatewayContext.Provider value={gateway}>
         <GameSessionProvider>
           <SoloGameProvider>
-            <SessionFlowRoutes />
+            <SessionFlowRoutes createAiOpponent={createFourForestsAiOpponent} />
           </SoloGameProvider>
         </GameSessionProvider>
       </GameSessionGatewayContext.Provider>
