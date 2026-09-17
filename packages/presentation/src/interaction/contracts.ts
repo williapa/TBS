@@ -28,11 +28,16 @@ export type GameMenuActionId =
   | `construct:${string}`
   | `spawn:${string}`;
 
+export type GameMenuOptionUnavailableReason =
+  | "insufficient-funds"
+  | "unavailable-terrain";
+
 export type GameMenuOption = Readonly<{
   disabled?: boolean;
   id: GameMenuActionId;
   label: string;
   unitTypeId?: UnitTypeId;
+  unavailableReasons?: readonly GameMenuOptionUnavailableReason[];
 }>;
 
 export type GameActionMenuState = Readonly<{

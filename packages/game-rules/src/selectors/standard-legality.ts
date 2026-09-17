@@ -85,6 +85,22 @@ const adjacentBoardPositions = (
 ): readonly HexCoord[] => getHexNeighbors(position)
   .filter((neighbor) => Boolean(state.board.cells[hexKey(neighbor)]));
 
+const withMinimumTeamMoney = (
+  state: GameState,
+  actorTeamId: TeamId,
+  minimumMoney: number,
+): GameState => {
+  const team = state.teams[actorTeamId];
+  if (!team || team.money >= minimumMoney) return state;
+  return {
+    ...state,
+    teams: {
+      ...state.teams,
+      [actorTeamId]: { ...team, money: minimumMoney },
+    },
+  };
+};
+
 const projectileTargetEntities = (
   state: GameState,
   actorTeamId: TeamId,
@@ -315,6 +331,25 @@ export const getConstructablePositions = (
     }));
 };
 
+export const getConstructionPlacementPositions = (
+  state: GameState,
+  actorTeamId: TeamId,
+  actorId: EntityId,
+  destination: HexCoord,
+  buildingUnitTypeId: UnitTypeId,
+): readonly HexCoord[] => {
+  const option = getConstructionOptions().find(({ unitTypeId }) => unitTypeId === buildingUnitTypeId);
+  return option
+    ? getConstructablePositions(
+        withMinimumTeamMoney(state, actorTeamId, option.cost),
+        actorTeamId,
+        actorId,
+        destination,
+        buildingUnitTypeId,
+      )
+    : [];
+};
+
 export const getAffordableProductionOptions = (
   state: GameState,
   actorTeamId: TeamId,
@@ -360,6 +395,26 @@ export const getSpawnablePositions = (
       spawnedEntityId,
       unitTypeId,
     }));
+};
+
+export const getSpawnPlacementPositions = (
+  state: GameState,
+  actorTeamId: TeamId,
+  buildingId: EntityId,
+  unitTypeId: UnitTypeId,
+): readonly HexCoord[] => {
+  const building = state.entities[buildingId];
+  const option = building
+    ? getProductionOptions(building.unitTypeId).find(({ unitTypeId: candidate }) => candidate === unitTypeId)
+    : undefined;
+  return option
+    ? getSpawnablePositions(
+        withMinimumTeamMoney(state, actorTeamId, option.cost),
+        actorTeamId,
+        buildingId,
+        unitTypeId,
+      )
+    : [];
 };
 
 export const getUnloadPositions = (
@@ -468,15 +523,28 @@ export const hasAnyLegalAction = (
   actorId: EntityId,
 ): boolean => collectAvailableActionTypes(state, actorTeamId, actorId, true).length > 0;
 
+const hasPurchaseMenuOptions = (
+  state: GameState,
+  actorTeamId: TeamId,
+  actorId: EntityId,
+): boolean => {
+  const actor = state.entities[actorId];
+  const definition = actor ? standardRuleServices.getUnit(actor.unitTypeId) : undefined;
+  if (!actor || !definition || !canPreviewActor(state, actorTeamId, actorId)) return false;
+  return (definition.capabilities.includes("construct") && getConstructionOptions().length > 0)
+    || (definition.capabilities.includes("spawn") && getProductionOptions(actor.unitTypeId).length > 0);
+};
+
 export const getActionableEntityIds = (
   state: GameState,
   actorTeamId: TeamId,
 ): readonly EntityId[] => Object.values(state.entities)
-  .filter(({ id }) => hasAnyLegalAction(state, actorTeamId, id))
+  .filter(({ id }) => isSelectableEntity(state, actorTeamId, id))
   .map(({ id }) => id);
 
 export const isSelectableEntity = (
   state: GameState,
   actorTeamId: TeamId,
   actorId: EntityId,
-): boolean => hasAnyLegalAction(state, actorTeamId, actorId);
+): boolean => hasAnyLegalAction(state, actorTeamId, actorId)
+  || hasPurchaseMenuOptions(state, actorTeamId, actorId);

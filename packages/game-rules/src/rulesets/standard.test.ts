@@ -20,10 +20,14 @@ import {
   getActionableEntityIds,
   getAttackTargetIds,
   getAvailableActionTypes,
+  getConstructablePositions,
+  getConstructionPlacementPositions,
   getEntityCapabilities,
   getLegalMoveOptions,
   getLegalMovePositions,
   getLegalProductionOptions,
+  getSpawnablePositions,
+  getSpawnPlacementPositions,
   getTeamIncome,
   hasAnyLegalAction,
   isSelectableEntity,
@@ -693,5 +697,43 @@ describe("standard ruleset action registry", () => {
     };
     expect(getLegalProductionOptions(capitalState, orange, soldier, hexCoord(1, 0))
       .map(({ unitTypeId: id }) => id)).toEqual(["soldier", "leader", "constructionWorker"]);
+  });
+
+  it("reports valid production and construction placements independently of current funds", () => {
+    const base = stateFixture();
+    const actor = base.entities[soldier];
+    if (!actor) throw new Error("missing test actor");
+    const capitalState: GameState = {
+      ...base,
+      entities: {
+        ...base.entities,
+        [soldier]: { ...actor, unitTypeId: unitTypeId("capital") },
+      },
+    };
+    expect(getSpawnablePositions(capitalState, orange, soldier, unitTypeId("soldier"))).toEqual([]);
+    expect(getSpawnPlacementPositions(capitalState, orange, soldier, unitTypeId("soldier")))
+      .toEqual([hexCoord(1, 0)]);
+
+    const workerState: GameState = {
+      ...base,
+      entities: {
+        ...base.entities,
+        [soldier]: { ...actor, unitTypeId: unitTypeId("constructionWorker") },
+      },
+    };
+    expect(getConstructablePositions(
+      workerState,
+      orange,
+      soldier,
+      hexCoord(0, 0),
+      unitTypeId("airport"),
+    )).toEqual([]);
+    expect(getConstructionPlacementPositions(
+      workerState,
+      orange,
+      soldier,
+      hexCoord(0, 0),
+      unitTypeId("airport"),
+    )).toEqual([hexCoord(1, 0)]);
   });
 });

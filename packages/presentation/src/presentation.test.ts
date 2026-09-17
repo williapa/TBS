@@ -613,12 +613,14 @@ describe("semantic interaction controller", () => {
         disabled: true,
         id: "spawn:soldier",
         label: "Soldier ($200)",
+        unavailableReasons: ["insufficient-funds"],
         unitTypeId: "soldier",
       },
       {
         disabled: true,
         id: "spawn:leader",
         label: "Leader ($1000)",
+        unavailableReasons: ["insufficient-funds"],
         unitTypeId: "leader",
       },
       {
@@ -626,6 +628,135 @@ describe("semantic interaction controller", () => {
         id: "spawn:constructionWorker",
         label: "Construction Worker ($100)",
         unitTypeId: "constructionWorker",
+      },
+      { id: "cancel", label: "Cancel" },
+    ]);
+  });
+
+  test.each(["capital", "leader", "soldier"])(
+    "does not offer construction to a %s without the construction capability",
+    (actorType) => {
+      const state = createState();
+      const actorState: GameState = {
+        ...state,
+        entities: {
+          ...state.entities,
+          [orangeSoldier]: {
+            ...state.entities[orangeSoldier],
+            unitTypeId: unitTypeId(actorType),
+          },
+        },
+      };
+      const actorContext = { ...context(), state: actorState };
+      const selected = advanceGameInteraction(
+        createInitialGameInteractionState(),
+        { type: "select-entity", entityId: orangeSoldier },
+        actorContext,
+      );
+      const actionMenu = selected.state.menu
+        ? selected
+        : advanceGameInteraction(
+            selected.state,
+            { type: "select-entity", entityId: orangeSoldier },
+            actorContext,
+          );
+
+      expect(actionMenu.state.menu?.options.map(({ id }) => id)).not.toContain("construct");
+      const rejectedChoice = advanceGameInteraction(
+        actionMenu.state,
+        { type: "choose-action", actionType: "construct" },
+        actorContext,
+      );
+      expect(rejectedChoice.state).toEqual(actionMenu.state);
+    },
+  );
+
+  test("lists every construction option and identifies cost and terrain restrictions independently", () => {
+    const state = createState();
+    const workerState: GameState = {
+      ...state,
+      entities: {
+        ...state.entities,
+        [orangeSoldier]: {
+          ...state.entities[orangeSoldier],
+          unitTypeId: unitTypeId("constructionWorker"),
+        },
+      },
+    };
+    const workerContext = { ...context(), state: workerState };
+    const selected = advanceGameInteraction(
+      createInitialGameInteractionState(),
+      { type: "select-entity", entityId: orangeSoldier },
+      workerContext,
+    );
+    const actionMenu = advanceGameInteraction(
+      selected.state,
+      { type: "select-entity", entityId: orangeSoldier },
+      workerContext,
+    );
+    const constructionMenu = advanceGameInteraction(
+      actionMenu.state,
+      { type: "choose-action", actionType: "construct" },
+      workerContext,
+    );
+
+    expect(constructionMenu.state.menu?.options.map(({ id }) => id)).toEqual([
+      ...getConstructionOptions().map(({ unitTypeId: id }) => `construct:${id}`),
+      "cancel",
+    ]);
+    expect(constructionMenu.state.menu?.options).toEqual(expect.arrayContaining([
+      expect.objectContaining({ disabled: false, id: "construct:airport" }),
+      expect.objectContaining({
+        disabled: true,
+        id: "construct:bank",
+        unavailableReasons: ["insufficient-funds"],
+      }),
+      expect.objectContaining({
+        disabled: true,
+        id: "construct:port",
+        unavailableReasons: ["insufficient-funds", "unavailable-terrain"],
+      }),
+    ]));
+
+    const rejectedChoice = advanceGameInteraction(
+      constructionMenu.state,
+      { type: "choose-action", actionType: "construct:port" },
+      workerContext,
+    );
+    expect(rejectedChoice.state).toEqual(constructionMenu.state);
+  });
+
+  test("disables an affordable production option when no suitable terrain is available", () => {
+    const state = createState();
+    const portState: GameState = {
+      ...state,
+      entities: {
+        ...state.entities,
+        [orangeSoldier]: {
+          ...state.entities[orangeSoldier],
+          unitTypeId: unitTypeId("port"),
+        },
+      },
+    };
+    const portContext = { ...context(), state: portState };
+    const selected = advanceGameInteraction(
+      createInitialGameInteractionState(),
+      { type: "select-entity", entityId: orangeSoldier },
+      portContext,
+    );
+    const spawnMenu = advanceGameInteraction(
+      selected.state,
+      { type: "choose-action", actionType: "spawn" },
+      portContext,
+    );
+
+    expect(spawnMenu.state.menu?.options).toEqual([
+      {
+        disabled: true,
+        id: "spawn:sub",
+        label: "Sub ($500)",
+        unavailableReasons: ["unavailable-terrain"],
+        unitTypeId: "sub",
       },
       { id: "cancel", label: "Cancel" },
     ]);

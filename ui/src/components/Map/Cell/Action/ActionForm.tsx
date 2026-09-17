@@ -1,7 +1,11 @@
 import type React from "react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { getEmojiForUnit } from "@TBS/renderer-2d";
-import type { ActionFormProps, GameMenuActionId } from "../../../../types";
+import type {
+  ActionFormProps,
+  GameMenuActionId,
+  GameMenuOptionUnavailableReason,
+} from "../../../../types";
 import "./ActionForm.css";
 
 const MENU_GAP = 12;
@@ -11,6 +15,14 @@ type FocusableElement = Element & Readonly<{ focus: () => void }>;
 
 const canFocus = (element: Element | null): element is FocusableElement =>
   Boolean(element && "focus" in element && typeof element.focus === "function");
+
+const unavailableReasonDetails: readonly Readonly<{
+  id: GameMenuOptionUnavailableReason;
+  label: string;
+}>[] = [
+  { id: "insufficient-funds", label: "Insufficient funds." },
+  { id: "unavailable-terrain", label: "No suitable terrain is available." },
+];
 
 const ActionForm = ({
   left,
@@ -25,6 +37,13 @@ const ActionForm = ({
     canFocus(document.activeElement) ? document.activeElement : null,
   );
   const [position, setPosition] = useState({ left, top });
+  const applicableReasons = unavailableReasonDetails.filter(({ id }) =>
+    options.some(({ disabled, unavailableReasons }) =>
+      disabled && unavailableReasons?.includes(id)),
+  );
+  const markerByReason = new Map(
+    applicableReasons.map(({ id }, index) => [id, "*".repeat(index + 1)]),
+  );
 
   useLayoutEffect(() => {
     if (placement === "docked") return;
@@ -78,17 +97,31 @@ const ActionForm = ({
       style={placement === "anchored" ? position : undefined}
     >
       <p className="game-action-menu__title">{title}</p>
-      {options.map(({ disabled, id, label, unitTypeId }) => (
-        <button
-          key={id}
-          disabled={Boolean(disabled)}
-          style={{ width: "100%" }}
-          type="button"
-          onClick={handleClick(id)}
-        >
-          {unitTypeId ? `${getEmojiForUnit(unitTypeId)} ${label}` : label}
-        </button>
-      ))}
+      {options.map(({ disabled, id, label, unitTypeId, unavailableReasons }) => {
+        const markers = unavailableReasons?.flatMap((reason) => {
+          const marker = markerByReason.get(reason);
+          return marker ? [marker] : [];
+        }) ?? [];
+        const optionLabel = `${unitTypeId ? `${getEmojiForUnit(unitTypeId)} ` : ""}${label}`;
+        return (
+          <button
+            key={id}
+            disabled={Boolean(disabled)}
+            style={{ width: "100%" }}
+            type="button"
+            onClick={handleClick(id)}
+          >
+            {optionLabel}{markers.length > 0 ? ` ${markers.join(" ")}` : ""}
+          </button>
+        );
+      })}
+      {applicableReasons.length > 0 && (
+        <div aria-label="Unavailable option reasons" className="game-action-menu__footnotes">
+          {applicableReasons.map(({ id, label }) => (
+            <p key={id}>{markerByReason.get(id)} {label}</p>
+          ))}
+        </div>
+      )}
     </form>
   );
 };

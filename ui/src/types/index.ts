@@ -21,6 +21,7 @@ import type {
   GameInteractionState,
   GameMenuActionId,
   GameMenuOption,
+  GameMenuOptionUnavailableReason,
   MenuPosition,
   StandardActionDraft,
   UnitPanelActionViewModel,
@@ -209,5 +210,6 @@ export type {
   GameInteractionState,
   GameMenuActionId,
   GameMenuOption,
+  GameMenuOptionUnavailableReason,
   MenuPosition,
 };

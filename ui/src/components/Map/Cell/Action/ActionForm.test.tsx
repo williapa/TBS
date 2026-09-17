@@ -67,7 +67,12 @@ describe("ActionForm", () => {
         left={0}
         onAction={onAction}
         options={[
-          { disabled: true, id: "spawn:leader", label: "Leader ($1000)" },
+          {
+            disabled: true,
+            id: "spawn:leader",
+            label: "Leader ($1000)",
+            unavailableReasons: ["insufficient-funds"],
+          },
           { id: "cancel", label: "Cancel" },
         ]}
         placement="docked"
@@ -76,9 +81,43 @@ describe("ActionForm", () => {
       />,
     );
 
-    const leader = screen.getByRole("button", { name: "Leader ($1000)" });
+    const leader = screen.getByRole("button", { name: "Leader ($1000) *" });
     expect(leader).toBeDisabled();
     fireEvent.click(leader);
     expect(onAction).not.toHaveBeenCalled();
+    expect(screen.getByText("* Insufficient funds.")).toBeInTheDocument();
+    expect(screen.queryByText(/suitable terrain/i)).not.toBeInTheDocument();
+  });
+
+  test("marks each applicable unavailability reason and renders only those footnotes", () => {
+    render(
+      <ActionForm
+        left={0}
+        onAction={vi.fn()}
+        options={[
+          {
+            disabled: true,
+            id: "spawn:airplane",
+            label: "Airplane ($1000)",
+            unavailableReasons: ["insufficient-funds", "unavailable-terrain"],
+          },
+          {
+            disabled: true,
+            id: "spawn:pilot",
+            label: "Pilot ($300)",
+            unavailableReasons: ["unavailable-terrain"],
+          },
+          { id: "cancel", label: "Cancel" },
+        ]}
+        placement="docked"
+        title="Airport options"
+        top={0}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Airplane ($1000) * **" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Pilot ($300) **" })).toBeDisabled();
+    expect(screen.getByText("* Insufficient funds.")).toBeInTheDocument();
+    expect(screen.getByText("** No suitable terrain is available.")).toBeInTheDocument();
   });
 });

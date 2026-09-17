@@ -33,6 +33,15 @@
   width: 100%;
 }
 
+.game-action-menu__footnotes {
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.game-action-menu__footnotes p {
+  margin: 0;
+}
+
 @media (max-width: 720px), (pointer: coarse) {
   .game-action-menu {
     bottom: 8px;

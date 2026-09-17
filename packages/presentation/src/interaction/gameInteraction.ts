@@ -8,15 +8,17 @@ import {
 } from "@TBS/game-core";
 import {
   getActionableEntityIds,
-  getAffordableConstructionOptions,
-  getAffordableProductionOptions,
   getAttackTargetIds,
   getBoostTargetIds,
+  getConstructionOptions,
+  getConstructionPlacementPositions,
   getConstructablePositions,
+  getEntityCapabilities,
   getHealTargetIds,
   getLegalMoveOptions,
   getLoadTargetIds,
   getProductionOptions,
+  getSpawnPlacementPositions,
   getSpawnablePositions,
   getUnloadPositions,
   isSelectableEntity,
@@ -31,6 +33,7 @@ import type {
   GameInteractionTarget,
   GameMenuActionId,
   GameMenuOption,
+  GameMenuOptionUnavailableReason,
   InteractiveActionType,
   StandardActionDraft,
 } from "./contracts";
@@ -204,20 +207,31 @@ const constructionOptions = (
 ): readonly GameMenuOption[] => {
   const actorId = state.selectedEntityId;
   const destination = currentDestination(state, context);
-  if (!actorId || !destination) return [];
-  return getAffordableConstructionOptions(context.state, context.perspective)
-    .filter(({ unitTypeId: id }) => getConstructablePositions(
-      context.state,
-      context.perspective,
-      actorId,
-      destination,
-      id,
-    ).length > 0)
-    .map(({ cost, unitTypeId: id }) => ({
-      id: `construct:${id}` as const,
-      label: `${humanize(id)} ($${cost})`,
-      unitTypeId: id,
-    }));
+  if (
+    !actorId
+    || !destination
+    || !getEntityCapabilities(context.state, actorId).includes("construct")
+  ) return [];
+  const money = context.state.teams[context.perspective]?.money ?? 0;
+  return getConstructionOptions()
+    .map(({ cost, unitTypeId: id }) => {
+      const unavailableReasons: GameMenuOptionUnavailableReason[] = [];
+      if (cost > money) unavailableReasons.push("insufficient-funds");
+      if (getConstructionPlacementPositions(
+        context.state,
+        context.perspective,
+        actorId,
+        destination,
+        id,
+      ).length === 0) unavailableReasons.push("unavailable-terrain");
+      return {
+        disabled: unavailableReasons.length > 0,
+        id: `construct:${id}` as const,
+        label: `${humanize(id)} ($${cost})`,
+        unitTypeId: id,
+        ...(unavailableReasons.length > 0 ? { unavailableReasons } : {}),
+      };
+    });
 };
 
 const spawnOptions = (
@@ -227,22 +241,25 @@ const spawnOptions = (
   const actorId = state.selectedEntityId;
   const actor = actorId ? context.state.entities[actorId] : undefined;
   if (!actorId || !actor) return [];
-  const affordableUnitTypeIds = new Set(
-    getAffordableProductionOptions(context.state, context.perspective, actor.unitTypeId)
-      .map(({ unitTypeId: id }) => id),
-  );
+  const money = context.state.teams[context.perspective]?.money ?? 0;
   return getProductionOptions(actor.unitTypeId)
-    .map(({ cost, unitTypeId: id }) => ({
-      disabled: !affordableUnitTypeIds.has(id) || getSpawnablePositions(
+    .map(({ cost, unitTypeId: id }) => {
+      const unavailableReasons: GameMenuOptionUnavailableReason[] = [];
+      if (cost > money) unavailableReasons.push("insufficient-funds");
+      if (getSpawnPlacementPositions(
         context.state,
         context.perspective,
         actorId,
         id,
-      ).length === 0,
-      id: `spawn:${id}` as const,
-      label: `${humanize(id)} ($${cost})`,
-      unitTypeId: id,
-    }));
+      ).length === 0) unavailableReasons.push("unavailable-terrain");
+      return {
+        disabled: unavailableReasons.length > 0,
+        id: `spawn:${id}` as const,
+        label: `${humanize(id)} ($${cost})`,
+        unitTypeId: id,
+        ...(unavailableReasons.length > 0 ? { unavailableReasons } : {}),
+      };
+    });
 };
 
 const actionOptions = (
@@ -398,9 +415,12 @@ const chooseAction = (
   if (!state.selectedEntityId || !destination) return { state };
 
   if (action === "construct" || action === "spawn") {
+    const menuOption = state.menu?.options.find(({ id }) => id === action);
+    if (!menuOption || menuOption.disabled) return { state };
     const options = action === "construct"
       ? constructionOptions(state, context)
       : spawnOptions(state, context);
+    if (options.length === 0) return { state };
     return {
       state: {
         ...state,
@@ -420,6 +440,11 @@ const chooseAction = (
     const pendingAction: InteractiveActionType = action.startsWith("construct:")
       ? "construct"
       : "spawn";
+    const options = pendingAction === "construct"
+      ? constructionOptions(state, context)
+      : spawnOptions(state, context);
+    const option = options.find(({ id }) => id === action);
+    if (!option || option.disabled) return { state };
     const selectedUnitTypeId = unitTypeId(action.slice(action.indexOf(":") + 1));
     const nextState = { ...state, pendingAction, selectedUnitTypeId };
     return {
