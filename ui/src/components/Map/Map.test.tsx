@@ -69,7 +69,7 @@ describe("map editor persistence", () => {
               path="/mapEditor"
               element={<Map name="Tiny" initialMap={createDefaultBattlefield().map} />}
             />
-            <Route path="/game/new" element={<h1>Start a game</h1>} />
+            <Route path="/game/new" element={<h1>Play with a friend</h1>} />
           </Routes>
         </MemoryRouter>
       </MapRepositoryProvider>
@@ -82,7 +82,7 @@ describe("map editor persistence", () => {
       name: "Tiny",
       startingMoney: { orange: 1_200, purple: 800 },
     })));
-    expect(await screen.findByRole("heading", { name: "Start a game" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Play with a friend" })).toBeInTheDocument();
   });
 
   test("updates the displayed win condition when the capital setup changes", () => {

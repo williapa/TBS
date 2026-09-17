@@ -62,6 +62,18 @@ nav a {
   text-decoration: none;
 }
 
+.game-map-actions {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.game-map-actions > *,
+.game-map-actions button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 .session-landing-page {
   align-items: center;
   background:
@@ -134,7 +146,7 @@ nav a {
   display: inline-block;
   font-size: 0.58em;
   letter-spacing: normal;
-  transform: translateY(-0.1em);
+  transform: translateY(-0.25em);
 }
 
 .session-landing-page__summary {
@@ -146,12 +158,28 @@ nav a {
   text-align: left;
 }
 
+.session-landing-page__campaign-label {
+  color: #ffbd59;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin: 32px 0 0;
+  text-transform: uppercase;
+}
+
+.session-landing-page__campaign-description {
+  color: #d7dde4;
+  line-height: 1.55;
+  margin: 8px 0 0;
+  max-width: 590px;
+}
+
 .session-landing-page__actions {
   align-items: flex-start;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: 34px;
+  margin-top: 24px;
 }
 
 .session-landing-page__actions > span:first-child {
@@ -261,6 +289,11 @@ fieldset legend {
   .session-landing-page__summary {
     font-size: 1.05rem;
     margin-top: 22px;
+    text-align: center;
+  }
+
+  .session-landing-page__campaign-label,
+  .session-landing-page__campaign-description {
     text-align: center;
   }
 

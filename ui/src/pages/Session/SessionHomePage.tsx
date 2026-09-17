@@ -144,9 +144,9 @@ export const SessionHomePage = ({
         header={(
           <Header
             variant="h1"
-            description="Play both teams locally in test mode, or create a multiplayer match your opponent can join via link."
+            description="Choose a battlefield, create a private game, and share the invite link with a friend."
           >
-            Start a game
+            Play with a friend
           </Header>
         )}
       >
@@ -270,16 +270,24 @@ export const SessionHomePage = ({
                     description={selectedMap ? `Selected battlefield: ${selectedMap.name}.` : "Choose the battlefield for this match."}
                     errorText={mapError ?? selectedSetup.error}
                     secondaryControl={(
-                      <Button
-                        variant="link"
-                        formAction="none"
-                        iconName="remove"
-                        ariaHaspopup="dialog"
-                        disabled={!selectedMap || selectedMap.readOnly}
-                        onClick={() => setMapPendingDeletion(selectedMap)}
-                      >
-                        Delete map
-                      </Button>
+                      <div className="game-map-actions">
+                        <Button
+                          variant="link"
+                          formAction="none"
+                          onClick={() => navigate("/maps/new")}
+                        >
+                          Create custom map
+                        </Button>
+                        <Button
+                          variant="link"
+                          formAction="none"
+                          iconName="remove"
+                          ariaLabel="Delete map"
+                          ariaHaspopup="dialog"
+                          disabled={!selectedMap || selectedMap.readOnly}
+                          onClick={() => setMapPendingDeletion(selectedMap)}
+                        />
+                      </div>
                     )}
                   >
                     <Select

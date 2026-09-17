@@ -74,9 +74,12 @@ describe("new session create and join flow", () => {
   test("renders the restored Hostile Hexagons homepage", () => {
     renderFlow(new InMemoryGameSessionGateway(createStore(), "visitor"));
 
-    expect(screen.getByRole("heading", { name: "🎖️ Hostile Hexagons 🎖️" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "🎖️ Hostile 🎖️Hexagons" })).toBeInTheDocument();
     expect(screen.getByText(/Lead your legion to victory/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "🤖 Play against the AI 🤖" }))
+    expect(screen.getByText("Campaign demo", { selector: "p" })).toBeInTheDocument();
+    expect(screen.getByText(/Battle against a demo AI opponent/))
+      .toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "🤖 Play the campaign demo" }))
       .toHaveAttribute("href", "/game/ai");
   });
 
@@ -116,9 +119,14 @@ describe("new session create and join flow", () => {
     const gateway = new InMemoryGameSessionGateway(createStore(), "map-viewer");
     const normalView = renderFlow(gateway, "/game/new", undefined, false);
 
+    expect(await normalView.findByRole("heading", { name: "Play with a friend" })).toBeVisible();
+    expect(normalView.getByText(/Choose a battlefield, create a private game/)).toBeVisible();
     expect(await normalView.findByRole("button", { name: /Map.*4 Forests/ })).toBeVisible();
     expect(normalView.queryByRole("button", { name: /Map.*Default battlefield/ }))
       .not.toBeInTheDocument();
+    fireEvent.click(normalView.getByRole("button", { name: "Create custom map" }));
+    expect(await normalView.findByRole("heading", { name: "New Map Configuration" }))
+      .toBeVisible();
     normalView.unmount();
 
     const testView = renderFlow(gateway, "/game/new", undefined, true);
@@ -488,19 +496,19 @@ describe("new session create and join flow", () => {
     expect(await mapsView.findByRole("heading", { name: "New Map Configuration" })).toBeInTheDocument();
     const navigation = mapsView.getByRole("navigation", { name: "Primary" });
     /*expect(navigation).toContainElement(mapsView.getByRole("link", { name: "Home" })); */ /* I removed this link for now */
-    expect(navigation).toContainElement(mapsView.getByRole("link", { name: "Create game" }));
-    expect(navigation).toContainElement(mapsView.getByRole("link", { name: "Create map" }));
+    expect(navigation).toContainElement(mapsView.getByRole("link", { name: "Play with a friend" }));
+    expect(navigation).toContainElement(mapsView.getByRole("link", { name: "Campaign demo" }));
     expect(mapsView.queryByText(/signup|profile|lobby/i)).not.toBeInTheDocument();
     expect(mapsView.queryByLabelText("Import map JSON")).not.toBeInTheDocument();
     expect(mapsView.queryByRole("button", { name: /Export/ })).not.toBeInTheDocument();
     mapsView.unmount();
 
     const redirected = renderFlow(gateway, "/lobby");
-    expect(await redirected.findByRole("heading", { name: "🎖️ Hostile Hexagons 🎖️" })).toBeInTheDocument();
+    expect(await redirected.findByRole("heading", { name: "🎖️ Hostile 🎖️Hexagons" })).toBeInTheDocument();
     redirected.unmount();
 
     const oldCreateGame = renderFlow(gateway, "/createGame");
-    expect(await oldCreateGame.findByRole("heading", { name: "Start a game" })).toBeInTheDocument();
+    expect(await oldCreateGame.findByRole("heading", { name: "Play with a friend" })).toBeInTheDocument();
     oldCreateGame.unmount();
 
     const oldEditor = renderFlow(gateway, "/mapEditor");

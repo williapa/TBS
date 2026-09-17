@@ -58,21 +58,23 @@ export const SessionLandingPage = () => (
       <div className="session-landing-page__hero">
         <h1>
           <span className="session-landing-page__medal">🎖️</span>
-          {" Hostile Hexagons "}
+          {" HOSTILE "}
           <span className="session-landing-page__medal">🎖️</span>
+          HEXAGONS
         </h1>
         <p className="session-landing-page__summary">
           Lead your legion to victory across a 6-sided grid in this turn-based strategy game!
         </p>
+        <p className="session-landing-page__campaign-label">Campaign demo</p>
+        <p className="session-landing-page__campaign-description">
+          Battle against a demo AI opponent. A full campaign mode is coming soon!
+        </p>
         <div className="session-landing-page__actions">
           <Button
             variant="primary"
-            href="/game/new"
+            href="/game/ai"
           >
-            🔗 Play with friends via shareable link 🔗
-          </Button>
-          <Button href="/game/ai">
-            🤖 Play against the AI 🤖
+            🤖 Play the campaign demo
           </Button>
         </div>
       </div>

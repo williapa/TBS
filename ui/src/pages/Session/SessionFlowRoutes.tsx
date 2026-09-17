@@ -25,8 +25,8 @@ export const SessionFlowRoutes = ({
         {/*<li className="primary-navigation__home">
           <Link aria-label="Home" to="/"><span aria-hidden="true">🏰</span></Link>
         </li> */}
-        <li><Link to="/game/new">Create game</Link></li>
-        <li><Link to="/maps/new">Create map</Link></li>
+        <li><Link to="/game/new">Play with a friend</Link></li>
+        <li><Link to="/game/ai">Campaign demo</Link></li>
       </ul>
     </nav>
     <Routes>

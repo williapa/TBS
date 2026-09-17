@@ -61,7 +61,7 @@ test("creator, challenger, and spectator complete a live game and all action fam
     const spectator = await openClient("spectator");
 
     await creator.goto("/game/new");
-    await expect(creator.getByRole("heading", { name: "Start a game" })).toBeVisible();
+    await expect(creator.getByRole("heading", { name: "Play with a friend" })).toBeVisible();
     await creator.getByLabel("Display name").fill("Creator");
     await creator.getByRole("button", { name: /Map.*Default battlefield/ }).click();
     await creator.getByRole("option", { name: /Quick finish/ }).click();

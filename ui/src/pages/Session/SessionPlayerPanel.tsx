@@ -38,6 +38,7 @@ export const SessionPlayerPanel = ({
     >
       <div className={`player__identity player__identity--${color}`}>
         <p aria-label={accessibleName} className="player__name">{name}</p>
+        {activeTurn && <p className="player__turn-indicator">Current turn</p>}
         {isWinner && <p className="player__winner"><span aria-hidden="true">★</span> Winner</p>}
         <img
           alt="avatar"

@@ -124,6 +124,31 @@
   overflow-wrap: anywhere;
 }
 
+.player__turn-indicator {
+  align-items: center;
+  background: rgba(24, 24, 24, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  color: white;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 800;
+  gap: 6px;
+  letter-spacing: 0.06em;
+  margin: 2px 0 7px;
+  padding: 3px 9px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.player__turn-indicator::before {
+  background: currentColor;
+  border-radius: 50%;
+  content: "";
+  height: 0.5em;
+  width: 0.5em;
+}
+
 .player__winner {
   background: #fff3b0;
   border: 1px solid #6b4f00;
@@ -219,6 +244,13 @@
     font-size: 0.8rem;
     line-height: 1.15;
     overflow: hidden;
+  }
+
+  .player__turn-indicator {
+    font-size: 0.58rem;
+    gap: 4px;
+    letter-spacing: 0.03em;
+    padding: 3px 5px;
   }
 
   .game.special-panel {
