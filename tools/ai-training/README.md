@@ -10,6 +10,7 @@ Every request has a bounded `id`, an `environmentId`, and one of these operation
 - `legal-actions`: returns just the revision-bound candidate mapping.
 - `step`: requires the candidate encoding version, state revision, candidate index, and semantic key returned by the same observation.
 - `snapshot` / `restore`: checkpoint or resume canonical state and environment provenance.
+- `release`: discard a named environment when an episode is complete so long sequential runs do not consume the 256-environment capacity.
 - `replay`: reconstruct a trajectory from its recorded base state and semantic candidate keys.
 
 Requests larger than 1 MiB, unsupported/custom presets, stale candidate mappings, legacy `standard@1` states, mismatched preset hashes, and invalid snapshots are rejected without applying a command. A command-budget cutoff reports `status: "truncated"` with `bootstrapAllowed: true`; engine wins and draws report `status: "terminated"` with `bootstrapAllowed: false`.
@@ -35,7 +36,7 @@ The generated manifest is intentionally marked `qualifiedForPlayerRelease: false
 
 ## Four Forests Phase 3 pilot
 
-The first map-specific experiment targets the bundled `four-forests` preset. It provides two deterministic, strategy-guided profiles around the shared construction-worker → office opening:
+The first map-specific experiment targets the bundled `four-forests` preset. Orange starts with 1,000 money and first-moving Purple starts with 900. It provides two deterministic, strategy-guided profiles around the shared construction-worker → office opening:
 
 - `zucker`: add a second leader and a Zuckerbird before advancing;
 - `michael`: construct a church and spawn Michael Jackson before advancing.
@@ -44,7 +45,9 @@ Both profiles ignore port/submarine production, keep soldiers defensive, prefer 
 
 Training trajectories use only the `michael` profile for both seats. `zucker` remains in paired balance and learned-policy evaluation, but it is not mixed into imitation labels because the version-one observation has no hidden strategy-intent feature.
 
-The pilot collects versioned graph observations and scripted targets to a compressed JSON-lines trajectory file, trains the existing policy/value architecture with behavior cloning, and then performs bounded iterative correction. Each correction round rolls the current model out from both seats against the canonical expert, labels strategically distinct model-reached mistakes, and fine-tunes at a lower learning rate. Equivalent movement tie-breaks are excluded from the correction buffer. Construction and spawn samples receive additional training weight because a policy that only imitates common move/end-turn actions does not demonstrate the intended opening. The final checkpoint is evaluated from both seats against scripted and random opponents. Generated trajectories, checkpoints, and reports remain ignored development artifacts and are always marked unqualified for player release.
+The pilot collects versioned graph observations and scripted targets to a compressed JSON-lines trajectory file, trains the existing policy/value architecture with behavior cloning, and then performs bounded iterative correction. Each correction round rolls the current model out from both seats against the canonical expert, labels strategically distinct model-reached mistakes, and fine-tunes at a lower learning rate. Equivalent movement tie-breaks are excluded from the correction buffer. Construction and spawn samples receive additional training weight because a policy that only imitates common move/end-turn actions does not demonstrate the intended opening. `--mode continue --correction-opponent-profile michael` focuses correction and checkpoint selection on the harder Michael baseline while retaining the source checkpoint as the regression fallback.
+
+Inference combines model logits with the versioned `four-forests-objective-policy@1` guardrail: the canonical opening is recovered from the complete legal construction/spawn set, all legal Michael/Zuckerbird tactical actions are considered, occupied routes are handled explicitly, and recent positions prevent cycles. The checkpoint alone is not the qualified policy.
 
 Create an isolated Python 3.12 environment outside this repository's `tools` tree, install `python/requirements-phase3.txt`, and set `AI_TRAINING_PYTHON` to its absolute Python executable path. Then run:
 
@@ -53,4 +56,13 @@ pnpm ai:phase3:test
 pnpm ai:phase3:four-forests
 ```
 
-The default bounded pilot writes to `.tmp/ai-phase-3-four-forests`. Use `--mode balance` to run only the paired scripted balance suite or `--mode evaluate --checkpoint <path>` to re-evaluate a compatible checkpoint. Counts, seeds, output directory, batch size, initial epochs, correction iterations/epochs, and learning rates are explicit CLI options. A pilot recommendation distinguishes map/seat balance blockers from curriculum-learning blockers; it does not qualify a model or authorize unrestricted self-play.
+The default bounded pilot writes to `.tmp/ai-phase-3-four-forests`. Repository-relative checkpoint and output paths are resolved from the repository root, including when pnpm runs the command from the package directory. Use `--mode balance` to run only the paired scripted balance suite or `--mode evaluate --checkpoint <path>` to re-evaluate a compatible checkpoint. If training finished but final evaluation/reporting was interrupted, `--mode finalize --checkpoint <path>` reuses the saved checkpoint and trajectories, reruns balance and evaluation, recomputes held-out metrics, and writes `report.json` without retraining.
+
+`--mode qualify --qualification-pairs 384 --objective-top-k 5 --checkpoint <path>` runs the release-strength gate on 768 held-out paired-seat games. It enforces sample size, overall and per-seat strength, 95% confidence bounds, draw rate, capital finishes, buildout completion, forbidden naval production, and separate floors for every seat/opponent-profile combination. A passing report can be bundled with the trained checkpoint by installing `requirements-phase2.txt` and running:
+
+```sh
+pnpm --filter @TBS/ai-training-tools phase3:four-forests:export \
+  <checkpoint.pt> <qualification-report.json> <output-directory>
+```
+
+The exporter verifies live preset/protocol provenance, checkpoint and qualification hashes, PyTorch invariance/equivariance, dynamic shapes, and native ONNX parity. Run `onnx-verify` and `onnx-smoke` against the generated files to verify Web/WASM parity and an engine-applied Four Forests action. The bundle is marked `qualifiedForFourForestsPolicyRelease: true` but `qualifiedForPlayerRelease: false` until the versioned deterministic postprocessor is implemented and verified in the player runtime.

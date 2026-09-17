@@ -1,12 +1,15 @@
 import { resolve } from "node:path";
 
-import { StandardTrainingEnvironment } from "./environment";
+import { PRODUCTION_AI_PRESET_IDS, StandardTrainingEnvironment } from "./environment";
 import { createOnnxSession, runOnnxPolicyValue } from "./onnx-runtime";
 
 const main = async (): Promise<void> => {
   const modelPath = resolve(process.argv[2] ?? ".tmp/ai-phase-2/policy-value.onnx");
+  const requestedPresetId = process.argv[3] ?? "money-mountain";
+  const presetId = PRODUCTION_AI_PRESET_IDS.find((candidate) => candidate === requestedPresetId);
+  if (!presetId) throw new Error(`unsupported production AI preset: ${requestedPresetId}`);
   const environment = new StandardTrainingEnvironment();
-  const before = environment.reset("money-mountain", 0);
+  const before = environment.reset(presetId, 0);
   const encoded = environment.encode();
   const session = await createOnnxSession(modelPath);
   const output = await runOnnxPolicyValue(session, encoded);

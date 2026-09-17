@@ -4,7 +4,9 @@
 
 The first Phase 3 learning target is the bundled `four-forests` preset under the exact preset hash and pinned engine, ruleset, content, observation, and candidate-encoding versions reported by the training environment. Any balance, content, rules, or map edit creates a new training identity and invalidates this experiment's checkpoints and qualification evidence.
 
-The map contains 91 cells: 64 forest, 26 road, and one central water cell. Each team begins with one capital, leader, soldier, and 1,000 money. Purple acts first. The setup is geometrically mirrored, but evaluation must still report outcomes separately by seat and swap deterministic policy instances between seats.
+The map contains 91 cells: 64 forest, 26 road, and one central water cell. Each team begins with one capital, leader, and soldier. Orange begins with 1,000 money; Purple begins with 900 because Purple acts first. The terrain and units remain geometrically mirrored, but evaluation must still report outcomes separately by seat and swap deterministic policy instances between seats.
+
+The 100-money Purple handicap was introduced after a 768-game held-out qualification run at 1,000/1,000 produced a 54.4% Orange score and 66.9% Purple score. It reduces first-player liquidity through the worker/office/church opening without changing shared unit costs or turn rules. It changes the preset hash and invalidates every earlier Four Forests checkpoint and qualification report.
 
 ## Strategic curriculum
 
@@ -27,7 +29,15 @@ The initial pilot has three evidence layers:
 - Bounded iterative correction rolls the current model out against the canonical expert from both seats, adds expert labels for strategically distinct model-reached mistakes, and fine-tunes at a lower learning rate. Equivalent movement tie-breaks are not treated as errors.
 - The learned checkpoint is evaluated from both seats against fixed scripted profiles and random legal play. Reports include exact and action-family imitation accuracy, strategic construction/spawn accuracy, terminal outcomes, finish reasons, and produced-unit traces.
 
-The pilot checkpoint is never player-qualified. A longer curriculum run is justified only when both teams demonstrate winning paths, paired seat disparity is at most 25 percentage points, draws do not exceed half of competent games, broad action-family accuracy is at least 65%, strategic construction/spawn accuracy is at least 65%, and closed-loop evaluation shows at least one scripted-baseline win without port/submarine production. Failing a map criterion triggers balance investigation; failing a learning criterion triggers curriculum or learner revision before simply extending runtime.
+A pilot checkpoint is never player-qualified by training accuracy alone. A longer curriculum run is justified only when both teams demonstrate winning paths, paired seat disparity is at most 25 percentage points, draws do not exceed half of competent games, broad action-family accuracy is at least 65%, strategic construction/spawn accuracy is at least 65%, and closed-loop evaluation shows at least one scripted-baseline win without port/submarine production. Failing a map criterion triggers balance investigation; failing a learning criterion triggers curriculum or learner revision before simply extending runtime.
+
+## Qualified Phase 3 result
+
+The current qualified identity is preset hash `18d5a763e664f8615873166c39e57b84e5218c438db7aad7502a878ad7626021`, using `standard@2`, `standard@1` content, `standard-observation@1`, `standard-actions@1`, and `four-forests-objective-policy@1`. The selected checkpoint SHA-256 is `75e1ea9587883992886afc3af01fe32427c8da7196d34da63365384ad5790912`.
+
+The final untouched qualification range contained 384 paired scenarios (768 games). The policy won 591 and lost 177 with no draws: 77.0% overall, 81.5% as Orange, and 72.4% as Purple. The 95% win-rate lower bounds were 77.3% and 67.7% by seat. Every game completed the intended Michael buildout and ended by capital destruction; no port or submarine was produced. Separate scores were 95.8%/67.2% as Orange and 88.5%/56.3% as Purple against Zucker/Michael, with the lowest profile-specific 95% lower bound at 49.2%.
+
+The locally generated ONNX bundle passed PyTorch/ONNX Runtime CPU parity and ONNX Runtime Web/WASM parity. Web/WASM policy logits differed by at most `7.63e-6`, candidate permutation difference was zero, and the smoke-selected Four Forests command advanced the authoritative engine. These results qualify the combined checkpoint and deterministic policy for Four Forests; they do not qualify the raw checkpoint by itself or complete player-facing integration.
 
 ## Curriculum decision
 

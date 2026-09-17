@@ -74,6 +74,7 @@ export const trainingRequestSchema = z.discriminatedUnion("operation", [
     }).strict(),
   }).strict(),
   z.object({ ...requestBase, operation: z.literal("snapshot") }).strict(),
+  z.object({ ...requestBase, operation: z.literal("release") }).strict(),
   z.object({ ...requestBase, operation: z.literal("restore"), snapshot: snapshotSchema }).strict(),
   z.object({ ...requestBase, operation: z.literal("replay"), replay: replaySchema }).strict(),
 ]);
@@ -111,6 +112,13 @@ export class TrainingProtocol {
     }
     const request = parsed.data;
     try {
+      if (request.operation === "release") {
+        return {
+          id: request.id,
+          ok: true,
+          result: { released: this.environments.delete(request.environmentId) },
+        };
+      }
       let environment = this.environments.get(request.environmentId);
       if (request.operation === "reset" || request.operation === "restore" || request.operation === "replay") {
         if (!environment) {

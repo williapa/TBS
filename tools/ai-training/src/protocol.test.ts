@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { TrainingProtocol } from "./protocol";
+import { MAX_TRAINING_ENVIRONMENTS, TrainingProtocol } from "./protocol";
 
 describe("TrainingProtocol", () => {
   it("validates requests and keeps named environments alive", () => {
@@ -31,5 +31,31 @@ describe("TrainingProtocol", () => {
       });
     expect(protocol.handle({ id: "missing", environmentId: "other", operation: "observe" }))
       .toMatchObject({ ok: false, error: { code: "operation-failed", message: "unknown training environment" } });
+    expect(protocol.handle({ id: "release", environmentId: "one", operation: "release" }))
+      .toEqual({ id: "release", ok: true, result: { released: true } });
+    expect(protocol.handle({ id: "released", environmentId: "one", operation: "observe" }))
+      .toMatchObject({ ok: false, error: { code: "operation-failed", message: "unknown training environment" } });
+    expect(protocol.handle({ id: "release-again", environmentId: "one", operation: "release" }))
+      .toEqual({ id: "release-again", ok: true, result: { released: false } });
+  });
+
+  it("supports sequential runs longer than the concurrent environment limit", () => {
+    const protocol = new TrainingProtocol();
+    for (let index = 0; index <= MAX_TRAINING_ENVIRONMENTS; index += 1) {
+      const environmentId = `sequential-${index}`;
+      expect(protocol.handle({
+        id: `reset-${index}`,
+        environmentId,
+        operation: "reset",
+        presetId: "four-forests",
+        seed: index,
+        maxCommands: 1,
+      })).toMatchObject({ ok: true });
+      expect(protocol.handle({
+        id: `release-${index}`,
+        environmentId,
+        operation: "release",
+      })).toMatchObject({ ok: true, result: { released: true } });
+    }
   });
 });

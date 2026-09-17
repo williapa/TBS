@@ -2,9 +2,9 @@
 
 ## Status and purpose
 
-The repository has the deterministic tooling needed to run AI experiments against bundled production maps and a bounded Phase 3 curriculum pilot for Four Forests. It does not contain a qualified player model or evidence that unrestricted self-play is ready to produce one.
+The repository has the deterministic tooling needed to run AI experiments against bundled production maps and a release-qualified Phase 3 policy bundle for Four Forests. The qualified policy combines trained weights with a versioned deterministic opening/objective postprocessor. It is not yet wired into the player application, and there is still no evidence that unrestricted self-play is ready to replace the bounded curriculum.
 
-Four Forests is the first training target. Its strategy, paired balance suite, behavior-cloning trajectory pilot, and progression gate are defined in [`ai-four-forests-strategy.md`](./ai-four-forests-strategy.md). Pilot checkpoints remain experimental and unqualified.
+Four Forests is the first training target. Its strategy, paired balance suite, behavior-cloning/correction run, and qualification gate are defined in [`ai-four-forests-strategy.md`](./ai-four-forests-strategy.md). A checkpoint without the matching postprocessor and qualification report remains unqualified.
 
 This document is the authoritative description of the AI training foundation. It deliberately does not preserve results from exploratory simulations because rules, content, or map-balance changes invalidate those results.
 
@@ -88,7 +88,7 @@ The current export fixture uses Money Mountain as a deterministic technical comp
 
 ### Four Forests curriculum pilot
 
-`tools/ai-training/python/four_forests_phase3.py` supplies the first map-specific scripted profiles, paired-seat balance checks, compressed trajectory collection, weighted behavior-cloning loop, bounded iterative correction on model-reached states, and closed-loop evaluation. It deliberately keeps strategy outside the deterministic rules and records terminal values from authoritative engine outcomes. Its recommendation separates balance failures from learning/curriculum failures so a longer run is not used to conceal either one.
+`tools/ai-training/python/four_forests_phase3.py` supplies the first map-specific scripted profiles, paired-seat balance checks, compressed trajectory collection, weighted behavior-cloning loop, bounded iterative correction on model-reached states, checkpoint selection, closed-loop evaluation, and a qualification-grade held-out suite. `export_four_forests_model.py` binds a passing qualification report to the exact checkpoint and live preset identity, exports ONNX, and verifies native runtime parity. Strategy remains outside the deterministic game rules and terminal values still come only from authoritative engine outcomes.
 
 ### Reusable commands
 
@@ -107,9 +107,7 @@ Operational details live in [`tools/ai-training/README.md`](../tools/ai-training
 The repository does not yet provide:
 
 - a PPO, league, or unrestricted self-play learning loop;
-- learned or qualified weights;
-- an opponent pool, league, or checkpoint-selection policy;
-- a qualification-grade balance or playing-strength evaluation suite; or
+- a self-play opponent pool or league;
 - player-facing model loading and inference.
 
 These omissions are the clean stopping boundary. Adding a learner before balance and map strategy are established would automate production of data without establishing that the data teaches useful play.
@@ -133,4 +131,4 @@ Later maps repeat steps 3 through 8 with their own strategy, curriculum, checkpo
 
 The deterministic game engine remains authoritative. The AI tooling is an outer local composition and does not add training concerns to `game-core` or `game-rules`. The observation package contains no tensor runtime, filesystem, browser, network, or randomness dependency. Model inference selects only from a revision-bound legal candidate set, and the normal evaluator still validates the chosen command.
 
-Training artifacts remain development-only until a separate player integration explicitly defines model provenance, compatibility checks, resource limits, failure behavior, and release qualification.
+Generated training and release bundles remain ignored local artifacts. The Four Forests bundle records model provenance, compatibility, and qualification evidence, but remains blocked from player release until the application implements the exact versioned postprocessor, model loading, resource limits, and failure behavior.

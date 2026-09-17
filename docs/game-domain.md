@@ -58,7 +58,7 @@ The game-details panel also provides a unit dictionary for every concrete unit i
 
 ## Money and income
 
-Each team starts with the amount configured by the map. The bundled maps currently configure 1,000 money for Orange and 1,000 for Purple. Construction and production spend the costs defined in the rules registry. At turn transition, income from the next team's on-board buildings is calculated and credited deterministically. Income values are part of unit definitions, so setup, previews, and trusted execution share one source.
+Each team starts with the amount configured by the map. Bundled maps normally configure 1,000 money per team; Four Forests configures 1,000 for Orange and 900 for first-moving Purple as a map-specific balance adjustment. Construction and production spend the costs defined in the rules registry. At turn transition, income from the next team's on-board buildings is calculated and credited deterministically. Income values are part of unit definitions, so setup, previews, and trusted execution share one source.
 
 ## Combat, objects, and status
 

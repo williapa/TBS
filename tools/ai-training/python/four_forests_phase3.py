@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import gzip
 import hashlib
 import json
 import math
 import random
+import shutil
 import subprocess
 import sys
 from collections import Counter, deque
@@ -19,9 +21,11 @@ SERVER = ROOT / "tools" / "ai-training" / "dist" / "server.js"
 DEFAULT_OUTPUT = ROOT / "tools" / "ai-training" / ".tmp" / "ai-phase-3-four-forests"
 MODEL_ARCHITECTURE = "hex-graph-policy-value@1"
 PILOT_VERSION = "four-forests-pilot@1"
+OBJECTIVE_POLICY_VERSION = "four-forests-objective-policy@1"
 TEAM_IDS = ("orange", "purple")
 PROFILES = ("zucker", "michael")
 CANONICAL_TRAINING_PROFILE = "michael"
+OBJECTIVE_ATTACKER_TYPES = ("michaelJackson", "zuckerbird")
 ACTION_TYPES = ("attack", "boost", "construct", "end-turn", "heal", "load", "move", "spawn", "unload")
 ACTION_TYPE_INDEX = {name: index for index, name in enumerate(ACTION_TYPES)}
 HEX_DIRECTIONS = ((1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1))
@@ -29,6 +33,10 @@ HEX_DIRECTIONS = ((1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1))
 
 def _json_line(value: Any) -> str:
     return json.dumps(value, separators=(",", ":"), sort_keys=True)
+
+
+def _repository_path(path: Path) -> Path:
+    return path if path.is_absolute() else ROOT / path
 
 
 class TrainingEnvironmentClient:
@@ -93,6 +101,9 @@ class TrainingEnvironmentClient:
             },
         )
         return transition["observation"]
+
+    def release(self, environment_id: str) -> None:
+        self.request(environment_id, "release")
 
     def close(self) -> None:
         if self._process.stdin:
@@ -161,6 +172,44 @@ def _path_distance(
             visited.add(neighbor)
             queue.append((neighbor, distance + 1))
     return 10_000
+
+
+def _objective_approach_distance(
+    state: dict[str, Any],
+    start: tuple[int, int],
+    target: tuple[int, int],
+    actor_id: str,
+    flying: bool,
+) -> int:
+    """Find a route to an open cell from which the capital can be attacked."""
+    cells = _board_positions(state)
+    attack_positions = {
+        neighbor
+        for q_delta, r_delta in HEX_DIRECTIONS
+        if (neighbor := (target[0] + q_delta, target[1] + r_delta)) in cells
+        and (flying or cells[neighbor]["terrainTypeId"] != "water")
+        and cells[neighbor].get("occupantEntityId") in (None, actor_id)
+    }
+    if not attack_positions:
+        return _path_distance(state, start, target, flying)
+    queue: deque[tuple[tuple[int, int], int]] = deque([(start, 0)])
+    visited = {start}
+    while queue:
+        position, distance = queue.popleft()
+        if position in attack_positions:
+            return distance
+        for q_delta, r_delta in HEX_DIRECTIONS:
+            neighbor = (position[0] + q_delta, position[1] + r_delta)
+            cell = cells.get(neighbor)
+            if not cell or neighbor in visited:
+                continue
+            if not flying and cell["terrainTypeId"] == "water":
+                continue
+            if cell.get("occupantEntityId") not in (None, actor_id):
+                continue
+            visited.add(neighbor)
+            queue.append((neighbor, distance + 1))
+    return _path_distance(state, start, target, flying)
 
 
 UNIT_VALUE = {
@@ -239,6 +288,13 @@ def training_profiles() -> dict[str, str]:
     return {team: CANONICAL_TRAINING_PROFILE for team in TEAM_IDS}
 
 
+def _has_objective_attacker(state: dict[str, Any], team_id: str) -> bool:
+    return any(
+        entity["unitTypeId"] in OBJECTIVE_ATTACKER_TYPES
+        for entity in _team_entities(state, team_id)
+    )
+
+
 def should_collect_correction(
     candidates: Sequence[dict[str, Any]],
     expert_index: int,
@@ -253,6 +309,38 @@ def should_collect_correction(
         or expert_type in ("construct", "spawn")
         or selected_type in ("construct", "spawn")
     )
+
+
+def strategic_correction_reason(
+    observation: dict[str, Any],
+    expert_index: int,
+    selected_index: int,
+) -> str | None:
+    candidates = observation["candidates"]
+    if expert_index == selected_index:
+        return None
+    expert_action = candidates[expert_index]["action"]
+    selected_action = candidates[selected_index]["action"]
+    expert_type = expert_action["type"]
+    selected_type = selected_action["type"]
+    if expert_type != selected_type:
+        return "action-family"
+    if expert_type in ("construct", "spawn"):
+        return "production-choice"
+    if expert_type not in ("attack", "move"):
+        return None
+    expert_score = score_four_forests_candidate(
+        observation, candidates[expert_index], CANONICAL_TRAINING_PROFILE
+    )
+    selected_score = score_four_forests_candidate(
+        observation, candidates[selected_index], CANONICAL_TRAINING_PROFILE
+    )
+    if expert_score - selected_score < 100.0:
+        return None
+    if expert_type == "attack":
+        defender = observation["state"]["entities"].get(expert_action["defenderId"])
+        return "capital-attack" if defender and defender["unitTypeId"] == "capital" else "attack-target"
+    return "objective-move"
 
 
 def _construction_score(
@@ -320,11 +408,20 @@ def score_four_forests_candidate(
         if damage <= 0:
             return -1_000.0
         defender_type = defender["unitTypeId"]
+        if defender_type == "capital":
+            return 108_000.0 + damage * 20.0
+        if buildout_ready and attacker["unitTypeId"] in (
+            "leader", "michaelJackson", "zuckerbird"
+        ):
+            destination = _coord(action["destination"])
+            distance = _path_distance(state, destination, enemy_capital, flying=False)
+            score = 5_000.0 + damage * 10.0 - distance * 300.0
+            if damage >= defender_health:
+                score += 2_000.0
+            return score
         score = 8_000.0 + damage * 20.0 + UNIT_VALUE.get(defender_type, 200)
         if damage >= defender_health:
             score += 5_000.0
-        if defender_type == "capital":
-            score += 100_000.0
         return score
 
     if action_type == "construct":
@@ -355,7 +452,9 @@ def score_four_forests_candidate(
         unit_type = entity["unitTypeId"]
         destination = _coord(action["destination"])
         if unit_type in ("leader", "michaelJackson", "zuckerbird") and buildout_ready:
-            distance = _path_distance(state, destination, enemy_capital, flying=False)
+            distance = _objective_approach_distance(
+                state, destination, enemy_capital, action["actorId"], flying=False
+            )
             unit_priority = {"zuckerbird": 900.0, "michaelJackson": 800.0, "leader": 400.0}[unit_type]
             opponents = _team_entities(state, opponent_team)
             danger = sum(
@@ -366,8 +465,13 @@ def score_four_forests_candidate(
                     3 if opponent["unitTypeId"] == "soldier" else 2
                 )
             )
-            exposure_penalty = danger * (1_500.0 if unit_type == "zuckerbird" else 300.0)
-            return 5_000.0 + unit_priority - distance * 120.0 - exposure_penalty
+            exposure_per_threat = {
+                "zuckerbird": 200.0,
+                "michaelJackson": 50.0,
+                "leader": 100.0,
+            }[unit_type]
+            exposure_penalty = danger * exposure_per_threat
+            return 5_000.0 + unit_priority - distance * 300.0 - exposure_penalty
         if unit_type == "soldier":
             enemies = _team_entities(state, opponent_team)
             threatening = [
@@ -449,6 +553,8 @@ def play_episode(
     max_commands: int = 2_000,
 ) -> tuple[EpisodeSummary, list[dict[str, Any]]]:
     observation = client.reset(episode_id, seed, max_commands)
+    if model_policy is not None:
+        model_policy.reset_episode()
     action_counts: Counter[str] = Counter()
     produced_counts = {team: Counter() for team in TEAM_IDS}
     capital_attacks: Counter[str] = Counter()
@@ -467,7 +573,7 @@ def play_episode(
                 raise RuntimeError(
                     f"{error}; orphan entities: {_orphan_entities(observation['state'])}"
                 ) from error
-            index = model_policy.choose(encoding)
+            index = model_policy.choose(encoding, observation)
         elif policy == "random":
             index = rngs[actor].randrange(len(observation["candidates"]))
         else:
@@ -492,9 +598,11 @@ def play_episode(
                 "step": observation["commandCount"],
                 "actorTeamId": actor,
                 "actionType": action_type,
+                "objectiveAttackerReady": _has_objective_attacker(observation["state"], actor),
                 "candidateActionTypes": [candidate["action"]["type"] for candidate in observation["candidates"]],
                 "targetIndex": index,
                 "encoding": client.encode(episode_id),
+                "sampleWeight": 1.0,
             })
         observation = client.step(episode_id, observation, index)
 
@@ -515,6 +623,7 @@ def play_episode(
         capital_attacks=dict(capital_attacks),
         soldier_moves=dict(soldier_moves),
     )
+    client.release(episode_id)
     return summary, samples
 
 
@@ -623,36 +732,48 @@ def collect_model_corrections(
     pair_count: int,
     seed: int,
     output_path: Path,
+    opponent_profiles: Sequence[str] = PROFILES,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     policy = TorchPolicy(model)
     samples: list[dict[str, Any]] = []
     episodes: list[dict[str, Any]] = []
     for pair in range(pair_count):
         scenario_seed = seed + pair
+        opponent_profile = opponent_profiles[pair % len(opponent_profiles)]
         for model_team in TEAM_IDS:
             episode_id = f"correction-{pair}-{model_team}"
             observation = client.reset(episode_id, scenario_seed, 2_000)
+            policy.reset_episode()
             expert_rng = random.Random(scenario_seed * 2 + 401)
             episode_samples: list[dict[str, Any]] = []
             while observation["status"] == "running":
                 actor = observation["actorTeamId"]
+                actor_profile = (
+                    CANONICAL_TRAINING_PROFILE if actor == model_team else opponent_profile
+                )
                 expert_index = choose_scripted_candidate(
-                    observation, CANONICAL_TRAINING_PROFILE, expert_rng
+                    observation, actor_profile, expert_rng
                 )
                 if actor == model_team:
                     encoding = client.encode(episode_id)
-                    selected_index = policy.choose(encoding)
+                    selected_index = policy.choose(encoding, observation)
                     expert_type = observation["candidates"][expert_index]["action"]["type"]
                     selected_type = observation["candidates"][selected_index]["action"]["type"]
-                    if should_collect_correction(
-                        observation["candidates"], expert_index, selected_index
-                    ):
+                    reason = strategic_correction_reason(
+                        observation, expert_index, selected_index
+                    )
+                    if reason:
+                        objective_attacker_ready = _has_objective_attacker(
+                            observation["state"], actor
+                        )
                         episode_samples.append({
                             "episodeId": episode_id,
                             "step": observation["commandCount"],
                             "actorTeamId": actor,
                             "actionType": expert_type,
                             "modelActionType": selected_type,
+                            "correctionReason": reason,
+                            "objectiveAttackerReady": objective_attacker_ready,
                             "candidateActionTypes": [
                                 candidate["action"]["type"]
                                 for candidate in observation["candidates"]
@@ -660,25 +781,50 @@ def collect_model_corrections(
                             "targetIndex": expert_index,
                             "encoding": encoding,
                             "split": "train",
+                            "sampleWeight": 1.0,
                         })
                 else:
                     selected_index = expert_index
                 observation = client.step(episode_id, observation, selected_index)
             winner = _winner(observation)
+            model_result = (
+                "draw" if winner is None else ("win" if winner == model_team else "loss")
+            )
+            outcome_weight = {"draw": 3.0, "loss": 2.0, "win": 0.5}[model_result]
             for sample in episode_samples:
                 sample["valueTarget"] = (
                     0 if winner is None else (1 if sample["actorTeamId"] == winner else -1)
                 )
+                aggression_weight = (
+                    2.0
+                    if sample["objectiveAttackerReady"]
+                    and sample["correctionReason"] in (
+                        "action-family", "attack-target", "capital-attack", "objective-move"
+                    )
+                    else 1.0
+                )
+                sample["sampleWeight"] = outcome_weight * aggression_weight
             samples.extend(episode_samples)
             episodes.append({
                 "episodeId": episode_id,
                 "modelTeamId": model_team,
+                "opponentProfile": opponent_profile,
                 "winner": winner,
+                "modelResult": model_result,
                 "finishReason": _finish_reason(observation),
                 "turns": observation["state"]["turn"]["number"],
                 "commands": observation["commandCount"],
                 "correctionSamples": len(episode_samples),
             })
+            client.release(episode_id)
+    raw_weight_by_seat = {
+        team: sum(sample["sampleWeight"] for sample in samples if sample["actorTeamId"] == team)
+        for team in TEAM_IDS
+    }
+    if all(raw_weight_by_seat.values()):
+        target_weight = sum(raw_weight_by_seat.values()) / len(TEAM_IDS)
+        for sample in samples:
+            sample["sampleWeight"] *= target_weight / raw_weight_by_seat[sample["actorTeamId"]]
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with gzip.open(output_path, "wt", encoding="utf-8") as target:
         for sample in samples:
@@ -687,10 +833,64 @@ def collect_model_corrections(
         "correctionFormat": "four-forests-corrections@1",
         "canonicalTrainingProfile": CANONICAL_TRAINING_PROFILE,
         "sampleCount": len(samples),
+        "sampleCountBySeat": dict(Counter(sample["actorTeamId"] for sample in samples)),
+        "weightedSamplesBySeat": {
+            team: sum(
+                sample["sampleWeight"] for sample in samples if sample["actorTeamId"] == team
+            )
+            for team in TEAM_IDS
+        },
+        "correctionReasons": dict(Counter(sample["correctionReason"] for sample in samples)),
         "expertActionCounts": dict(Counter(sample["actionType"] for sample in samples)),
         "modelActionCounts": dict(Counter(sample["modelActionType"] for sample in samples)),
         "sha256": hashlib.sha256(output_path.read_bytes()).hexdigest(),
         "episodes": episodes,
+    }
+
+
+def collect_objective_tactical_samples(
+    client: TrainingEnvironmentClient,
+    episode_count: int,
+    seed: int,
+    output_path: Path,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    samples: list[dict[str, Any]] = []
+    episodes: list[EpisodeSummary] = []
+    for episode_index in range(episode_count):
+        scenario_seed = seed + episode_index
+        profile = PROFILES[episode_index % len(PROFILES)]
+        episode, episode_samples = play_episode(
+            client,
+            f"objective-tactical-{episode_index}",
+            scenario_seed,
+            {team: profile for team in TEAM_IDS},
+            {
+                "orange": random.Random(scenario_seed * 2 + 501),
+                "purple": random.Random(scenario_seed * 2 + 502),
+            },
+            collect_samples=True,
+        )
+        episodes.append(episode)
+        if episode.finish_reason != "capital":
+            continue
+        for sample in episode_samples:
+            if not sample["objectiveAttackerReady"] or sample["actionType"] not in ("attack", "move"):
+                continue
+            sample["split"] = "train"
+            sample["sampleWeight"] = 2.5
+            sample["tacticalProfile"] = profile
+            samples.append(sample)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with gzip.open(output_path, "wt", encoding="utf-8") as target:
+        for sample in samples:
+            target.write(_json_line(sample) + "\n")
+    return samples, {
+        "trajectoryFormat": "four-forests-objective-tactics@1",
+        "sampleCount": len(samples),
+        "profiles": dict(Counter(sample["tacticalProfile"] for sample in samples)),
+        "actionCounts": dict(Counter(sample["actionType"] for sample in samples)),
+        "sha256": hashlib.sha256(output_path.read_bytes()).hexdigest(),
+        "episodes": _aggregate_episodes(episodes),
     }
 
 
@@ -714,7 +914,9 @@ def _pad_first_axis(values: list[Any], size: int, fill: Any) -> list[Any]:
     return values + [fill for _ in range(size - len(values))]
 
 
-def collate_samples(batch: Sequence[dict[str, Any]]) -> tuple[tuple[Any, ...], Any, Any, Any]:
+def collate_samples(
+    batch: Sequence[dict[str, Any]],
+) -> tuple[tuple[Any, ...], Any, Any, Any, Any]:
     torch, _, _ = _torch_modules()
     tensors = [sample["encoding"]["tensors"] for sample in batch]
     maximum_entities = max(len(value["entityFeatures"]) for value in tensors)
@@ -751,7 +953,10 @@ def collate_samples(batch: Sequence[dict[str, Any]]) -> tuple[tuple[Any, ...], A
     family_targets = torch.tensor(
         [ACTION_TYPE_INDEX[sample["actionType"]] for sample in batch], dtype=torch.int64
     )
-    return inputs, targets, value_targets, family_targets
+    sample_weights = torch.tensor(
+        [sample.get("sampleWeight", 1.0) for sample in batch], dtype=torch.float32
+    )
+    return inputs, targets, value_targets, family_targets, sample_weights
 
 
 def _classification_metrics(model: Any, samples: Sequence[dict[str, Any]], batch_size: int) -> dict[str, float]:
@@ -766,7 +971,7 @@ def _classification_metrics(model: Any, samples: Sequence[dict[str, Any]], batch
     squared_error = 0.0
     model.eval()
     with torch.no_grad():
-        for batch, (inputs, targets, value_targets, _) in zip(loader.batch_sampler, loader):
+        for batch, (inputs, targets, value_targets, _, _) in zip(loader.batch_sampler, loader):
             logits, values = model(*inputs)
             predictions = logits.argmax(dim=1)
             correct += int((predictions == targets).sum())
@@ -840,11 +1045,13 @@ def train_model(
         total_policy_loss = 0.0
         total_value_loss = 0.0
         batches = 0
-        for inputs, targets, value_targets, family_targets in loader:
+        for inputs, targets, value_targets, family_targets, sample_weights in loader:
             logits, values = model(*inputs)
             policy_losses = nn.functional.cross_entropy(logits, targets, reduction="none")
-            policy_loss = (policy_losses * action_weights[family_targets]).mean()
-            value_loss = nn.functional.mse_loss(values, value_targets)
+            effective_weights = action_weights[family_targets] * sample_weights
+            policy_loss = (policy_losses * effective_weights).sum() / effective_weights.sum()
+            value_losses = nn.functional.mse_loss(values, value_targets, reduction="none")
+            value_loss = (value_losses * sample_weights).sum() / sample_weights.sum()
             loss = policy_loss + 0.25 * value_loss
             optimizer.zero_grad()
             loss.backward()
@@ -888,17 +1095,94 @@ def train_model(
     }
 
 
+def select_objective_candidate(
+    observation: dict[str, Any],
+    ranked_indices: Sequence[int],
+    logits: Sequence[float],
+    recent_positions: dict[str, set[tuple[int, int]]] | None = None,
+) -> int:
+    if not _has_objective_attacker(observation["state"], observation["actorTeamId"]):
+        return ranked_indices[0]
+    objective_choices = []
+    for index in ranked_indices:
+        action = observation["candidates"][index]["action"]
+        action_type = action["type"]
+        if action_type not in ("attack", "move"):
+            continue
+        actor = observation["state"]["entities"].get(action.get("actorId", ""))
+        if not actor or actor["unitTypeId"] not in OBJECTIVE_ATTACKER_TYPES:
+            continue
+        score = score_four_forests_candidate(
+            observation, observation["candidates"][index], CANONICAL_TRAINING_PROFILE
+        )
+        if score > 0:
+            if action_type == "move" and _coord(action["destination"]) in (
+                recent_positions or {}
+            ).get(action["actorId"], set()):
+                score -= 10_000.0
+            objective_choices.append((score, logits[index], index))
+    return max(objective_choices)[2] if objective_choices else ranked_indices[0]
+
+
+def select_opening_candidate(
+    observation: dict[str, Any],
+    logits: Sequence[float],
+) -> int | None:
+    choices = []
+    for index, candidate in enumerate(observation["candidates"]):
+        if candidate["action"]["type"] not in ("construct", "spawn"):
+            continue
+        score = score_four_forests_candidate(
+            observation, candidate, CANONICAL_TRAINING_PROFILE
+        )
+        if score >= 20_000.0:
+            choices.append((score, logits[index], index))
+    return max(choices)[2] if choices else None
+
+
 class TorchPolicy:
-    def __init__(self, model: Any) -> None:
+    def __init__(self, model: Any, objective_top_k: int = 1) -> None:
         self.model = model.eval()
         self.torch, _, _ = _torch_modules()
+        self.objective_top_k = objective_top_k
+        self.recent_positions: dict[str, deque[tuple[int, int]]] = {}
 
-    def choose(self, encoding: dict[str, Any]) -> int:
+    def reset_episode(self) -> None:
+        self.recent_positions.clear()
+
+    def choose(self, encoding: dict[str, Any], observation: dict[str, Any] | None = None) -> int:
         sample = {"encoding": encoding, "targetIndex": 0, "valueTarget": 0, "actionType": "end-turn"}
-        inputs, _, _, _ = collate_samples([sample])
+        inputs, _, _, _, _ = collate_samples([sample])
         with self.torch.no_grad():
             logits, _ = self.model(*inputs)
-        return int(logits[0].argmax())
+        ranked = logits[0].topk(min(self.objective_top_k, logits.shape[1])).indices.tolist()
+        if observation is None or self.objective_top_k == 1:
+            return int(ranked[0])
+        logit_values = logits[0].tolist()
+        opening_index = select_opening_candidate(observation, logit_values)
+        if opening_index is not None:
+            return int(opening_index)
+        objective_indices = []
+        for index, candidate in enumerate(observation["candidates"]):
+            action = candidate["action"]
+            if action["type"] not in ("attack", "move"):
+                continue
+            actor = observation["state"]["entities"].get(action.get("actorId", ""))
+            if actor and actor["unitTypeId"] in OBJECTIVE_ATTACKER_TYPES:
+                objective_indices.append(index)
+        rerank_indices = list(dict.fromkeys(ranked + objective_indices))
+        selected = select_objective_candidate(
+            observation,
+            rerank_indices,
+            logit_values,
+            {entity_id: set(positions) for entity_id, positions in self.recent_positions.items()},
+        )
+        action = observation["candidates"][selected]["action"]
+        actor = observation["state"]["entities"].get(action.get("actorId", ""))
+        if action["type"] in ("attack", "move") and actor and actor.get("position"):
+            positions = self.recent_positions.setdefault(actor["id"], deque(maxlen=64))
+            positions.append(_coord(actor["position"]))
+        return int(selected)
 
 
 def load_model(checkpoint_path: Path, encoding: dict[str, Any], provenance: dict[str, Any]) -> Any:
@@ -922,18 +1206,29 @@ def load_model(checkpoint_path: Path, encoding: dict[str, Any], provenance: dict
     return model.eval()
 
 
+def load_trajectory_samples(path: Path) -> list[dict[str, Any]]:
+    with gzip.open(path, "rt", encoding="utf-8") as source:
+        return [json.loads(line) for line in source if line.strip()]
+
+
 def evaluate_model(
     client: TrainingEnvironmentClient,
     model: Any,
     pairs: int,
     seed: int,
     opponent_policy: str,
+    objective_top_k: int = 1,
+    scripted_profiles: Sequence[str] = PROFILES,
 ) -> dict[str, Any]:
     episodes: list[EpisodeSummary] = []
-    policy = TorchPolicy(model)
+    policy = TorchPolicy(model, objective_top_k)
     for pair in range(pairs):
         scenario_seed = seed + pair
-        scripted_profile = PROFILES[pair % len(PROFILES)] if opponent_policy == "scripted" else "random"
+        scripted_profile = (
+            scripted_profiles[pair % len(scripted_profiles)]
+            if opponent_policy == "scripted"
+            else "random"
+        )
         for model_team in TEAM_IDS:
             policies = {
                 "orange": "model" if model_team == "orange" else scripted_profile,
@@ -962,7 +1257,165 @@ def evaluate_model(
         by_seat[model_team][result] += 1
     aggregate["modelOutcomes"] = dict(model_outcomes)
     aggregate["modelOutcomesBySeat"] = {team: dict(values) for team, values in by_seat.items()}
+    aggregate["inference"] = {
+        "objectivePolicyVersion": OBJECTIVE_POLICY_VERSION,
+        "objectiveTopK": objective_top_k,
+        "canonicalOpeningGuardrail": objective_top_k > 1,
+        "considersAllLegalObjectiveAttackerActions": objective_top_k > 1,
+    }
     return aggregate
+
+
+def _outcome_score(outcomes: dict[str, int]) -> float:
+    games = sum(outcomes.values())
+    return (outcomes.get("win", 0) + 0.5 * outcomes.get("draw", 0)) / max(1, games)
+
+
+def evaluation_quality(evaluation: dict[str, Any]) -> dict[str, Any]:
+    outcomes = evaluation["modelOutcomes"]
+    games = sum(outcomes.values())
+    seat_scores = {
+        team: _outcome_score(evaluation["modelOutcomesBySeat"].get(team, {}))
+        for team in TEAM_IDS
+    }
+    return {
+        "score": _outcome_score(outcomes),
+        "minimumSeatScore": min(seat_scores.values()),
+        "seatScores": seat_scores,
+        "winRate": outcomes.get("win", 0) / max(1, games),
+        "drawRate": outcomes.get("draw", 0) / max(1, games),
+        "selectionKey": [
+            min(seat_scores.values()),
+            _outcome_score(outcomes),
+            outcomes.get("win", 0) / max(1, games),
+            -outcomes.get("draw", 0) / max(1, games),
+        ],
+    }
+
+
+def release_readiness(evaluation: dict[str, Any]) -> dict[str, Any]:
+    quality = evaluation_quality(evaluation)
+    blockers: list[str] = []
+    if quality["drawRate"] > 0.25:
+        blockers.append("scripted draw rate exceeds the provisional 25% release gate")
+    for team, score in quality["seatScores"].items():
+        if score < 0.5:
+            blockers.append(f"{team} scripted score is below the provisional 50% seat floor")
+    return {
+        "decision": "needs-more-training" if blockers else "ready-for-expanded-qualification",
+        "blockers": blockers,
+        **quality,
+    }
+
+
+def _wilson_lower_bound(successes: int, trials: int, z_score: float = 1.96) -> float:
+    if trials == 0:
+        return 0.0
+    proportion = successes / trials
+    z_squared = z_score * z_score
+    denominator = 1.0 + z_squared / trials
+    center = proportion + z_squared / (2.0 * trials)
+    margin = z_score * math.sqrt(
+        (proportion * (1.0 - proportion) + z_squared / (4.0 * trials)) / trials
+    )
+    return (center - margin) / denominator
+
+
+def qualification_readiness(
+    evaluation: dict[str, Any],
+    minimum_pairs: int = 96,
+) -> dict[str, Any]:
+    quality = evaluation_quality(evaluation)
+    games = evaluation["games"]
+    expected_games = minimum_pairs * len(TEAM_IDS)
+    blockers: list[str] = []
+    if games < expected_games:
+        blockers.append(
+            f"qualification requires at least {expected_games} paired-seat games"
+        )
+    if not evaluation.get("inference", {}).get(
+        "considersAllLegalObjectiveAttackerActions", False
+    ):
+        blockers.append("the qualified policy must include the complete objective-action guardrail")
+    if not evaluation.get("inference", {}).get("canonicalOpeningGuardrail", False):
+        blockers.append("the qualified policy must include the canonical opening guardrail")
+    if quality["drawRate"] > 0.10:
+        blockers.append("scripted draw rate exceeds the 10% qualification ceiling")
+    if quality["score"] < 0.60:
+        blockers.append("scripted score is below the 60% qualification floor")
+    seat_win_lower_bounds: dict[str, float] = {}
+    for team in TEAM_IDS:
+        outcomes = evaluation["modelOutcomesBySeat"].get(team, {})
+        trials = sum(outcomes.values())
+        lower_bound = _wilson_lower_bound(outcomes.get("win", 0), trials)
+        seat_win_lower_bounds[team] = lower_bound
+        if quality["seatScores"][team] < 0.55:
+            blockers.append(f"{team} scripted score is below the 55% qualification floor")
+        if lower_bound < 0.50:
+            blockers.append(
+                f"{team} win-rate 95% confidence lower bound is below 50%"
+            )
+    capital_finishes = evaluation.get("finishReasons", {}).get("capital", 0)
+    capital_finish_rate = capital_finishes / max(1, games)
+    if capital_finish_rate < 0.90:
+        blockers.append("capital destruction accounts for less than 90% of qualification games")
+    completed_buildouts = 0
+    forbidden_production = 0
+    profile_outcomes = {
+        team: {profile: Counter() for profile in PROFILES}
+        for team in TEAM_IDS
+    }
+    for episode in evaluation.get("episodes", []):
+        model_team = "orange" if episode["orange_policy"] == "model" else "purple"
+        opponent_profile = (
+            episode["purple_policy"] if model_team == "orange" else episode["orange_policy"]
+        )
+        if opponent_profile in PROFILES:
+            winner = episode.get("winner")
+            result = "draw" if winner is None else ("win" if winner == model_team else "loss")
+            profile_outcomes[model_team][opponent_profile][result] += 1
+        production = episode["produced_counts"].get(model_team, {})
+        completed_buildouts += int(production.get("michaelJackson", 0) > 0)
+        forbidden_production += production.get("port", 0) + production.get("sub", 0)
+    buildout_rate = completed_buildouts / max(1, games)
+    if buildout_rate < 0.95:
+        blockers.append("the intended Michael Jackson buildout completed in less than 95% of games")
+    if forbidden_production > 0:
+        blockers.append("the model produced a port or submarine during qualification")
+    profile_scores: dict[str, dict[str, float]] = {team: {} for team in TEAM_IDS}
+    profile_win_lower_bounds: dict[str, dict[str, float]] = {team: {} for team in TEAM_IDS}
+    minimum_profile_games = minimum_pairs // len(PROFILES)
+    for team in TEAM_IDS:
+        for profile in PROFILES:
+            outcomes = profile_outcomes[team][profile]
+            trials = sum(outcomes.values())
+            score = _outcome_score(outcomes)
+            lower_bound = _wilson_lower_bound(outcomes.get("win", 0), trials)
+            profile_scores[team][profile] = score
+            profile_win_lower_bounds[team][profile] = lower_bound
+            if trials < minimum_profile_games:
+                blockers.append(
+                    f"{team} versus {profile} has fewer than {minimum_profile_games} games"
+                )
+            if score < 0.50:
+                blockers.append(f"{team} versus {profile} score is below 50%")
+            if lower_bound < 0.40:
+                blockers.append(
+                    f"{team} versus {profile} win-rate 95% confidence lower bound is below 40%"
+                )
+    return {
+        "decision": "failed" if blockers else "passed",
+        "blockers": blockers,
+        **quality,
+        "minimumPairs": minimum_pairs,
+        "games": games,
+        "seatWinRateWilsonLowerBounds95": seat_win_lower_bounds,
+        "capitalFinishRate": capital_finish_rate,
+        "buildoutCompletionRate": buildout_rate,
+        "forbiddenProductionCount": forbidden_production,
+        "profileScores": profile_scores,
+        "profileWinRateWilsonLowerBounds95": profile_win_lower_bounds,
+    }
 
 
 def _recommendation(report: dict[str, Any]) -> dict[str, Any]:
@@ -1030,7 +1483,11 @@ def _recommendation(report: dict[str, Any]) -> dict[str, Any]:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run the Four Forests Phase 3 training pilot")
-    parser.add_argument("--mode", choices=("balance", "evaluate", "pilot"), default="pilot")
+    parser.add_argument(
+        "--mode",
+        choices=("balance", "continue", "evaluate", "finalize", "pilot", "qualify"),
+        default="pilot",
+    )
     parser.add_argument("--checkpoint", type=Path)
     parser.add_argument("--output-directory", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--seed", type=int, default=20260915)
@@ -1044,6 +1501,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--correction-epochs", type=int, default=4)
     parser.add_argument("--correction-iterations", type=int, default=2)
     parser.add_argument("--correction-learning-rate", type=float, default=1e-4)
+    parser.add_argument("--selection-pairs", type=int, default=4)
+    parser.add_argument("--tactical-episodes", type=int, default=8)
+    parser.add_argument("--objective-top-k", type=int, default=1)
+    parser.add_argument("--qualification-pairs", type=int, default=96)
+    parser.add_argument(
+        "--correction-opponent-profile",
+        choices=("mixed", *PROFILES),
+        default="mixed",
+    )
     return parser.parse_args()
 
 
@@ -1058,9 +1524,15 @@ def main() -> None:
         or args.correction_epochs < 1
         or args.correction_iterations < 1
         or args.correction_learning_rate <= 0
+        or args.selection_pairs < 1
+        or args.tactical_episodes < 1
+        or args.objective_top_k < 1
+        or args.qualification_pairs < 1
     ):
         raise ValueError("pilot counts must be positive and collection must include at least two episodes")
-    args.output_directory.mkdir(parents=True, exist_ok=True)
+    output_directory = _repository_path(args.output_directory)
+    checkpoint_path = _repository_path(args.checkpoint) if args.checkpoint else None
+    output_directory.mkdir(parents=True, exist_ok=True)
     with TrainingEnvironmentClient() as client:
         identity = client.reset("identity", args.seed, 1)
         identity_encoding = client.encode("identity")
@@ -1075,25 +1547,295 @@ def main() -> None:
             "candidateEncodingVersion": identity["candidateVersion"],
             "curriculumProfile": CANONICAL_TRAINING_PROFILE,
         }
-        if args.mode == "evaluate":
-            if args.checkpoint is None:
-                raise ValueError("evaluate mode requires --checkpoint")
-            model = load_model(args.checkpoint, identity_encoding, provenance)
-            evaluation = {
-                "scripted": evaluate_model(
-                    client, model, args.evaluation_pairs, args.seed + 200_000, "scripted"
-                ),
-                "random": evaluate_model(
-                    client, model, args.evaluation_pairs, args.seed + 300_000, "random"
-                ),
-            }
-            report_path = args.output_directory / "evaluation-report.json"
-            report_path.write_text(json.dumps({
+        if args.mode == "qualify":
+            if checkpoint_path is None:
+                raise ValueError("qualify mode requires --checkpoint")
+            model = load_model(checkpoint_path, identity_encoding, provenance)
+            evaluation = evaluate_model(
+                client,
+                model,
+                args.qualification_pairs,
+                args.seed + 700_000,
+                "scripted",
+                args.objective_top_k,
+            )
+            readiness = qualification_readiness(evaluation, args.qualification_pairs)
+            report = {
+                "qualificationVersion": "four-forests-qualification@1",
                 "pilotVersion": PILOT_VERSION,
                 "provenance": provenance,
+                "checkpoint": {
+                    "path": str(checkpoint_path),
+                    "sha256": hashlib.sha256(checkpoint_path.read_bytes()).hexdigest(),
+                },
+                "configuration": {
+                    "seed": args.seed,
+                    "evaluationSeed": args.seed + 700_000,
+                    "pairs": args.qualification_pairs,
+                    "objectiveTopK": args.objective_top_k,
+                    "objectivePolicyVersion": OBJECTIVE_POLICY_VERSION,
+                },
                 "evaluation": evaluation,
-            }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-            print(json.dumps({"report": str(report_path)}))
+                "qualification": readiness,
+            }
+            report_path = output_directory / "qualification-report.json"
+            report_path.write_text(
+                json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+            )
+            print(json.dumps({
+                "report": str(report_path),
+                "qualification": readiness,
+            }))
+            return
+        if args.mode == "continue":
+            if checkpoint_path is None:
+                raise ValueError("continue mode requires --checkpoint")
+            source_directory = checkpoint_path.parent
+            trajectory_path = source_directory / "trajectories.jsonl.gz"
+            if not trajectory_path.exists():
+                raise ValueError(f"continue mode requires saved trajectories: {trajectory_path}")
+            source_samples = load_trajectory_samples(trajectory_path)
+            source_corrections = sorted(source_directory.glob("corrections-*.jsonl.gz"))
+            for correction_path in source_corrections:
+                source_samples.extend(load_trajectory_samples(correction_path))
+            validation_samples = [
+                sample for sample in source_samples if sample["split"] == "validation"
+            ]
+            if not validation_samples:
+                raise ValueError("continue mode requires validation trajectory samples")
+            model = load_model(checkpoint_path, identity_encoding, provenance)
+            tactical_samples, tactical_metadata = collect_objective_tactical_samples(
+                client,
+                args.tactical_episodes,
+                args.seed + 350_000,
+                output_directory / "objective-tactics.jsonl.gz",
+            )
+            combined_samples = list(source_samples) + tactical_samples
+            correction_profiles = (
+                PROFILES
+                if args.correction_opponent_profile == "mixed"
+                else (args.correction_opponent_profile,)
+            )
+            selection_seed = args.seed + 400_000
+            baseline_selection = evaluate_model(
+                client,
+                model,
+                args.selection_pairs,
+                selection_seed,
+                "scripted",
+                args.objective_top_k,
+                correction_profiles,
+            )
+            best_quality = evaluation_quality(baseline_selection)
+            best_state = copy.deepcopy(model.state_dict())
+            best_checkpoint_path = checkpoint_path
+            best_iteration = 0
+            iterations = []
+            for iteration in range(args.correction_iterations):
+                correction_samples, correction_metadata = collect_model_corrections(
+                    client,
+                    model,
+                    args.correction_pairs,
+                    args.seed + 450_000 + iteration * 10_000,
+                    output_directory / f"aggression-corrections-{iteration + 1}.jsonl.gz",
+                    correction_profiles,
+                )
+                combined_samples.extend(correction_samples)
+                candidate_checkpoint = output_directory / f"candidate-{iteration + 1}.pt"
+                model, training = train_model(
+                    combined_samples,
+                    args.correction_epochs,
+                    args.batch_size,
+                    args.correction_learning_rate,
+                    args.seed + iteration + 1,
+                    candidate_checkpoint,
+                    provenance,
+                    model,
+                )
+                selection = evaluate_model(
+                    client,
+                    model,
+                    args.selection_pairs,
+                    selection_seed,
+                    "scripted",
+                    args.objective_top_k,
+                    correction_profiles,
+                )
+                quality = evaluation_quality(selection)
+                selected = quality["selectionKey"] > best_quality["selectionKey"]
+                if selected:
+                    best_quality = quality
+                    best_state = copy.deepcopy(model.state_dict())
+                    best_checkpoint_path = candidate_checkpoint
+                    best_iteration = iteration + 1
+                else:
+                    model.load_state_dict(best_state)
+                iterations.append({
+                    "iteration": iteration + 1,
+                    "collection": correction_metadata,
+                    "training": training,
+                    "selectionEvaluation": selection,
+                    "selectionQuality": quality,
+                    "selectedAsBest": selected,
+                })
+            final_checkpoint_path = output_directory / "checkpoint.pt"
+            if best_checkpoint_path.resolve() != final_checkpoint_path.resolve():
+                shutil.copyfile(best_checkpoint_path, final_checkpoint_path)
+            model = load_model(final_checkpoint_path, identity_encoding, provenance)
+            evaluation = {
+                "scripted": evaluate_model(
+                    client,
+                    model,
+                    args.evaluation_pairs,
+                    args.seed + 500_000,
+                    "scripted",
+                    args.objective_top_k,
+                ),
+                "random": evaluate_model(
+                    client,
+                    model,
+                    args.evaluation_pairs,
+                    args.seed + 600_000,
+                    "random",
+                    args.objective_top_k,
+                ),
+            }
+            balance = run_balance_suite(client, args.balance_pairs, args.seed)
+            report = {
+                "pilotVersion": PILOT_VERSION,
+                "presetId": "four-forests",
+                "configuration": {
+                    "mode": "continue",
+                    "seed": args.seed,
+                    "balancePairs": args.balance_pairs,
+                    "batchSize": args.batch_size,
+                    "evaluationPairs": args.evaluation_pairs,
+                    "correctionPairs": args.correction_pairs,
+                    "correctionEpochs": args.correction_epochs,
+                    "correctionIterations": args.correction_iterations,
+                    "correctionLearningRate": args.correction_learning_rate,
+                    "selectionPairs": args.selection_pairs,
+                    "tacticalEpisodes": args.tactical_episodes,
+                    "objectiveTopK": args.objective_top_k,
+                    "correctionOpponentProfile": args.correction_opponent_profile,
+                },
+                "provenance": provenance,
+                "balance": balance,
+                "source": {
+                    "checkpoint": str(checkpoint_path),
+                    "checkpointSha256": hashlib.sha256(checkpoint_path.read_bytes()).hexdigest(),
+                    "trajectorySamples": len(source_samples),
+                    "correctionFiles": [str(path) for path in source_corrections],
+                },
+                "objectiveTactics": tactical_metadata,
+                "selection": {
+                    "seed": selection_seed,
+                    "baseline": baseline_selection,
+                    "baselineQuality": evaluation_quality(baseline_selection),
+                    "bestIteration": best_iteration,
+                    "bestQuality": best_quality,
+                },
+                "corrections": {"iterations": iterations},
+                "training": {
+                    "checkpoint": str(final_checkpoint_path),
+                    "checkpointSha256": hashlib.sha256(
+                        final_checkpoint_path.read_bytes()
+                    ).hexdigest(),
+                    "validation": _classification_metrics(
+                        model, validation_samples, args.batch_size
+                    ),
+                },
+                "evaluation": evaluation,
+            }
+            report["recommendation"] = _recommendation(report)
+            report["releaseReadiness"] = release_readiness(evaluation["scripted"])
+            report_path = output_directory / "report.json"
+            report_path.write_text(
+                json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+            )
+            print(json.dumps({
+                "report": str(report_path),
+                "bestIteration": best_iteration,
+                "releaseReadiness": report["releaseReadiness"],
+            }))
+            return
+        if args.mode in ("evaluate", "finalize"):
+            if checkpoint_path is None:
+                raise ValueError(f"{args.mode} mode requires --checkpoint")
+            model = load_model(checkpoint_path, identity_encoding, provenance)
+            evaluation = {
+                "scripted": evaluate_model(
+                    client,
+                    model,
+                    args.evaluation_pairs,
+                    args.seed + 200_000,
+                    "scripted",
+                    args.objective_top_k,
+                ),
+                "random": evaluate_model(
+                    client,
+                    model,
+                    args.evaluation_pairs,
+                    args.seed + 300_000,
+                    "random",
+                    args.objective_top_k,
+                ),
+            }
+            if args.mode == "evaluate":
+                report_path = output_directory / "evaluation-report.json"
+                report_path.write_text(json.dumps({
+                    "pilotVersion": PILOT_VERSION,
+                    "provenance": provenance,
+                    "evaluation": evaluation,
+                }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+                print(json.dumps({"report": str(report_path)}))
+                return
+            trajectory_path = output_directory / "trajectories.jsonl.gz"
+            if not trajectory_path.exists():
+                raise ValueError(f"finalize mode requires saved trajectories: {trajectory_path}")
+            samples = load_trajectory_samples(trajectory_path)
+            validation_samples = [sample for sample in samples if sample["split"] == "validation"]
+            if not validation_samples:
+                raise ValueError("finalize mode requires validation trajectory samples")
+            balance = run_balance_suite(client, args.balance_pairs, args.seed)
+            torch, _, _ = _torch_modules()
+            checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+            report: dict[str, Any] = {
+                "pilotVersion": PILOT_VERSION,
+                "presetId": "four-forests",
+                "configuration": {
+                    "mode": "finalize",
+                    "seed": args.seed,
+                    "balancePairs": args.balance_pairs,
+                    "batchSize": args.batch_size,
+                    "evaluationPairs": args.evaluation_pairs,
+                },
+                "provenance": provenance,
+                "balance": balance,
+                "trajectories": {
+                    "path": str(trajectory_path),
+                    "sha256": hashlib.sha256(trajectory_path.read_bytes()).hexdigest(),
+                    "sampleCount": len(samples),
+                    "validationSamples": len(validation_samples),
+                },
+                "training": {
+                    "checkpoint": str(checkpoint_path),
+                    "checkpointSha256": hashlib.sha256(checkpoint_path.read_bytes()).hexdigest(),
+                    "checkpointTraining": checkpoint.get("training", {}),
+                    "validation": _classification_metrics(model, validation_samples, args.batch_size),
+                },
+                "evaluation": evaluation,
+            }
+            report["recommendation"] = _recommendation(report)
+            report_path = output_directory / "report.json"
+            report_path.write_text(
+                json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+            )
+            print(json.dumps({
+                "report": str(report_path),
+                "recommendation": report["recommendation"],
+                "balanceOutcomes": balance["outcomes"],
+            }))
             return
         balance = run_balance_suite(client, args.balance_pairs, args.seed)
         report: dict[str, Any] = {
@@ -1122,7 +1864,7 @@ def main() -> None:
                 client,
                 args.collection_episodes,
                 args.seed + 100_000,
-                args.output_directory / "trajectories.jsonl.gz",
+                output_directory / "trajectories.jsonl.gz",
             )
             model, initial_training = train_model(
                 samples,
@@ -1130,7 +1872,7 @@ def main() -> None:
                 args.batch_size,
                 args.learning_rate,
                 args.seed,
-                args.output_directory / "initial-checkpoint.pt",
+                output_directory / "initial-checkpoint.pt",
                 provenance,
             )
             combined_samples = list(samples)
@@ -1142,7 +1884,7 @@ def main() -> None:
                     model,
                     args.correction_pairs,
                     args.seed + 150_000 + iteration * 10_000,
-                    args.output_directory / f"corrections-{iteration + 1}.jsonl.gz",
+                    output_directory / f"corrections-{iteration + 1}.jsonl.gz",
                 )
                 combined_samples.extend(correction_samples)
                 final_iteration = iteration + 1 == args.correction_iterations
@@ -1152,7 +1894,7 @@ def main() -> None:
                     args.batch_size,
                     args.correction_learning_rate,
                     args.seed + iteration + 1,
-                    args.output_directory / (
+                    output_directory / (
                         "checkpoint.pt" if final_iteration else f"correction-checkpoint-{iteration + 1}.pt"
                     ),
                     provenance,
@@ -1175,14 +1917,24 @@ def main() -> None:
             report["training"] = training
             report["evaluation"] = {
                 "scripted": evaluate_model(
-                    client, model, args.evaluation_pairs, args.seed + 200_000, "scripted"
+                    client,
+                    model,
+                    args.evaluation_pairs,
+                    args.seed + 200_000,
+                    "scripted",
+                    args.objective_top_k,
                 ),
                 "random": evaluate_model(
-                    client, model, args.evaluation_pairs, args.seed + 300_000, "random"
+                    client,
+                    model,
+                    args.evaluation_pairs,
+                    args.seed + 300_000,
+                    "random",
+                    args.objective_top_k,
                 ),
             }
         report["recommendation"] = _recommendation(report)
-        report_path = args.output_directory / "report.json"
+        report_path = output_directory / "report.json"
         report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         print(json.dumps({
             "report": str(report_path),

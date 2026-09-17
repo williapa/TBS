@@ -248,7 +248,7 @@ describe("map documents and setup", () => {
       startingMoney,
     }))).toEqual([
       { id: "default-battlefield", name: "Default battlefield", cells: 2, startingMoney: DEFAULT_MAP_STARTING_MONEY },
-      { id: "four-forests", name: "4 Forests", cells: 91, startingMoney: DEFAULT_MAP_STARTING_MONEY },
+      { id: "four-forests", name: "4 Forests", cells: 91, startingMoney: { orange: 1_000, purple: 900 } },
       { id: "lake-affection", name: "Lake Affection", cells: 169, startingMoney: DEFAULT_MAP_STARTING_MONEY },
       { id: "money-mountain", name: "Money Mountain", cells: 91, startingMoney: DEFAULT_MAP_STARTING_MONEY },
     ]);
