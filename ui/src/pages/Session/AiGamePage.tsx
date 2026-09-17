@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 
 import { createActionEnvelope } from "../../multiplayer/createActionEnvelope";
 import { GameView } from "./GameView";
 
-export const AI_MOVE_DELAY_MS = 700;
+export const AI_MOVE_DELAY_MS = 1000;
 
 const createAiGameModel = (): SoloGameModel => {
   const preset = createBundledMapPresets().find(({ id }) => id === "four-forests");
