@@ -88,7 +88,7 @@ describe("new session create and join flow", () => {
       .toHaveAttribute("href", "/game/ai");
   });
 
-  test("starts Four Forests with the human as Orange and paces the Purple AI move", async () => {
+  test("starts Four Forests after its introduction and paces the Purple AI move", async () => {
     vi.useFakeTimers();
     aiWorker.choose.mockImplementation(async (state: { revision: number }) => ({
       type: "selection",
@@ -104,10 +104,26 @@ describe("new session create and join flow", () => {
 
     expect(screen.getByText("Player vs AI")).toBeInTheDocument();
     expect(screen.getByText("4 Forests")).toBeInTheDocument();
-    expect(screen.getByText("AI is choosing its next move…")).toBeInTheDocument();
+    const introduction = screen.getByRole("dialog", { name: "The Orange Legion needs YOU!" });
+    expect(within(introduction).getByText(/proud citizen of the Orange Legion/)).toBeInTheDocument();
+    expect(within(introduction).getByText(/Purple Legion are a peace-loving people/)).toBeInTheDocument();
+    expect(within(introduction).getByText(/eliminate the Purple Legion with the utmost contempt/))
+      .toBeInTheDocument();
     expect(screen.getByText("0")).toBeInTheDocument();
+    await act(async () => {
+      vi.advanceTimersByTime(AI_MOVE_DELAY_MS * 2);
+      await Promise.resolve();
+    });
+    expect(aiWorker.choose).not.toHaveBeenCalled();
 
-    await act(async () => { await Promise.resolve(); });
+    await act(async () => {
+      fireEvent.click(within(introduction).getByRole("button", { name: "Start game" }));
+      await Promise.resolve();
+    });
+
+    expect(screen.queryByRole("dialog", { name: "The Orange Legion needs YOU!" }))
+      .not.toBeInTheDocument();
+    expect(screen.getByText("AI is choosing its next move…")).toBeInTheDocument();
     act(() => { vi.advanceTimersByTime(AI_MOVE_DELAY_MS - 1); });
     expect(screen.getByText("0")).toBeInTheDocument();
     act(() => { vi.advanceTimersByTime(1); });
