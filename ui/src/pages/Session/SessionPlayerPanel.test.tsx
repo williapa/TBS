@@ -52,4 +52,27 @@ describe("SessionPlayerPanel", () => {
     expect(screen.getByRole("complementary", { name: "purple player" }))
       .not.toHaveAttribute("aria-current");
   });
+
+  test("places the winner badge after the centered avatar", () => {
+    render(
+      <SessionPlayerPanel
+        activeTurn={false}
+        canEndTurn={false}
+        color="purple"
+        displayName="Ada"
+        income={25}
+        isLocalPlayer
+        isOnline
+        isWinner
+        money={1000}
+        onEndTurn={vi.fn()}
+      />,
+    );
+
+    const avatar = screen.getByRole("img", { name: "avatar" });
+    const winnerBadge = screen.getByText("Winner");
+
+    expect(avatar.nextElementSibling).toBe(winnerBadge);
+    expect(avatar.parentElement).toHaveClass("player__identity");
+  });
 });

@@ -39,12 +39,12 @@ export const SessionPlayerPanel = ({
       <div className={`player__identity player__identity--${color}`}>
         <p aria-label={accessibleName} className="player__name">{name}</p>
         {activeTurn && <p className="player__turn-indicator">Current turn</p>}
-        {isWinner && <p className="player__winner"><span aria-hidden="true">★</span> Winner</p>}
         <img
           alt="avatar"
           className="player__avatar"
           src={`https://api.dicebear.com/5.x/adventurer/svg?seed=${avatarSeed}${flip}`}
         />
+        {isWinner && <p className="player__winner"><span aria-hidden="true">★</span> Winner</p>}
         <p className="player__presence">
           {presenceLabel ?? (displayName ? (isOnline ? "online" : "offline") : "waiting")}
         </p>

@@ -9,5 +9,5 @@ test('renders the Hostile Hexagons homepage', async () => {
     'test-user',
   );
   render(<App gateway={gateway} />);
-  expect(await screen.findByRole('heading', { name: '🎖️ Hostile 🎖️Hexagons' })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: '🎖️ HOSTILE 🎖️HEXAGONS' })).toBeInTheDocument();
 });

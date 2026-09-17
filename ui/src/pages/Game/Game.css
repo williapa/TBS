@@ -164,7 +164,9 @@
 }
 
 .player__avatar {
+  display: block;
   height: min(22vh, 170px);
+  margin-inline: auto;
   max-width: 100%;
 }
 

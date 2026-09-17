@@ -15,6 +15,7 @@ import { GameSessionGatewayContext } from "../../multiplayer/GameSessionGatewayC
 import { GameSessionProvider } from "../../multiplayer/GameSessionProvider";
 import { createActionEnvelope } from "../../multiplayer/createActionEnvelope";
 import { SoloGameProvider } from "../../solo";
+import { AI_MOVE_DELAY_MS } from "./AiGamePage";
 import { SessionFlowRoutes } from "./SessionFlowRoutes";
 import { saveReconnectDetails } from "./sessionReconnect";
 
@@ -71,10 +72,14 @@ describe("new session create and join flow", () => {
     window.localStorage.setItem("TBS.board-renderer.v2", "2d");
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   test("renders the restored Hostile Hexagons homepage", () => {
     renderFlow(new InMemoryGameSessionGateway(createStore(), "visitor"));
 
-    expect(screen.getByRole("heading", { name: "🎖️ Hostile 🎖️Hexagons" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /HOSTILE/ })).toBeInTheDocument();
     expect(screen.getByText(/Lead your legion to victory/)).toBeInTheDocument();
     expect(screen.getByText("Campaign demo", { selector: "p" })).toBeInTheDocument();
     expect(screen.getByText(/Battle against a demo AI opponent/))
@@ -103,7 +108,7 @@ describe("new session create and join flow", () => {
     expect(screen.getByText("0")).toBeInTheDocument();
 
     await act(async () => { await Promise.resolve(); });
-    act(() => { vi.advanceTimersByTime(699); });
+    act(() => { vi.advanceTimersByTime(AI_MOVE_DELAY_MS - 1); });
     expect(screen.getByText("0")).toBeInTheDocument();
     act(() => { vi.advanceTimersByTime(1); });
     expect(screen.getByText("Your turn — you are Orange")).toBeInTheDocument();
@@ -504,7 +509,7 @@ describe("new session create and join flow", () => {
     mapsView.unmount();
 
     const redirected = renderFlow(gateway, "/lobby");
-    expect(await redirected.findByRole("heading", { name: "🎖️ Hostile 🎖️Hexagons" })).toBeInTheDocument();
+    expect(await redirected.findByRole("heading", { name: /HOSTILE/ })).toBeInTheDocument();
     redirected.unmount();
 
     const oldCreateGame = renderFlow(gateway, "/createGame");
